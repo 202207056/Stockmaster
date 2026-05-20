@@ -1,2 +1,78 @@
 # Stockmaster
 유한대학교 컴소과 3-2 모의투자 ai 학습형 졸업작품프로젝트
+
+----DATEBASE---
+
+Table users {
+  user_id integer [primary key, increment]
+  login_id varchar [unique, not null]
+  passwd varchar [not null]
+  user_name varchar
+  email varchar [unique, not null]
+  investment_style text [note: 'AI에게 받아오는 사용자의 투자 성향']
+  created timestamp [default: `now()`]
+  last_login timestamp
+}
+
+Table Account {
+  account_id varchar [primary key]
+  user_id integer [ref: > users.user_id]
+  account_name varchar
+  balance decimal [default: 10000000]
+  withdrawable_cash decimal [default: 10000000]
+}
+
+Table item_master {
+  symbol_code varchar [primary key]
+  name varchar
+  market_type varchar [note: '국내주식, ELW, 선물옵션 구분']
+  sector_code varchar [note: '해당 종목이 어떤 산업 분야(종류)에 속해 있는지']
+}
+
+Table Orders {
+  order_id integer [primary key, increment]
+  account_id varchar [ref: > Account.account_id]
+  symbol_code varchar [ref: > item_master.symbol_code]
+  order_type varchar [note: '매수, 매도, 정정, 취소']
+  price decimal
+  quantity integer
+  status varchar [note: '대기, 체결, 취소, 거부']
+  created_at timestamp [default: `now()`]
+}
+
+Table Portfolio {
+  portfolio_id integer [primary key, increment]
+  account_id varchar [ref: > Account.account_id]
+  symbol_code varchar [ref: > item_master.symbol_code]
+  avg_price decimal
+  hold_quantity integer
+}
+
+Table PriceHistory {
+  history_id integer [primary key, increment]
+  symbol_code varchar [ref: > item_master.symbol_code]
+  time_frame varchar [note: '1분, 일봉, 주봉 등']
+  open decimal
+  high decimal
+  low decimal
+  close decimal
+  volume bigint
+  timestamp timestamp
+}
+
+
+Table user_survey_response {
+  response_id integer [primary key, increment , note: '답안 데이터 자체를 구별하기위한 일련번호 ']
+  user_id integer [ref: > users.user_id, note: '설문을 진행한 사용자']
+  question_number integer [note: '설문 문항 번호 (예: 1번 나이, 2번 투자 목적 등)']
+  selected_answer text [note: '사용자가 선택하거나 작성한 답변 내용']
+  updated_at timestamp [default: `now()`, note: '설문 작성 및 수정 시간']
+}
+
+Table ai_propensity_advice {
+  advice_id integer [primary key, increment] ( 위에 user response_id 랑 비슷한건데 나중에 재설문하거나 이러면 어떤 데이터인지 구별하기 힘들어서 1번데이터 2번데이터 이런식으로 )
+  user_id integer [ref: > users.user_id]
+  ai_analysis_result text [note: 'AI가 분석한 사용자의 유형 (예: 공격투자형, 안정추구형 등 요약)']
+  ai_detailed_advice text [note: 'AI가 해당 성향의 사용자에게 주는 구체적인 투자 가이드 및 조언 문구']
+  created_at timestamp [default: `now()`]
+}
