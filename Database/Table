@@ -31,7 +31,7 @@ Table Orders {
   account_id varchar [ref: > Account.account_id]
   symbol_code varchar [ref: > item_master.symbol_code]
   order_type varchar [note: '매수, 매도, 정정, 취소']
-  price integer
+  price decimal
   quantity integer
   status varchar [note: '대기, 체결, 취소, 거부']
   created_at timestamp [default: `now()`]
