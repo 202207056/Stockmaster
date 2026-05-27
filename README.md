@@ -16,7 +16,7 @@ Table users {
 }
 
 Table Account {
-  account_id varchar [primary key]
+  account_id integer [primary key]
   user_id integer [ref: > users.user_id]
   account_name varchar
   balance decimal [default: 10000000]
