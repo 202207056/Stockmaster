@@ -28,7 +28,7 @@ Table item_master {
 
 Table Orders {
   order_id integer [primary key, increment]
-  account_id varchar [ref: > Account.account_id]
+  account_id integer [ref: > Account.account_id]
   symbol_code varchar [ref: > item_master.symbol_code]
   order_type varchar [note: '매수, 매도, 정정, 취소']
   price decimal
@@ -39,7 +39,7 @@ Table Orders {
 
 Table Portfolio {
   portfolio_id integer [primary key, increment]
-  account_id varchar [ref: > Account.account_id]
+  account_id integer [ref: > Account.account_id]
   symbol_code varchar [ref: > item_master.symbol_code]
   avg_price decimal
   hold_quantity integer
