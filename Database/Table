@@ -58,6 +58,7 @@ Table PriceHistory {
 }
 
 
+--AI설문조사--
 Table user_survey_response {
   response_id integer [primary key, increment , note: '답안 데이터 자체를 구별하기위한 일련번호 ']
   user_id integer [ref: > users.user_id, note: '설문을 진행한 사용자']
@@ -66,6 +67,7 @@ Table user_survey_response {
   updated_at timestamp [default: `now()`, note: '설문 작성 및 수정 시간']
 }
 
+--AI조언--
 Table ai_propensity_advice {
   advice_id integer [primary key, increment] ( 위에 user response_id 랑 비슷한건데 나중에 재설문하거나 이러면 어떤 데이터인지 구별하기 힘들어서 1번데이터 2번데이터 이런식으로 )
   user_id integer [ref: > users.user_id]
@@ -73,3 +75,15 @@ Table ai_propensity_advice {
   ai_detailed_advice text [note: 'AI가 해당 성향의 사용자에게 주는 구체적인 투자 가이드 및 조언 문구']
   created_at timestamp [default: `now()`]
 }
+
+--뉴스--
+Table ai_news_summary {
+  news_id integer [primary key, increment, note: '뉴스 요약 데이터 식별 번호']
+  symbol_code varchar [ref: > item_master.symbol_code, note: '어떤 주식 종목에 대한 뉴스인지 매핑']
+  article_url varchar [unique, not null, note: '기사 원본 링크 (중복 크롤링 및 AI 토큰 낭비 방지용)']
+  summary_keyword varchar [note: 'AI가 생성한 핵심 한 줄 요약 (화면 리스트에 노출)']
+  summary_details text [note: 'AI가 생성한 상세 요약 내용 및 투자 인사이트 (클릭 시 상세 노출)']
+  published_at timestamp [note: '네이버 뉴스 기준 실제 기사 발행 일시']
+  created_at timestamp [default: `now()`, note: '크롤링 및 DB 적재 일시']
+}
+
