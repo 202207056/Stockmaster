@@ -1,0 +1,17 @@
+# frontend (React / Vite) 관련 제외
+frontend/node_modules/
+frontend/dist/
+frontend/dist-ssr/
+frontend/*.local
+
+# backend (FastAPI / Python) 관련 제외
+backend/venv/
+backend/__pycache__/
+backend/*.pyc
+
+# 에디터 및 OS 관련 운영체제 찌꺼기 파일 제외
+.vscode/
+.idea/
+.DS_Store
+*.suo
+*.sln
