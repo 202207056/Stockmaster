@@ -1,122 +1,40 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import React from 'react';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+
+// 🌟 여기서부터 불러오기(import)가 하나라도 빠지면 하얀 화면이 뜹니다!
+import Dashboard from './pages/Dashboard';
+import Login from './pages/Login';
+import Trading from './pages/Trading';
+import Assets from './pages/Assets';
+import Survey from './pages/Survey';
+import Landing from './pages/Landing';
 
 function App() {
-  const [count, setCount] = useState(0)
-
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+    // BrowserRouter: 주소창의 URL을 감지하는 역할
+    <BrowserRouter>
+      {/* Routes: 여러 개의 길(Route)들을 묶어주는 역할 */}
+      <Routes>
 
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+        <Route path="/" element={<Landing />} />
+        
+        {/* 접속 주소가 '/' (기본 홈) 일 때 -> Dashboard 화면을 보여줌 */}
+        <Route path="/dashboard" element={<Dashboard />} />
+        
+        {/* 접속 주소가 '/login' 일 때 -> Login 화면을 보여줌 */}
+        <Route path="/login" element={<Login />} />
+        
+        {/* 접속 주소가 '/trading' 일 때 -> Trading 화면을 보여줌 */}
+        <Route path="/trading" element={<Trading />} />
+        
+        {/* 추가로 필요한 화면(AI 설문, 커뮤니티 등)은 팀원들이 여기에 한 줄씩 추가하면 됩니다! */}
+        <Route path="/trading" element={<Trading />} />
+        <Route path="/assets" element={<Assets />} />
+        <Route path="/survey" element={<Survey />} />
+        
+      </Routes>
+    </BrowserRouter>
+  );
 }
 
-export default App
+export default App;
