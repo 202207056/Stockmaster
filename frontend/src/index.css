@@ -113,6 +113,75 @@ body {
   animation: skeleton-pulse 1.6s ease-in-out infinite;
 }
 
+/* =========================================================================
+   헤더 티커 — 인기 검색어가 하나씩 위로 밀려 올라가며 교체됩니다.
+   (components/layout/PopularSearchTicker.jsx)
+
+   나가는 항목은 위로 빠지고, 새 항목은 아래에서 올라옵니다.
+   ========================================================================= */
+@keyframes ticker-in {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes ticker-out {
+  from {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+}
+
+.ticker-in {
+  animation: ticker-in 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.ticker-out {
+  animation: ticker-out 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* =========================================================================
+   카드 스트립 — 한 칸씩 넘어가는 가로 띠 (주요 시세)
+   (components/dashboard/MarketStrip.jsx)
+
+   - 스크롤바는 감춥니다. 자동으로 넘어가고 마우스로 끌 수 있어서 필요 없습니다.
+   - scroll-snap 으로 항상 카드 경계에 딱 맞춰 멈춥니다. ("휙" 넘어가는 느낌)
+   - 드래그 중에는 JS 가 snap 을 잠시 꺼서 손을 따라오게 하고, 놓으면 다시 켜서
+     가장 가까운 카드로 붙습니다.
+   ========================================================================= */
+.card-strip {
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  overscroll-behavior-x: contain;
+  cursor: grab;
+}
+
+.card-strip::-webkit-scrollbar {
+  display: none;
+}
+
+.card-strip.is-dragging {
+  cursor: grabbing;
+  scroll-snap-type: none;
+  user-select: none;
+}
+
+.card-strip > * {
+  scroll-snap-align: start;
+}
+
 /* 모션 최소화 설정을 존중 */
 @media (prefers-reduced-motion: reduce) {
   *,

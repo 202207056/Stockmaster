@@ -1,3 +1,5 @@
+import { MessageSquare, Newspaper, Receipt, Search, Star, TrendingUp } from 'lucide-react';
+
 /**
  * EmptyState 문구 프리셋
  *
@@ -9,40 +11,43 @@
  *   - 종목이 30개뿐이라 검색 결과가 자주 비어 있음 (Doc/13 §4-5)
  *   - 뉴스 크롤링 실패 시 빈 배열이 옴 (Doc/13 §3-6)
  * 그래서 문구는 "실패"가 아니라 "다음에 뭘 하면 되는지"를 말합니다.
+ *
+ * 아이콘은 lucide 선 아이콘입니다. 이모지를 쓰면 OS·브라우저마다 모양과 색이 달라
+ * 화면 톤이 흔들립니다. (Doc/17 §12-3)
  */
 export const EMPTY_MESSAGES = {
   stockSearch: {
-    icon: '🔍',
+    Icon: Search,
     title: '등록된 종목이 아니에요',
     description: '현재 코스피 대표 30종목만 제공됩니다. 다른 종목으로 검색해 보세요.',
   },
   favorites: {
-    icon: '⭐',
+    Icon: Star,
     title: '관심종목이 아직 없어요',
     description: '종목 상세 화면에서 별표를 눌러 추가해 보세요.',
   },
   holdings: {
-    icon: '📈',
+    Icon: TrendingUp,
     title: '보유한 종목이 없어요',
     description: '트레이딩 화면에서 첫 주문을 넣어 보세요.',
   },
   orders: {
-    icon: '🧾',
+    Icon: Receipt,
     title: '주문 내역이 없어요',
     description: '매수 또는 매도 주문을 넣으면 여기에 표시됩니다.',
   },
   news: {
-    icon: '📰',
+    Icon: Newspaper,
     title: '표시할 뉴스가 없어요',
     description: '잠시 후 다시 확인해 주세요.',
   },
   posts: {
-    icon: '💬',
+    Icon: MessageSquare,
     title: '아직 글이 없어요',
     description: '첫 글을 남겨 보세요.',
   },
   comments: {
-    icon: '💬',
+    Icon: MessageSquare,
     title: '댓글이 아직 없어요',
     description: '첫 댓글을 남겨 보세요.',
   },

@@ -50,6 +50,10 @@ export const signTextClass = (v) =>
 export const signBgClass = (v) =>
   ({ up: 'bg-up-50', down: 'bg-down-50', flat: 'bg-flat-50' })[sign(v)];
 
+/** 등락 테두리 클래스 — 지수 카드처럼 배경과 함께 쓸 때 */
+export const signBorderClass = (v) =>
+  ({ up: 'border-up-100', down: 'border-down-100', flat: 'border-gray-100' })[sign(v)];
+
 /**
  * 색상만으로 등락을 구분하면 색약 사용자가 읽을 수 없습니다.
  * 기호를 함께 표기합니다. (Doc/13 §10 차별화 체크리스트)
@@ -60,6 +64,30 @@ export const signMark = (v) => ({ up: '▲', down: '▼', flat: '–' })[sign(v)
 export const rateWithMark = (v, digits = 2) => {
   const n = num(v);
   return `${signMark(n)} ${Math.abs(n).toFixed(digits)}%`;
+};
+
+/**
+ * 지수·금·환율 값 표기 (헤더 티커 · 홈 상단 카드 공용)
+ *
+ * 항목마다 자릿수와 단위가 다릅니다.
+ *   코스피 2,712.34  (소수 2자리, 단위 없음)
+ *   금     128,400원 (소수 0자리, 원)
+ *   달러   1,382.50원 (소수 2자리, 원)
+ */
+export const marketValue = (v, decimals = 2, unit = '') =>
+  num(v).toLocaleString('ko-KR', {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  }) + unit;
+
+/**
+ * 전일대비 값. 부호를 붙이고 자릿수·단위를 값과 똑같이 맞춥니다.
+ * "+18.22" / "-4.20원" / "+540원"
+ * (값에는 '원'이 붙는데 전일대비에는 안 붙으면 같은 카드 안에서 단위가 어긋나 보입니다)
+ */
+export const marketChange = (v, decimals = 2, unit = '') => {
+  const n = num(v);
+  return `${n > 0 ? '+' : ''}${marketValue(n, decimals, unit)}`;
 };
 
 /** 큰 금액 축약: 123456789 -> "1.23억" */

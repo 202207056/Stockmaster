@@ -1,3 +1,4 @@
+import { TriangleAlert } from 'lucide-react';
 import { toUserMessage } from '../../api/client';
 
 /**
@@ -14,9 +15,7 @@ export default function ErrorState({ error, message, onRetry, className = '' }) 
       role="alert"
       className={`flex flex-col items-center justify-center gap-3 px-6 py-10 text-center ${className}`}
     >
-      <div className="text-3xl" aria-hidden="true">
-        ⚠️
-      </div>
+      <TriangleAlert size={28} strokeWidth={1.5} aria-hidden="true" className="text-gray-400" />
       <p className="max-w-sm text-sm leading-relaxed font-medium text-gray-700">{text}</p>
       {onRetry && (
         <button

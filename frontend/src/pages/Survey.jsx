@@ -1,28 +1,35 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { MAX_SCORE, SURVEY, calcStyle, isComplete, totalScore } from '../constants/survey';
+import { Link, useNavigate } from 'react-router-dom';
+import { SURVEY, STYLES, calcStyle, isComplete, totalScore } from '../constants/survey';
 import HelpIcon from '../components/learn/HelpIcon';
 
 /**
- * 투자성향 설문 (§5-4)
+ * 투자성향 설문
  *
- * 고친 것
- *  - 선택지가 전부 "설문 선택지 내용이 들어갑니다."로 되어 있었고, 첫 문항의 첫 번째가
- *    항상 체크된 것처럼 보이는 눈속임이 들어 있었습니다.
+ * 이 화면의 위치
+ *  회원가입 직후 한 번 뜨는 온보딩 화면입니다. 그래서 **상단 메뉴바(Layout)를 쓰지 않고**
+ *  App.jsx 에서 Layout 밖 라우트로 뺐습니다. 설문에만 집중하도록 하기 위함입니다.
+ *  나중에 다시 하고 싶으면 내 정보 화면에서 들어옵니다.
+ *
+ * 점수를 감춘 이유
+ *  배점(0/5/10/15)은 내부 계산 방식일 뿐이고, 사용자가 볼 이유가 없습니다.
+ *  점수가 보이면 "높은 점수 = 좋은 결과"로 오해해 솔직하게 답하지 않게 됩니다.
+ *  그래서 진행률만 보여 주고, 결과도 총점 대신 성향 스펙트럼상의 위치로 표시합니다.
+ *
+ * 고친 것 (기존 시안)
+ *  - 선택지가 전부 "설문 선택지 내용이 들어갑니다."였고, 첫 문항 첫 선택지가
+ *    항상 체크된 것처럼 보이는 눈속임이 있었습니다.
  *  - 제출하면 아무것도 저장하지 않고 alert 만 띄운 뒤 대시보드로 넘어갔습니다.
- *
- * 지금
- *  - 실제 문항·선택지·배점을 constants/survey.js 에서 읽어 옵니다.
- *  - 총점으로 성향을 프론트에서 계산해 결과 화면까지 보여 줍니다.
- *    (GET /api/ai/propensity 는 분석 주체가 없어 항상 null 이라 서버 결과를 쓸 수 없습니다.)
- *  - 로그인 없이도 설문하고 결과를 볼 수 있습니다. 결과는 이 브라우저에만 남습니다.
  *
  * TODO(F-19): 제출 시 POST /api/ai/survey 로 원본 답변을 저장하고,
  *             PUT /api/users/survey 로 계산된 성향 라벨을 저장합니다.
+ *             (GET /api/ai/propensity 는 분석 주체가 없어 항상 null 이라 서버 결과를 쓸 수 없습니다)
  */
 const RESULT_KEY = 'gp_survey_result';
 
 export default function Survey() {
+  const navigate = useNavigate();
+
   const [selections, setSelections] = useState({});
   const [result, setResult] = useState(() => {
     try {
@@ -33,7 +40,6 @@ export default function Survey() {
   });
   const [touched, setTouched] = useState(false);
 
-  const score = totalScore(selections);
   const complete = isComplete(selections);
   const answered = SURVEY.filter((q) => selections[q.number] != null).length;
 
@@ -49,6 +55,7 @@ export default function Survey() {
       return;
     }
 
+    const score = totalScore(selections);
     const style = calcStyle(score);
     const payload = { score, code: style.code, label: style.label };
     try {
@@ -66,106 +73,140 @@ export default function Survey() {
     setTouched(false);
   };
 
-  if (result) return <SurveyResult result={result} onRetry={handleRetry} />;
-
   return (
-    <div className="mx-auto w-full max-w-2xl">
-      <div className="pb-8">
-        <h1 className="text-3xl leading-snug font-extrabold text-gray-900">
-          <span className="text-brand-600">투자성향</span>을<br />
-          알려 주세요
-        </h1>
-        <p className="mt-4 text-sm leading-relaxed text-gray-600">
-          더 나은 맞춤형 분석을 위한 질문이에요.
-          <br />
-          투자에 대해 잘 몰라도 괜찮아요. 결과는 나중에 다시 바꿀 수 있습니다.
-        </p>
-      </div>
+    <SurveyShell>
+      {result ? (
+        <SurveyResult
+          result={result}
+          onRetry={handleRetry}
+          onDone={() => navigate('/dashboard')}
+        />
+      ) : (
+        <>
+          <div className="pb-8">
+            <h1 className="text-3xl leading-snug font-extrabold text-gray-900">
+              <span className="text-brand-600">투자성향</span>을<br />
+              알려 주세요
+            </h1>
+            <p className="mt-4 text-sm leading-relaxed text-gray-600">
+              더 나은 맞춤형 분석을 위한 질문이에요.
+              <br />
+              투자에 대해 잘 몰라도 괜찮아요. 결과는 나중에 다시 바꿀 수 있습니다.
+            </p>
+          </div>
 
-      {/* 진행률 */}
-      <div className="sticky top-[4.5rem] z-20 -mx-2 bg-white/95 px-2 py-3 backdrop-blur">
-        <div className="flex items-center justify-between text-xs font-bold text-gray-500">
-          <span>
-            {answered} / {SURVEY.length} 문항
+          {/* 진행률 — 점수는 표시하지 않습니다 */}
+          <div className="sticky top-0 z-20 -mx-2 bg-white/95 px-2 py-3 backdrop-blur">
+            <div className="flex items-center justify-between text-xs font-bold text-gray-500">
+              <span>
+                {answered} / {SURVEY.length} 문항
+              </span>
+              <span className="font-medium text-gray-400">
+                {complete ? '모두 답하셨어요' : '솔직하게 답할수록 정확해요'}
+              </span>
+            </div>
+            <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-gray-100">
+              <div
+                className="h-full rounded-full bg-brand-600 transition-all"
+                style={{ width: `${(answered / SURVEY.length) * 100}%` }}
+              />
+            </div>
+          </div>
+
+          <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-10">
+            {SURVEY.map((q) => {
+              const missing = touched && selections[q.number] == null;
+              return (
+                <fieldset key={q.number} id={`question-${q.number}`}>
+                  <legend className="mb-3 text-sm font-bold text-gray-800">
+                    {q.number}. {q.question}
+                    {missing && (
+                      <span className="ml-2 text-xs font-medium text-up-600">답변해 주세요</span>
+                    )}
+                  </legend>
+                  <div className="flex flex-col gap-2">
+                    {q.options.map((opt, idx) => {
+                      const selected = selections[q.number] === idx;
+                      return (
+                        <label
+                          key={opt.label}
+                          className={`flex cursor-pointer items-center gap-3 rounded-lg border p-3 transition ${
+                            selected
+                              ? 'border-brand-400 bg-brand-50'
+                              : missing
+                                ? 'border-up-200 bg-white hover:border-gray-300'
+                                : 'border-gray-100 bg-gray-50 hover:border-gray-300'
+                          }`}
+                        >
+                          <input
+                            type="radio"
+                            name={`question_${q.number}`}
+                            checked={selected}
+                            onChange={() =>
+                              setSelections((prev) => ({ ...prev, [q.number]: idx }))
+                            }
+                            className="h-4 w-4 accent-brand-600"
+                          />
+                          <span
+                            className={`text-sm ${selected ? 'font-bold text-gray-900' : 'text-gray-600'}`}
+                          >
+                            {opt.label}
+                          </span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </fieldset>
+              );
+            })}
+
+            <div className="flex items-center gap-3 pb-8">
+              <button
+                type="submit"
+                className="rounded-lg bg-brand-600 px-8 py-2.5 text-sm font-bold text-white transition hover:bg-brand-700"
+              >
+                결과 보기
+              </button>
+              <Link
+                to="/dashboard"
+                className="text-sm font-medium text-gray-400 hover:text-gray-700"
+              >
+                나중에 할게요
+              </Link>
+            </div>
+          </form>
+        </>
+      )}
+    </SurveyShell>
+  );
+}
+
+/**
+ * 설문 전용 껍데기 — 상단 메뉴 없이 로고만 둡니다.
+ * 온보딩 중에 다른 메뉴로 새어 나가지 않게 하려는 의도입니다.
+ */
+function SurveyShell({ children }) {
+  return (
+    <div className="min-h-screen bg-white">
+      <div className="mx-auto w-full max-w-2xl px-6 py-8">
+        <Link to="/dashboard" className="inline-flex items-center gap-2">
+          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-600 text-xs font-extrabold text-white">
+            MI
           </span>
-          <span className="tabular">
-            {score}점 / {MAX_SCORE}점
-          </span>
-        </div>
-        <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-gray-100">
-          <div
-            className="h-full rounded-full bg-brand-600 transition-all"
-            style={{ width: `${(answered / SURVEY.length) * 100}%` }}
-          />
-        </div>
+          <span className="text-sm font-extrabold text-gray-900">인생한방</span>
+        </Link>
+        <div className="mt-8">{children}</div>
       </div>
-
-      <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-10">
-        {SURVEY.map((q) => {
-          const missing = touched && selections[q.number] == null;
-          return (
-            <fieldset key={q.number} id={`question-${q.number}`}>
-              <legend className="mb-3 text-sm font-bold text-gray-800">
-                {q.number}. {q.question}
-                {missing && (
-                  <span className="ml-2 text-xs font-medium text-up-600">답변해 주세요</span>
-                )}
-              </legend>
-              <div className="flex flex-col gap-2">
-                {q.options.map((opt, idx) => {
-                  const selected = selections[q.number] === idx;
-                  return (
-                    <label
-                      key={opt.label}
-                      className={`flex cursor-pointer items-center gap-3 rounded-lg border p-3 transition ${
-                        selected
-                          ? 'border-brand-400 bg-brand-50'
-                          : missing
-                            ? 'border-up-200 bg-white hover:border-gray-300'
-                            : 'border-gray-100 bg-gray-50 hover:border-gray-300'
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        name={`question_${q.number}`}
-                        checked={selected}
-                        onChange={() => setSelections((prev) => ({ ...prev, [q.number]: idx }))}
-                        className="h-4 w-4 accent-brand-600"
-                      />
-                      <span
-                        className={`text-sm ${selected ? 'font-bold text-gray-900' : 'text-gray-600'}`}
-                      >
-                        {opt.label}
-                      </span>
-                    </label>
-                  );
-                })}
-              </div>
-            </fieldset>
-          );
-        })}
-
-        <div className="flex items-center gap-3 pb-8">
-          <button
-            type="submit"
-            className="rounded-lg bg-brand-600 px-8 py-2.5 text-sm font-bold text-white transition hover:bg-brand-700"
-          >
-            결과 보기
-          </button>
-          <Link to="/dashboard" className="text-sm font-medium text-gray-400 hover:text-gray-700">
-            나중에 할게요
-          </Link>
-        </div>
-      </form>
     </div>
   );
 }
 
-function SurveyResult({ result, onRetry }) {
+function SurveyResult({ result, onRetry, onDone }) {
   const style = calcStyle(result.score);
+  const position = STYLES.findIndex((s) => s.code === style.code);
 
   return (
-    <div className="mx-auto w-full max-w-2xl">
+    <div>
       <p className="text-sm font-bold text-brand-600">투자성향 분석 결과</p>
       <h1 className="mt-2 flex items-center text-3xl font-extrabold text-gray-900">
         {style.label}
@@ -173,20 +214,31 @@ function SurveyResult({ result, onRetry }) {
       </h1>
       <p className="mt-3 text-sm leading-relaxed text-gray-600">{style.summary}</p>
 
-      <div className="mt-8 flex flex-col gap-4 rounded-xl border border-gray-200 p-6">
-        <div className="flex items-center justify-between">
-          <span className="text-sm text-gray-500">총점</span>
-          <span className="tabular text-lg font-extrabold text-gray-900">
-            {result.score} / {MAX_SCORE}점
-          </span>
+      {/* 총점 대신 성향 스펙트럼에서의 위치를 보여 줍니다 */}
+      <div className="mt-8 rounded-xl border border-gray-200 p-6">
+        <div className="flex justify-between text-xs font-medium text-gray-400">
+          <span>안정</span>
+          <span>공격</span>
         </div>
-        <div className="h-2 w-full overflow-hidden rounded-full bg-gray-100">
-          <div
-            className="h-full rounded-full bg-brand-600"
-            style={{ width: `${(result.score / MAX_SCORE) * 100}%` }}
-          />
+        <div className="mt-2 flex gap-1">
+          {STYLES.map((s, i) => (
+            <div
+              key={s.code}
+              className={`h-2 flex-1 rounded-full ${
+                i === position ? 'bg-brand-600' : 'bg-gray-100'
+              }`}
+            />
+          ))}
         </div>
-        <div className="flex items-center justify-between border-t border-gray-100 pt-4">
+        <div className="mt-3 flex justify-between text-[11px] text-gray-400">
+          {STYLES.map((s, i) => (
+            <span key={s.code} className={i === position ? 'font-bold text-brand-700' : ''}>
+              {s.label}
+            </span>
+          ))}
+        </div>
+
+        <div className="mt-6 flex items-center justify-between border-t border-gray-100 pt-4">
           <span className="flex items-center text-sm text-gray-500">
             권장 주식 비중
             <HelpIcon termId="diversification" />
@@ -206,12 +258,13 @@ function SurveyResult({ result, onRetry }) {
       </p>
 
       <div className="mt-8 flex flex-wrap gap-3 pb-8">
-        <Link
-          to="/dashboard"
+        <button
+          type="button"
+          onClick={onDone}
           className="rounded-lg bg-brand-600 px-6 py-2.5 text-sm font-bold text-white transition hover:bg-brand-700"
         >
-          대시보드로 가기
-        </Link>
+          시작하기
+        </button>
         <button
           type="button"
           onClick={onRetry}

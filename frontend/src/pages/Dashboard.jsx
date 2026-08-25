@@ -1,36 +1,33 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import useAuth from '../hooks/useAuth';
-import { num, won } from '../utils/format';
+import { Heart, MessageSquare, Newspaper, Star } from 'lucide-react';
+import { comma, rateWithMark, signTextClass } from '../utils/format';
 import { FAVORITES_EVENT, getFavorites } from '../utils/favorites';
-import HelpIcon from '../components/learn/HelpIcon';
 import EmptyState from '../components/common/EmptyState';
-import LoginNotice from '../components/common/LoginNotice';
+import MockBadge from '../components/common/MockBadge';
+import HelpIcon from '../components/learn/HelpIcon';
+import MarketStrip from '../components/dashboard/MarketStrip';
+import { MOCK_NEWS, MOCK_POSTS, MOCK_RANKINGS } from '../constants/mockData';
 
 /**
- * 대시보드 (Doc/13 §6 — 설계 변경 적용)
+ * 홈 (대시보드)
  *
- * 왜 시안대로 만들지 않았나
- * 원래 시안은 코스피/코스닥 지수 카드 4개와 "거래대금·급상승·급하락" 랭킹 3열을
- * 요구하는데, 이 셋을 지원하는 API 가 아예 없습니다. 기존 코드는 그 자리를
- * 하드코딩된 가짜 숫자로 채워 두었습니다.
+ * 구성 원칙 — 홈은 "시장"을 보여 주고, "내 돈"은 내 자산 화면이 보여 줍니다.
+ *  예수금·주문가능금액·평가손익·내 랭킹은 개인 정보이므로 /assets 에 있습니다.
+ *  홈에 남은 것은 로그인 여부와 무관하게 누구나 볼 수 있는 시장 정보뿐입니다.
  *
- *   - 코스피 8,096.93 / +612.52(8.1%)   ← 실제 지수가 아님
- *   - 랭킹 3열 전체가 같은 목업 5줄의 반복
- *   - 뉴스 2건, 커뮤니티 글 3건도 하드코딩
+ * 🔴 아래 지수·순위·뉴스·게시글은 전부 **목업**입니다. (constants/mockData.js)
+ *    연동 전 레이아웃을 확인하기 위한 자리이며, 각 영역에 <MockBadge /> 를 붙여
+ *    실제 데이터로 오해되지 않도록 했습니다.
  *
- * 시연 중에 이 숫자들이 실제 데이터로 오해될 위험이 커서 전부 걷어냈습니다.
- * 대신 Doc/13 §6 이 권장한 구성(있는 데이터로 채울 수 있는 구성)으로 바꿨습니다.
- *
- *   상단 카드 : 예수금 · 주문가능금액 (로그인 시 동작) / 평가손익 · 내 랭킹 (연동 대기)
- *   3열       : 보유종목(F-14) · 관심종목(로그인 없이도 동작) · 수익률 랭킹(F-18)
- *   뉴스(F-16) · 커뮤니티(F-17)
- *
- * 로그인하지 않아도 이 화면은 열립니다. 개인 데이터 자리에는 무한 스켈레톤 대신
- * "로그인하면 표시돼요" 안내가 나옵니다.
+ *    TODO(F-지수)  지수 카드   → GET /api/market/indices (국내 + 해외)
+ *    TODO(F-랭킹)  랭킹 3열    → GET /api/ranking/* (KIS 순위분석 TR 필요)
+ *    TODO(F-16)   뉴스        → GET /api/news/market
+ *    TODO(F-17)   커뮤니티     → GET /api/community/posts?page=1&size=4
  */
 export default function Dashboard() {
-  const { user, account, isAuthenticated } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const [favorites, setFavorites] = useState(getFavorites);
 
   useEffect(() => {
@@ -45,122 +42,177 @@ export default function Dashboard() {
 
   return (
     <div className="flex flex-col gap-12">
-      <div>
-        <h1 className="text-xl font-extrabold text-gray-900">
-          {user?.user_name ? `${user.user_name}님, 안녕하세요` : '안녕하세요'}
-        </h1>
-        {isAuthenticated ? (
-          !user?.investment_style && (
+      {isAuthenticated && (
+        <div>
+          <h1 className="text-xl font-extrabold text-gray-900">
+            {user?.user_name ? `${user.user_name}님, 안녕하세요` : '안녕하세요'}
+          </h1>
+          {!user?.investment_style && (
             <p className="mt-1 text-sm text-gray-500">
               아직 투자성향을 알려 주지 않으셨어요.{' '}
               <Link to="/survey" className="font-bold text-brand-600 hover:underline">
                 1분 설문하기 →
               </Link>
             </p>
-          )
-        ) : (
-          <p className="mt-1 text-sm text-gray-500">
-            지금은 둘러보기 모드예요.{' '}
-            <Link to="/login" className="font-bold text-brand-600 hover:underline">
-              로그인
-            </Link>
-            하면 내 자산과 주문 내역이 표시됩니다.
-          </p>
-        )}
-      </div>
+          )}
+        </div>
+      )}
 
-      {/* ── 상단 카드 4개 ───────────────────────────────────────── */}
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {/* 계좌 금액은 AuthContext 가 로그인 직후 받아 둔 값입니다. 추가 호출 없음.
-            ⚠️ /trading/accounts 의 금액은 문자열로 옵니다 — num() 필수 (§4-1) */}
-        <StatCard
-          label={
-            <>
-              예수금
-              <HelpIcon termId="deposit" />
-            </>
-          }
-          value={account ? won(num(account.balance)) : null}
-          pending={isAuthenticated ? '불러오는 중이에요' : '로그인하면 표시돼요'}
-        />
-        <StatCard
-          label={
-            <>
-              주문가능금액
-              <HelpIcon termId="orderable_cash" />
-            </>
-          }
-          value={account ? won(num(account.withdrawable_cash)) : null}
-          pending={isAuthenticated ? '불러오는 중이에요' : '로그인하면 표시돼요'}
-        />
-        {/* 평가손익은 보유종목의 현재가를 조회해 직접 계산해야 합니다. (§5-1, F-14) */}
-        <StatCard
-          label={
-            <>
-              평가손익
-              <HelpIcon termId="eval_pnl" />
-            </>
-          }
-          pending="보유종목 시세 연동 후 표시"
-        />
-        {/* 랭킹은 백엔드 계산식 버그로 "투자를 안 한 사람"이 1위로 올라옵니다.
-            고쳐지기 전까지 숫자를 띄우면 오히려 신뢰를 잃으므로 비워 둡니다. (§6) */}
-        <StatCard label="내 랭킹" pending="랭킹 계산식 수정 대기" />
+      {/* ── 주요 시세 (자동 스크롤) ─────────────────────────────── */}
+      <MarketStrip />
+
+      {/* ── 실시간 랭킹 3열 ─────────────────────────────────────── */}
+      <section>
+        <SectionTitle mock>실시간 랭킹</SectionTitle>
+        <div className="grid gap-8 lg:grid-cols-3">
+          {MOCK_RANKINGS.map((col) => (
+            <div key={col.key}>
+              <div className="mb-2">
+                <h3 className="text-sm font-bold text-gray-700">{col.title}</h3>
+                <p className="text-xs text-gray-400">{col.hint}</p>
+              </div>
+              <ol className="border-t border-gray-400 pt-1">
+                {col.items.map((item) => (
+                  <li
+                    key={item.rank}
+                    className="flex items-center justify-between gap-2 border-b border-gray-100 py-2.5"
+                  >
+                    <div className="flex min-w-0 items-center gap-3">
+                      <span className="tabular w-3 shrink-0 text-sm font-bold text-gray-400">
+                        {item.rank}
+                      </span>
+                      {/* 기업 로고 자리 — 로고 데이터가 없어 빈 원으로 자리만 잡아 둡니다.
+                          TODO(F-랭킹): 종목 로고 이미지가 생기면 이 원을 <img> 로 교체 */}
+                      <span
+                        className="h-6 w-6 shrink-0 rounded-full bg-gray-200"
+                        aria-hidden="true"
+                      />
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-bold text-gray-800">{item.name}</p>
+                        <p className="tabular text-xs text-gray-400">{item.sub}</p>
+                      </div>
+                    </div>
+                    <div className="shrink-0 text-right">
+                      <p className="tabular text-sm font-bold text-gray-800">
+                        {comma(item.price)}
+                      </p>
+                      <p className={`tabular text-xs ${signTextClass(item.rate)}`}>
+                        {rateWithMark(item.rate)}
+                      </p>
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          ))}
+        </div>
       </section>
 
-      {/* ── 3열 ─────────────────────────────────────────────────── */}
-      <section className="grid gap-8 lg:grid-cols-3">
-        <Panel title="내 보유종목" moreTo="/assets">
-          {isAuthenticated ? (
-            /* TODO(F-14): GET /api/trading/portfolio + 종목별 현재가 */
-            <PendingBox text="보유종목 연동 준비 중이에요" />
-          ) : (
-            <LoginNotice message="로그인하면 보유종목이 표시돼요" className="border-0 py-8" />
-          )}
-        </Panel>
+      {/* ── 뉴스 + 오른쪽 사이드 ────────────────────────────────── */}
+      <div className="grid gap-10 lg:grid-cols-3">
+        {/* 뉴스 */}
+        <section className="lg:col-span-2">
+          <SectionTitle mock>오늘의 뉴스</SectionTitle>
+          <ul className="flex flex-col gap-5 rounded-xl border border-gray-100 bg-gray-50 p-6">
+            {MOCK_NEWS.map((n) => (
+              <li key={n.id} className="flex gap-5">
+                {/* 기사 썸네일이 들어갈 자리 */}
+                <div
+                  className="flex h-24 w-24 shrink-0 items-center justify-center rounded-lg border border-gray-200 bg-white"
+                  aria-hidden="true"
+                >
+                  <Newspaper size={24} strokeWidth={1.5} className="text-gray-300" />
+                </div>
+                <div className="flex min-w-0 flex-col justify-center gap-1.5">
+                  <h3 className="text-sm font-bold text-gray-900">{n.title}</h3>
+                  <p className="line-clamp-2 text-sm leading-relaxed text-gray-500">{n.summary}</p>
+                  <p className="mt-1 text-xs text-gray-400">
+                    {n.source} · {n.time}
+                  </p>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
 
-        <Panel title="관심종목" moreTo="/favorites">
-          {favorites.length === 0 ? (
-            <EmptyState
-              icon="⭐"
-              title="관심종목이 아직 없어요"
-              description="마음에 드는 종목을 담아 두면 여기서 바로 확인할 수 있어요."
-              className="py-8"
-            />
-          ) : (
-            <ul className="divide-y divide-gray-100">
-              {favorites.slice(0, 5).map((code) => (
-                <li key={code} className="flex items-center justify-between py-3">
-                  <span className="tabular rounded bg-gray-100 px-2 py-1 text-xs font-bold text-gray-600">
-                    {code}
-                  </span>
-                  {/* TODO(F-12): 종목명·현재가 표시 */}
-                  <span className="text-xs text-gray-400">시세 연동 예정</span>
+        {/* 오른쪽 — 관심종목 + 커뮤니티 */}
+        <div className="flex flex-col gap-10">
+          <section>
+            <SectionTitle to="/favorites">관심종목</SectionTitle>
+            {favorites.length === 0 ? (
+              <EmptyState
+                Icon={Star}
+                title="관심종목이 아직 없어요"
+                description="마음에 드는 종목을 담아 두면 여기서 바로 확인할 수 있어요."
+                className="py-8"
+              />
+            ) : (
+              <ul className="divide-y divide-gray-100 border-t border-gray-300">
+                {favorites.slice(0, 5).map((code) => (
+                  <li key={code} className="flex items-center justify-between py-3">
+                    <span className="tabular rounded bg-gray-100 px-2 py-1 text-xs font-bold text-gray-600">
+                      {code}
+                    </span>
+                    {/* TODO(F-12): 종목명·현재가 표시 */}
+                    <span className="text-xs text-gray-400">시세 연동 예정</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+
+          <section>
+            <SectionTitle mock to="/community">
+              커뮤니티
+            </SectionTitle>
+            <ul className="divide-y divide-gray-100 border-t border-gray-300">
+              {MOCK_POSTS.map((p) => (
+                <li key={p.id} className="py-3">
+                  <p className="truncate text-sm font-medium text-gray-800">{p.title}</p>
+                  <p className="mt-1 flex items-center gap-2 text-xs text-gray-400">
+                    <span>{p.author}</span>
+                    <span aria-hidden="true">·</span>
+                    <span>{p.time}</span>
+                    {p.symbol && (
+                      <span className="tabular rounded bg-gray-100 px-1.5 py-0.5 font-bold text-gray-500">
+                        {p.symbol}
+                      </span>
+                    )}
+                    <span className="ml-auto flex items-center gap-2">
+                      <span className="flex items-center gap-0.5">
+                        <Heart size={12} strokeWidth={1.75} aria-hidden="true" />
+                        {p.likes}
+                      </span>
+                      <span className="flex items-center gap-0.5">
+                        <MessageSquare size={12} strokeWidth={1.75} aria-hidden="true" />
+                        {p.comments}
+                      </span>
+                    </span>
+                  </p>
                 </li>
               ))}
             </ul>
-          )}
-        </Panel>
+          </section>
+        </div>
+      </div>
 
-        <Panel title="수익률 랭킹">
-          {/* TODO(F-18): GET /api/ranking — 단, 계산식 수정 후에 노출 */}
-          <PendingBox text="랭킹 계산식이 수정되면 열립니다" />
-        </Panel>
-      </section>
-
-      {/* ── 뉴스 ────────────────────────────────────────────────── */}
-      <section>
-        <SectionTitle>실시간 뉴스</SectionTitle>
-        {/* TODO(F-16): GET /api/news/market — 크롤링 실패 시 빈 배열이 오므로
-            오류가 아니라 EmptyState 로 처리해야 합니다. (§3-6) */}
-        <PendingBox text="뉴스 연동 준비 중이에요" />
-      </section>
-
-      {/* ── 커뮤니티 ────────────────────────────────────────────── */}
-      <section className="pb-8">
-        <SectionTitle to="/community">커뮤니티</SectionTitle>
-        {/* TODO(F-17): GET /api/community/posts?page=1&size=5 */}
-        <PendingBox text="커뮤니티 연동 준비 중이에요" />
+      {/* 초보자 안내 — 홈에서 학습 동선으로 연결 */}
+      <section className="mb-8 flex flex-wrap items-center justify-between gap-4 rounded-2xl bg-brand-50 px-6 py-5">
+        <div>
+          <p className="flex items-center text-sm font-extrabold text-brand-700">
+            처음이라 용어가 어렵나요?
+            <HelpIcon termId="per" label="PER 설명 미리보기" />
+          </p>
+          <p className="mt-1 text-sm text-gray-600">
+            화면 곳곳의 물음표를 누르면 그 자리에서 뜻을 알려 드려요. 용어 66개를 모아 두었어요.
+          </p>
+        </div>
+        <Link
+          to="/learn"
+          className="rounded-lg bg-brand-600 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-brand-700"
+        >
+          용어사전 보기
+        </Link>
       </section>
     </div>
   );
@@ -168,52 +220,19 @@ export default function Dashboard() {
 
 /* ------------------------------------------------------------------ */
 
-function StatCard({ label, value, pending }) {
+function SectionTitle({ children, to, mock, hint }) {
   return (
-    <div className="rounded-xl border border-gray-200 p-4">
-      <div className="flex items-center text-sm font-medium text-gray-500">{label}</div>
-      {value != null ? (
-        <div className="tabular mt-2 text-2xl font-extrabold text-gray-900">{value}</div>
-      ) : (
-        <div className="mt-2 text-sm text-gray-300">{pending}</div>
-      )}
-    </div>
-  );
-}
-
-function SectionTitle({ children, to }) {
-  return (
-    <h2 className="mb-3 flex items-center gap-2 text-lg font-bold text-gray-800">
-      {children}
-      {to && (
-        <Link to={to} className="text-sm font-normal text-gray-400 hover:text-gray-700">
-          &gt;
-        </Link>
-      )}
-    </h2>
-  );
-}
-
-function Panel({ title, moreTo, children }) {
-  return (
-    <div>
-      <div className="mb-2 flex items-center justify-between">
-        <h3 className="text-sm font-bold text-gray-700">{title}</h3>
-        {moreTo && (
-          <Link to={moreTo} className="text-xs text-gray-400 hover:text-gray-700">
-            더보기 &gt;
+    <div className="mb-3">
+      <h2 className="flex items-center gap-2 text-lg font-bold text-gray-800">
+        {children}
+        {to && (
+          <Link to={to} className="text-sm font-normal text-gray-400 hover:text-gray-700">
+            &gt;
           </Link>
         )}
-      </div>
-      <div className="border-t border-gray-300 pt-1">{children}</div>
-    </div>
-  );
-}
-
-function PendingBox({ text }) {
-  return (
-    <div className="rounded-lg border border-dashed border-gray-200 px-4 py-10 text-center text-sm text-gray-400">
-      {text}
+        {mock && <MockBadge className="ml-1" />}
+      </h2>
+      {hint && <p className="mt-0.5 text-xs text-gray-400">{hint}</p>}
     </div>
   );
 }

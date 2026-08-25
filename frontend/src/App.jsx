@@ -19,7 +19,7 @@ import MyPage from './pages/MyPage';
 import NotFound from './pages/NotFound';
 
 /**
- * 라우팅 (F-2)
+ * 라우팅
  *
  * 고친 것
  *  1) /trading 이 두 번 등록되어 있던 중복 제거
@@ -29,17 +29,17 @@ import NotFound from './pages/NotFound';
  *  4) 없는 주소로 가면 흰 화면만 나오던 것 -> 404 페이지
  *
  * 구조
- *  - Landing 은 자체 전체화면 디자인이라 공통 Layout 밖에 둡니다.
- *  - 나머지는 Layout(헤더·네비·푸터) 아래로 모읍니다.
+ *  - Landing 과 Survey 는 공통 Layout(헤더·네비) **밖**입니다.
+ *    Landing 은 자체 전체화면 디자인이고, Survey 는 가입 직후 한 번 뜨는 온보딩이라
+ *    메뉴로 새어 나가지 않도록 의도적으로 헤더를 빼 두었습니다.
+ *  - 나머지는 Layout 아래로 모읍니다.
  *
  * 🔓 접근 제어
  *  아래 화면들은 원래 로그인이 필요하지만, 지금은 `config/features.js` 의
  *  REQUIRE_AUTH 가 false 라서 **ProtectedRoute 가 아무도 막지 않습니다.**
  *  백엔드를 붙이지 않은 지금은 로그인 자체가 불가능하고, 붙인 뒤에도
  *  "로그인 없이 둘러보기"를 지원할 계획이기 때문입니다.
- *
- *  라우트를 ProtectedRoute 로 감싼 구조는 그대로 두었으므로,
- *  나중에 보호가 필요해지면 features.js 의 값 하나만 true 로 바꾸면 됩니다.
+ *  보호가 필요해지면 features.js 의 값 하나만 true 로 바꾸면 됩니다.
  */
 export default function App() {
   return (
@@ -48,6 +48,14 @@ export default function App() {
         <Routes>
           {/* 공통 레이아웃 없는 화면 */}
           <Route path="/" element={<Landing />} />
+          <Route
+            path="/survey"
+            element={
+              <ProtectedRoute>
+                <Survey />
+              </ProtectedRoute>
+            }
+          />
 
           {/* 공통 레이아웃 */}
           <Route element={<Layout />}>
@@ -63,7 +71,6 @@ export default function App() {
               <Route path="/assets" element={<Assets />} />
               <Route path="/favorites" element={<Favorites />} />
               <Route path="/community" element={<Community />} />
-              <Route path="/survey" element={<Survey />} />
               <Route path="/mypage" element={<MyPage />} />
             </Route>
 

@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { Lock } from 'lucide-react';
 
 /**
  * "로그인하면 볼 수 있어요" 안내 (F-8 확장)
@@ -31,9 +32,7 @@ export default function LoginNotice({
     <div
       className={`flex flex-col items-center gap-3 rounded-lg border border-dashed border-gray-200 px-6 py-10 text-center ${className}`}
     >
-      <div className="text-2xl" aria-hidden="true">
-        🔒
-      </div>
+      <Lock size={24} strokeWidth={1.5} aria-hidden="true" className="text-gray-300" />
       <p className="text-sm text-gray-500">{message}</p>
       <div className="flex gap-2">
         <Link

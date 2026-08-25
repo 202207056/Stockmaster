@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
+import { ChevronLeft, X } from 'lucide-react';
 import { CATEGORIES, getTerm } from '../../constants/glossary';
 
 /**
@@ -98,9 +99,10 @@ export default function HelpIcon({ termId, className = '', label }) {
                 <button
                   type="button"
                   onClick={() => setStack((s) => s.slice(0, -1))}
-                  className="mb-1 text-xs font-medium text-gray-400 hover:text-gray-700"
+                  className="mb-1 flex items-center gap-0.5 text-xs font-medium text-gray-400 hover:text-gray-700"
                 >
-                  ← 뒤로
+                  <ChevronLeft size={12} strokeWidth={2} aria-hidden="true" />
+                  뒤로
                 </button>
               )}
               <h4 className="text-sm font-extrabold text-gray-900">{term.term}</h4>
@@ -114,9 +116,9 @@ export default function HelpIcon({ termId, className = '', label }) {
               type="button"
               onClick={close}
               aria-label="설명 닫기"
-              className="-mt-1 -mr-1 rounded p-1 text-base leading-none text-gray-300 hover:text-gray-600"
+              className="-mt-1 -mr-1 rounded p-1 text-gray-300 hover:text-gray-600"
             >
-              ×
+              <X size={14} strokeWidth={2} aria-hidden="true" />
             </button>
           </div>
 

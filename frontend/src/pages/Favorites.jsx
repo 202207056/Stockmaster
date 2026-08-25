@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { X } from 'lucide-react';
 import EmptyState from '../components/common/EmptyState';
 import { EMPTY_MESSAGES } from '../constants/emptyMessages';
 import HelpIcon from '../components/learn/HelpIcon';
@@ -84,9 +85,9 @@ export default function Favorites() {
                 type="button"
                 onClick={() => removeFavorite(code)}
                 aria-label={`${code} 관심종목에서 빼기`}
-                className="rounded px-2 py-1 text-sm text-gray-300 transition hover:text-up-600"
+                className="rounded p-1.5 text-gray-300 transition hover:text-up-600"
               >
-                ✕
+                <X size={16} strokeWidth={1.75} aria-hidden="true" />
               </button>
             </li>
           ))}

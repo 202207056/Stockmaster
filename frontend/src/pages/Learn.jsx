@@ -6,6 +6,7 @@ import {
   groupByCategory,
   searchGlossary,
 } from '../constants/glossary';
+import { BookOpen } from 'lucide-react';
 import EmptyState from '../components/common/EmptyState';
 
 /**
@@ -69,7 +70,7 @@ export default function Learn() {
 
       {hitCount === 0 ? (
         <EmptyState
-          icon="📖"
+          Icon={BookOpen}
           title="찾는 용어가 아직 없어요"
           description="다른 검색어로 찾아보시거나, 팀에 추가를 요청해 주세요."
         />

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
+import { X } from 'lucide-react';
 
 const FOCUSABLE =
   'a[href], button:not([disabled]), textarea, input, select, [tabindex]:not([tabindex="-1"])';
@@ -92,9 +93,9 @@ export default function Modal({
               type="button"
               onClick={onClose}
               aria-label="닫기"
-              className="-mt-1 -mr-2 rounded p-1 text-xl leading-none text-gray-400 transition hover:text-gray-700"
+              className="-mt-1 -mr-2 rounded p-1 text-gray-400 transition hover:text-gray-700"
             >
-              ×
+              <X size={18} strokeWidth={1.75} aria-hidden="true" />
             </button>
           </div>
         )}
