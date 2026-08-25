@@ -1,0 +1,11 @@
+[build]
+  base = "frontend"
+  command = "npm run build"
+  publish = "dist"
+
+# SPA 라우팅: /dashboard 같은 주소로 새로고침해도 index.html 을 돌려줘야 합니다.
+# (이 설정이 없으면 첫 화면 외의 모든 경로가 404 로 떨어집니다.)
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

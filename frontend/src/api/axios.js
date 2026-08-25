@@ -1,20 +1,8 @@
-import axios from 'axios';
-
-// 백엔드(FastAPI) 기본 주소 설정
-const api = axios.create({
-  baseURL: 'http://localhost:8000', // 실제 백엔드 서버 주소로 변경 필요
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
-
-// 모든 API 요청이 서버로 가기 직전에 가로채서 로그인 토큰(access_token)을 넣어주는 마법의 코드
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('access_token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
-
-export default api;
+/**
+ * @deprecated `src/api/client.js` 를 사용하세요.
+ *
+ * 기존 코드가 `import api from '../api/axios'` 로 이 파일을 가져다 쓰고 있어
+ * 곧바로 삭제하면 다른 사람의 작업이 깨집니다. 당분간 재수출만 합니다.
+ * (하드코딩된 localhost:8000 baseURL 은 제거되었습니다 — client.js 가 .env 를 읽습니다.)
+ */
+export { default, API_BASE_URL, API_ORIGIN, getToken, setToken, clearToken } from './client';

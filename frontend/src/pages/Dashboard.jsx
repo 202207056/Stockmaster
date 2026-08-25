@@ -1,145 +1,219 @@
-import React from 'react';
+import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import useAuth from '../hooks/useAuth';
+import { num, won } from '../utils/format';
+import { FAVORITES_EVENT, getFavorites } from '../utils/favorites';
+import HelpIcon from '../components/learn/HelpIcon';
+import EmptyState from '../components/common/EmptyState';
+import LoginNotice from '../components/common/LoginNotice';
 
-function Dashboard() {
-  // 실시간 랭킹 목업 데이터 (임시 데이터)
-  const rankData = [
-    { id: 1, name: '삼성전자', price: '327,000원', rate: '+10.6%' },
-    { id: 2, name: 'SK하이닉스', price: '2,236,000원', rate: '+17.0%' },
-    { id: 3, name: 'LG전자', price: '246,500원', rate: '-8.0%', isBlue: true },
-    { id: 4, name: 'NAVER', price: '254,000원', rate: '-8.9%', isBlue: true },
-    { id: 5, name: '삼성전자', price: '327,000원', rate: '+10.6%' },
-  ];
+/**
+ * 대시보드 (Doc/13 §6 — 설계 변경 적용)
+ *
+ * 왜 시안대로 만들지 않았나
+ * 원래 시안은 코스피/코스닥 지수 카드 4개와 "거래대금·급상승·급하락" 랭킹 3열을
+ * 요구하는데, 이 셋을 지원하는 API 가 아예 없습니다. 기존 코드는 그 자리를
+ * 하드코딩된 가짜 숫자로 채워 두었습니다.
+ *
+ *   - 코스피 8,096.93 / +612.52(8.1%)   ← 실제 지수가 아님
+ *   - 랭킹 3열 전체가 같은 목업 5줄의 반복
+ *   - 뉴스 2건, 커뮤니티 글 3건도 하드코딩
+ *
+ * 시연 중에 이 숫자들이 실제 데이터로 오해될 위험이 커서 전부 걷어냈습니다.
+ * 대신 Doc/13 §6 이 권장한 구성(있는 데이터로 채울 수 있는 구성)으로 바꿨습니다.
+ *
+ *   상단 카드 : 예수금 · 주문가능금액 (로그인 시 동작) / 평가손익 · 내 랭킹 (연동 대기)
+ *   3열       : 보유종목(F-14) · 관심종목(로그인 없이도 동작) · 수익률 랭킹(F-18)
+ *   뉴스(F-16) · 커뮤니티(F-17)
+ *
+ * 로그인하지 않아도 이 화면은 열립니다. 개인 데이터 자리에는 무한 스켈레톤 대신
+ * "로그인하면 표시돼요" 안내가 나옵니다.
+ */
+export default function Dashboard() {
+  const { user, account, isAuthenticated } = useAuth();
+  const [favorites, setFavorites] = useState(getFavorites);
+
+  useEffect(() => {
+    const sync = () => setFavorites(getFavorites());
+    window.addEventListener(FAVORITES_EVENT, sync);
+    window.addEventListener('storage', sync);
+    return () => {
+      window.removeEventListener(FAVORITES_EVENT, sync);
+      window.removeEventListener('storage', sync);
+    };
+  }, []);
 
   return (
-    /* 1. 중앙 정렬(justify-center)을 없애고 전체 화면을 쓰도록 변경했습니다. */
-    <div className="min-h-screen bg-white font-sans text-gray-800">
-      
-      {/* 2. 가로 길이 제한(max-w-...)을 없애고 w-full로 꽉 채웠습니다. 좌우 여백(px-8)만 유지합니다. */}
-      <div className="w-full bg-white min-h-screen px-8 py-4">
-        
-        {/* 상단 네비게이션 헤더 */}
-        <header className="flex items-center justify-between pb-4 border-b border-gray-200">
-          <div className="flex items-center gap-6">
-            <div className="w-10 h-10 bg-gray-200 rounded flex items-center justify-center text-xs font-bold text-gray-500">로고</div>
-            <div className="relative">
-              <input 
-                type="text" 
-                placeholder="종목, 키워드 검색" 
-                /* 3. 다크모드 충돌 방지를 위해 배경색(bg-white)과 글자색(text-black)을 강제 지정했습니다. */
-                className="border border-gray-300 bg-white text-black rounded-sm py-2 px-4 w-64 text-sm focus:outline-none focus:border-blue-500"
-              />
-              <span className="absolute right-3 top-2 text-gray-400">🔍</span>
-            </div>
-            <div className="text-sm">
-              <span className="text-gray-500 font-medium mr-2">코스피</span>
-              <span className="text-red-500 font-bold">8,096.93</span>
-              <span className="text-red-500 text-xs ml-1">+612.52(8.1%)</span>
-            </div>
-          </div>
-          
-          <nav className="flex gap-8 text-sm font-medium text-gray-500">
-            <a href="#" className="flex flex-col items-center gap-1 hover:text-black"><span className="text-lg">🏠</span>홈</a>
-            <a href="#" className="flex flex-col items-center gap-1 hover:text-black"><span className="text-lg">⭐</span>즐겨찾기</a>
-            <a href="#" className="flex flex-col items-center gap-1 hover:text-black"><span className="text-lg">📈</span>트레이딩</a>
-            <a href="#" className="flex flex-col items-center gap-1 hover:text-black"><span className="text-lg">💰</span>내 자산</a>
-            <a href="#" className="flex flex-col items-center gap-1 hover:text-black"><span className="text-lg">👥</span>커뮤니티</a>
-            <a href="#" className="flex flex-col items-center gap-1 hover:text-black"><span className="text-lg">✏️</span>학습</a>
-          </nav>
-
-          <div className="flex items-center gap-4">
-            <button className="text-sm text-gray-400 hover:text-black">로그인</button>
-            <button className="text-gray-400 hover:text-black">⚙️</button>
-          </div>
-        </header>
-
-        {/* 메인 컨텐츠 영역 */}
-        <main className="py-8 flex flex-col gap-14">
-          
-          {/* 상단 지수 카드 영역 */}
-          <section className="grid grid-cols-4 gap-4">
-             <div className="h-28 bg-red-50/50 rounded-lg p-4 border border-red-100 flex flex-col justify-between cursor-pointer">
-                <span className="font-bold text-gray-800 text-sm">코스피</span>
-                <div>
-                  <div className="text-red-500 font-bold text-xl">8,096.93</div>
-                  <div className="text-red-500 text-xs mt-1">+612.52(8.1%)</div>
-                </div>
-             </div>
-             <div className="h-28 bg-gray-100 rounded-lg p-4 text-sm font-bold text-gray-600 cursor-pointer hover:bg-gray-200 transition">코스닥</div>
-             <div className="h-28 bg-gray-100 rounded-lg cursor-pointer hover:bg-gray-200 transition"></div>
-             <div className="h-28 bg-gray-100 rounded-lg cursor-pointer hover:bg-gray-200 transition"></div>
-          </section>
-
-          {/* 실시간 랭킹 영역 */}
-          <section>
-            {/* 4. 안 보이던 글씨들을 text-gray-800으로 명확하게 보이도록 수정했습니다. */}
-            <h2 className="text-lg font-bold mb-4 flex items-center gap-2 text-gray-800">실시간 랭킹 <span className="text-gray-400 text-sm font-normal">&gt;</span></h2>
-            <div className="grid grid-cols-3 gap-10">
-              {['거래대금', '급상승', '급하락'].map((title, idx) => (
-                <div key={idx}>
-                  <h3 className="text-sm text-gray-500 mb-2">{title} &gt;</h3>
-                  <div className="border-t border-gray-400 pt-1">
-                    {rankData.map((item) => (
-                      <div key={`${title}-${item.id}`} className="flex items-center justify-between py-3 border-b border-gray-100 hover:bg-gray-50 cursor-pointer">
-                        <div className="flex items-center gap-3">
-                          <span className="font-bold text-gray-400 w-4">{item.id}</span>
-                          <div className="w-6 h-6 bg-gray-200 rounded-full"></div>
-                          <span className="font-bold text-sm text-gray-700">{item.name}</span>
-                        </div>
-                        <div className="text-right flex items-center gap-3">
-                          <div className="flex flex-col items-end">
-                            <span className="text-sm font-bold text-gray-700">{item.price}</span>
-                            <span className={`text-xs ${item.isBlue ? 'text-blue-500' : 'text-red-500'}`}>{item.rate}</span>
-                          </div>
-                          <span className="text-gray-300 hover:text-red-400 text-lg">♡</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          {/* 실시간 뉴스 영역 */}
-          <section>
-            <h2 className="text-lg font-bold mb-4 flex items-center gap-2 text-gray-800">실시간 뉴스 <span className="text-gray-400 text-sm font-normal">&gt;</span></h2>
-            <div className="bg-gray-50 p-6 rounded-lg flex flex-col gap-6 border border-gray-100">
-              <div className="flex gap-5 cursor-pointer hover:opacity-80">
-                 <div className="w-24 h-24 bg-gray-200 rounded flex-shrink-0"></div>
-                 <div className="flex flex-col justify-center gap-1.5">
-                   <h3 className="font-bold text-gray-800 text-sm">'반도체 호조'에 1분기 경제성장률 1.8% ...속보치보다 0.1%p↑</h3>
-                   <p className="text-sm text-gray-500 line-clamp-1">올해 1분기 한국 경제가 반도체 수출 호조 등에 힘입어 큰 폭으로 성장했다. 9일 한국은행...</p>
-                   <span className="text-xs text-gray-400 mt-1">노컷뉴스</span>
-                 </div>
-              </div>
-              <div className="flex gap-5 cursor-pointer hover:opacity-80">
-                 <div className="w-24 h-24 bg-gray-200 rounded flex-shrink-0"></div>
-                 <div className="flex flex-col justify-center gap-1.5">
-                   <h3 className="font-bold text-gray-800 text-sm">"삼성 DNA 송두리째 바꾼다"...이재용 'AI 대전환' 선포</h3>
-                   <p className="text-sm text-gray-500 line-clamp-1">삼성이 전 관계사의 모든 업무에 외부 인공지능(AI)을 전면 도입한다. 삼성이 전사적으로...</p>
-                   <span className="text-xs text-gray-400 mt-1">디지털타임스</span>
-                 </div>
-              </div>
-            </div>
-            <button className="mt-4 text-sm font-bold text-gray-700 flex items-center gap-1 hover:text-blue-600 transition">
-              <span className="text-blue-500 text-base">✨</span> 오늘의 AI 뉴스 리포트 보기 &gt;
-            </button>
-          </section>
-          
-          {/* 커뮤니티 영역 */}
-          <section className="mb-20">
-            <h2 className="text-lg font-bold mb-4 flex items-center gap-2 text-gray-800">커뮤니티 <span className="text-gray-400 text-sm font-normal">&gt;</span></h2>
-            <div className="border-t border-gray-400 pt-1">
-              <div className="py-3 border-b border-gray-100 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer">가치투자 같이 하실 분 구합니다~</div>
-              <div className="py-3 border-b border-gray-100 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer">삼성전자 지금 매수 타이밍인가요? AI 분석 결과 공유합니다.</div>
-              <div className="py-3 border-b border-gray-100 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer">오늘 코스피 왜 이렇게 떨어지나요 ㅠㅠ</div>
-            </div>
-          </section>
-
-        </main>
+    <div className="flex flex-col gap-12">
+      <div>
+        <h1 className="text-xl font-extrabold text-gray-900">
+          {user?.user_name ? `${user.user_name}님, 안녕하세요` : '안녕하세요'}
+        </h1>
+        {isAuthenticated ? (
+          !user?.investment_style && (
+            <p className="mt-1 text-sm text-gray-500">
+              아직 투자성향을 알려 주지 않으셨어요.{' '}
+              <Link to="/survey" className="font-bold text-brand-600 hover:underline">
+                1분 설문하기 →
+              </Link>
+            </p>
+          )
+        ) : (
+          <p className="mt-1 text-sm text-gray-500">
+            지금은 둘러보기 모드예요.{' '}
+            <Link to="/login" className="font-bold text-brand-600 hover:underline">
+              로그인
+            </Link>
+            하면 내 자산과 주문 내역이 표시됩니다.
+          </p>
+        )}
       </div>
+
+      {/* ── 상단 카드 4개 ───────────────────────────────────────── */}
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {/* 계좌 금액은 AuthContext 가 로그인 직후 받아 둔 값입니다. 추가 호출 없음.
+            ⚠️ /trading/accounts 의 금액은 문자열로 옵니다 — num() 필수 (§4-1) */}
+        <StatCard
+          label={
+            <>
+              예수금
+              <HelpIcon termId="deposit" />
+            </>
+          }
+          value={account ? won(num(account.balance)) : null}
+          pending={isAuthenticated ? '불러오는 중이에요' : '로그인하면 표시돼요'}
+        />
+        <StatCard
+          label={
+            <>
+              주문가능금액
+              <HelpIcon termId="orderable_cash" />
+            </>
+          }
+          value={account ? won(num(account.withdrawable_cash)) : null}
+          pending={isAuthenticated ? '불러오는 중이에요' : '로그인하면 표시돼요'}
+        />
+        {/* 평가손익은 보유종목의 현재가를 조회해 직접 계산해야 합니다. (§5-1, F-14) */}
+        <StatCard
+          label={
+            <>
+              평가손익
+              <HelpIcon termId="eval_pnl" />
+            </>
+          }
+          pending="보유종목 시세 연동 후 표시"
+        />
+        {/* 랭킹은 백엔드 계산식 버그로 "투자를 안 한 사람"이 1위로 올라옵니다.
+            고쳐지기 전까지 숫자를 띄우면 오히려 신뢰를 잃으므로 비워 둡니다. (§6) */}
+        <StatCard label="내 랭킹" pending="랭킹 계산식 수정 대기" />
+      </section>
+
+      {/* ── 3열 ─────────────────────────────────────────────────── */}
+      <section className="grid gap-8 lg:grid-cols-3">
+        <Panel title="내 보유종목" moreTo="/assets">
+          {isAuthenticated ? (
+            /* TODO(F-14): GET /api/trading/portfolio + 종목별 현재가 */
+            <PendingBox text="보유종목 연동 준비 중이에요" />
+          ) : (
+            <LoginNotice message="로그인하면 보유종목이 표시돼요" className="border-0 py-8" />
+          )}
+        </Panel>
+
+        <Panel title="관심종목" moreTo="/favorites">
+          {favorites.length === 0 ? (
+            <EmptyState
+              icon="⭐"
+              title="관심종목이 아직 없어요"
+              description="마음에 드는 종목을 담아 두면 여기서 바로 확인할 수 있어요."
+              className="py-8"
+            />
+          ) : (
+            <ul className="divide-y divide-gray-100">
+              {favorites.slice(0, 5).map((code) => (
+                <li key={code} className="flex items-center justify-between py-3">
+                  <span className="tabular rounded bg-gray-100 px-2 py-1 text-xs font-bold text-gray-600">
+                    {code}
+                  </span>
+                  {/* TODO(F-12): 종목명·현재가 표시 */}
+                  <span className="text-xs text-gray-400">시세 연동 예정</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Panel>
+
+        <Panel title="수익률 랭킹">
+          {/* TODO(F-18): GET /api/ranking — 단, 계산식 수정 후에 노출 */}
+          <PendingBox text="랭킹 계산식이 수정되면 열립니다" />
+        </Panel>
+      </section>
+
+      {/* ── 뉴스 ────────────────────────────────────────────────── */}
+      <section>
+        <SectionTitle>실시간 뉴스</SectionTitle>
+        {/* TODO(F-16): GET /api/news/market — 크롤링 실패 시 빈 배열이 오므로
+            오류가 아니라 EmptyState 로 처리해야 합니다. (§3-6) */}
+        <PendingBox text="뉴스 연동 준비 중이에요" />
+      </section>
+
+      {/* ── 커뮤니티 ────────────────────────────────────────────── */}
+      <section className="pb-8">
+        <SectionTitle to="/community">커뮤니티</SectionTitle>
+        {/* TODO(F-17): GET /api/community/posts?page=1&size=5 */}
+        <PendingBox text="커뮤니티 연동 준비 중이에요" />
+      </section>
     </div>
   );
 }
 
-export default Dashboard;
+/* ------------------------------------------------------------------ */
+
+function StatCard({ label, value, pending }) {
+  return (
+    <div className="rounded-xl border border-gray-200 p-4">
+      <div className="flex items-center text-sm font-medium text-gray-500">{label}</div>
+      {value != null ? (
+        <div className="tabular mt-2 text-2xl font-extrabold text-gray-900">{value}</div>
+      ) : (
+        <div className="mt-2 text-sm text-gray-300">{pending}</div>
+      )}
+    </div>
+  );
+}
+
+function SectionTitle({ children, to }) {
+  return (
+    <h2 className="mb-3 flex items-center gap-2 text-lg font-bold text-gray-800">
+      {children}
+      {to && (
+        <Link to={to} className="text-sm font-normal text-gray-400 hover:text-gray-700">
+          &gt;
+        </Link>
+      )}
+    </h2>
+  );
+}
+
+function Panel({ title, moreTo, children }) {
+  return (
+    <div>
+      <div className="mb-2 flex items-center justify-between">
+        <h3 className="text-sm font-bold text-gray-700">{title}</h3>
+        {moreTo && (
+          <Link to={moreTo} className="text-xs text-gray-400 hover:text-gray-700">
+            더보기 &gt;
+          </Link>
+        )}
+      </div>
+      <div className="border-t border-gray-300 pt-1">{children}</div>
+    </div>
+  );
+}
+
+function PendingBox({ text }) {
+  return (
+    <div className="rounded-lg border border-dashed border-gray-200 px-4 py-10 text-center text-sm text-gray-400">
+      {text}
+    </div>
+  );
+}
