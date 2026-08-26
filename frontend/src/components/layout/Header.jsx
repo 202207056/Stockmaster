@@ -33,7 +33,7 @@ export default function Header() {
             <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-600 text-sm font-extrabold text-white">
               MI
             </span>
-            <span className="hidden text-base font-extrabold text-gray-900 sm:inline">인생한방</span>
+            <span className="hidden text-base font-extrabold text-gray-900 sm:inline">프로젝트</span>
           </Link>
 
           {/* TODO(F-12): /api/stocks 연동 후 활성화 */}

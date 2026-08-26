@@ -193,7 +193,7 @@ function SurveyShell({ children }) {
           <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-600 text-xs font-extrabold text-white">
             MI
           </span>
-          <span className="text-sm font-extrabold text-gray-900">인생한방</span>
+          <span className="text-sm font-extrabold text-gray-900">프로젝트</span>
         </Link>
         <div className="mt-8">{children}</div>
       </div>
