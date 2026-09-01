@@ -1,145 +1,238 @@
-import React from 'react';
+import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import useAuth from '../hooks/useAuth';
+import { Heart, MessageSquare, Newspaper, Star } from 'lucide-react';
+import { comma, rateWithMark, signTextClass } from '../utils/format';
+import { FAVORITES_EVENT, getFavorites } from '../utils/favorites';
+import EmptyState from '../components/common/EmptyState';
+import MockBadge from '../components/common/MockBadge';
+import HelpIcon from '../components/learn/HelpIcon';
+import MarketStrip from '../components/dashboard/MarketStrip';
+import { MOCK_NEWS, MOCK_POSTS, MOCK_RANKINGS } from '../constants/mockData';
 
-function Dashboard() {
-  // 실시간 랭킹 목업 데이터 (임시 데이터)
-  const rankData = [
-    { id: 1, name: '삼성전자', price: '327,000원', rate: '+10.6%' },
-    { id: 2, name: 'SK하이닉스', price: '2,236,000원', rate: '+17.0%' },
-    { id: 3, name: 'LG전자', price: '246,500원', rate: '-8.0%', isBlue: true },
-    { id: 4, name: 'NAVER', price: '254,000원', rate: '-8.9%', isBlue: true },
-    { id: 5, name: '삼성전자', price: '327,000원', rate: '+10.6%' },
-  ];
+/**
+ * 홈 (대시보드)
+ *
+ * 구성 원칙 — 홈은 "시장"을 보여 주고, "내 돈"은 내 자산 화면이 보여 줍니다.
+ *  예수금·주문가능금액·평가손익·내 랭킹은 개인 정보이므로 /assets 에 있습니다.
+ *  홈에 남은 것은 로그인 여부와 무관하게 누구나 볼 수 있는 시장 정보뿐입니다.
+ *
+ * 🔴 아래 지수·순위·뉴스·게시글은 전부 **목업**입니다. (constants/mockData.js)
+ *    연동 전 레이아웃을 확인하기 위한 자리이며, 각 영역에 <MockBadge /> 를 붙여
+ *    실제 데이터로 오해되지 않도록 했습니다.
+ *
+ *    TODO(F-지수)  지수 카드   → GET /api/market/indices (국내 + 해외)
+ *    TODO(F-랭킹)  랭킹 3열    → GET /api/ranking/* (KIS 순위분석 TR 필요)
+ *    TODO(F-16)   뉴스        → GET /api/news/market
+ *    TODO(F-17)   커뮤니티     → GET /api/community/posts?page=1&size=4
+ */
+export default function Dashboard() {
+  const { user, isAuthenticated } = useAuth();
+  const [favorites, setFavorites] = useState(getFavorites);
+
+  useEffect(() => {
+    const sync = () => setFavorites(getFavorites());
+    window.addEventListener(FAVORITES_EVENT, sync);
+    window.addEventListener('storage', sync);
+    return () => {
+      window.removeEventListener(FAVORITES_EVENT, sync);
+      window.removeEventListener('storage', sync);
+    };
+  }, []);
 
   return (
-    /* 1. 중앙 정렬(justify-center)을 없애고 전체 화면을 쓰도록 변경했습니다. */
-    <div className="min-h-screen bg-white font-sans text-gray-800">
-      
-      {/* 2. 가로 길이 제한(max-w-...)을 없애고 w-full로 꽉 채웠습니다. 좌우 여백(px-8)만 유지합니다. */}
-      <div className="w-full bg-white min-h-screen px-8 py-4">
-        
-        {/* 상단 네비게이션 헤더 */}
-        <header className="flex items-center justify-between pb-4 border-b border-gray-200">
-          <div className="flex items-center gap-6">
-            <div className="w-10 h-10 bg-gray-200 rounded flex items-center justify-center text-xs font-bold text-gray-500">로고</div>
-            <div className="relative">
-              <input 
-                type="text" 
-                placeholder="종목, 키워드 검색" 
-                /* 3. 다크모드 충돌 방지를 위해 배경색(bg-white)과 글자색(text-black)을 강제 지정했습니다. */
-                className="border border-gray-300 bg-white text-black rounded-sm py-2 px-4 w-64 text-sm focus:outline-none focus:border-blue-500"
-              />
-              <span className="absolute right-3 top-2 text-gray-400">🔍</span>
-            </div>
-            <div className="text-sm">
-              <span className="text-gray-500 font-medium mr-2">코스피</span>
-              <span className="text-red-500 font-bold">8,096.93</span>
-              <span className="text-red-500 text-xs ml-1">+612.52(8.1%)</span>
-            </div>
-          </div>
-          
-          <nav className="flex gap-8 text-sm font-medium text-gray-500">
-            <a href="#" className="flex flex-col items-center gap-1 hover:text-black"><span className="text-lg">🏠</span>홈</a>
-            <a href="#" className="flex flex-col items-center gap-1 hover:text-black"><span className="text-lg">⭐</span>즐겨찾기</a>
-            <a href="#" className="flex flex-col items-center gap-1 hover:text-black"><span className="text-lg">📈</span>트레이딩</a>
-            <a href="#" className="flex flex-col items-center gap-1 hover:text-black"><span className="text-lg">💰</span>내 자산</a>
-            <a href="#" className="flex flex-col items-center gap-1 hover:text-black"><span className="text-lg">👥</span>커뮤니티</a>
-            <a href="#" className="flex flex-col items-center gap-1 hover:text-black"><span className="text-lg">✏️</span>학습</a>
-          </nav>
+    <div className="flex flex-col gap-12">
+      {isAuthenticated && (
+        <div>
+          <h1 className="text-xl font-extrabold text-gray-900">
+            {user?.user_name ? `${user.user_name}님, 안녕하세요` : '안녕하세요'}
+          </h1>
+          {!user?.investment_style && (
+            <p className="mt-1 text-sm text-gray-500">
+              아직 투자성향을 알려 주지 않으셨어요.{' '}
+              <Link to="/survey" className="font-bold text-brand-600 hover:underline">
+                1분 설문하기 →
+              </Link>
+            </p>
+          )}
+        </div>
+      )}
 
-          <div className="flex items-center gap-4">
-            <button className="text-sm text-gray-400 hover:text-black">로그인</button>
-            <button className="text-gray-400 hover:text-black">⚙️</button>
-          </div>
-        </header>
+      {/* ── 주요 시세 (자동 스크롤) ─────────────────────────────── */}
+      <MarketStrip />
 
-        {/* 메인 컨텐츠 영역 */}
-        <main className="py-8 flex flex-col gap-14">
-          
-          {/* 상단 지수 카드 영역 */}
-          <section className="grid grid-cols-4 gap-4">
-             <div className="h-28 bg-red-50/50 rounded-lg p-4 border border-red-100 flex flex-col justify-between cursor-pointer">
-                <span className="font-bold text-gray-800 text-sm">코스피</span>
-                <div>
-                  <div className="text-red-500 font-bold text-xl">8,096.93</div>
-                  <div className="text-red-500 text-xs mt-1">+612.52(8.1%)</div>
-                </div>
-             </div>
-             <div className="h-28 bg-gray-100 rounded-lg p-4 text-sm font-bold text-gray-600 cursor-pointer hover:bg-gray-200 transition">코스닥</div>
-             <div className="h-28 bg-gray-100 rounded-lg cursor-pointer hover:bg-gray-200 transition"></div>
-             <div className="h-28 bg-gray-100 rounded-lg cursor-pointer hover:bg-gray-200 transition"></div>
-          </section>
-
-          {/* 실시간 랭킹 영역 */}
-          <section>
-            {/* 4. 안 보이던 글씨들을 text-gray-800으로 명확하게 보이도록 수정했습니다. */}
-            <h2 className="text-lg font-bold mb-4 flex items-center gap-2 text-gray-800">실시간 랭킹 <span className="text-gray-400 text-sm font-normal">&gt;</span></h2>
-            <div className="grid grid-cols-3 gap-10">
-              {['거래대금', '급상승', '급하락'].map((title, idx) => (
-                <div key={idx}>
-                  <h3 className="text-sm text-gray-500 mb-2">{title} &gt;</h3>
-                  <div className="border-t border-gray-400 pt-1">
-                    {rankData.map((item) => (
-                      <div key={`${title}-${item.id}`} className="flex items-center justify-between py-3 border-b border-gray-100 hover:bg-gray-50 cursor-pointer">
-                        <div className="flex items-center gap-3">
-                          <span className="font-bold text-gray-400 w-4">{item.id}</span>
-                          <div className="w-6 h-6 bg-gray-200 rounded-full"></div>
-                          <span className="font-bold text-sm text-gray-700">{item.name}</span>
-                        </div>
-                        <div className="text-right flex items-center gap-3">
-                          <div className="flex flex-col items-end">
-                            <span className="text-sm font-bold text-gray-700">{item.price}</span>
-                            <span className={`text-xs ${item.isBlue ? 'text-blue-500' : 'text-red-500'}`}>{item.rate}</span>
-                          </div>
-                          <span className="text-gray-300 hover:text-red-400 text-lg">♡</span>
-                        </div>
+      {/* ── 실시간 랭킹 3열 ─────────────────────────────────────── */}
+      <section>
+        <SectionTitle mock>실시간 랭킹</SectionTitle>
+        <div className="grid gap-8 lg:grid-cols-3">
+          {MOCK_RANKINGS.map((col) => (
+            <div key={col.key}>
+              <div className="mb-2">
+                <h3 className="text-sm font-bold text-gray-700">{col.title}</h3>
+                <p className="text-xs text-gray-400">{col.hint}</p>
+              </div>
+              <ol className="border-t border-gray-400 pt-1">
+                {col.items.map((item) => (
+                  <li
+                    key={item.rank}
+                    className="flex items-center justify-between gap-2 border-b border-gray-100 py-2.5"
+                  >
+                    <div className="flex min-w-0 items-center gap-3">
+                      <span className="tabular w-3 shrink-0 text-sm font-bold text-gray-400">
+                        {item.rank}
+                      </span>
+                      {/* 기업 로고 자리 — 로고 데이터가 없어 빈 원으로 자리만 잡아 둡니다.
+                          TODO(F-랭킹): 종목 로고 이미지가 생기면 이 원을 <img> 로 교체 */}
+                      <span
+                        className="h-6 w-6 shrink-0 rounded-full bg-gray-200"
+                        aria-hidden="true"
+                      />
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-bold text-gray-800">{item.name}</p>
+                        <p className="tabular text-xs text-gray-400">{item.sub}</p>
                       </div>
-                    ))}
-                  </div>
+                    </div>
+                    <div className="shrink-0 text-right">
+                      <p className="tabular text-sm font-bold text-gray-800">
+                        {comma(item.price)}
+                      </p>
+                      <p className={`tabular text-xs ${signTextClass(item.rate)}`}>
+                        {rateWithMark(item.rate)}
+                      </p>
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── 뉴스 + 오른쪽 사이드 ────────────────────────────────── */}
+      <div className="grid gap-10 lg:grid-cols-3">
+        {/* 뉴스 */}
+        <section className="lg:col-span-2">
+          <SectionTitle mock>오늘의 뉴스</SectionTitle>
+          <ul className="flex flex-col gap-5 rounded-xl border border-gray-100 bg-gray-50 p-6">
+            {MOCK_NEWS.map((n) => (
+              <li key={n.id} className="flex gap-5">
+                {/* 기사 썸네일이 들어갈 자리 */}
+                <div
+                  className="flex h-24 w-24 shrink-0 items-center justify-center rounded-lg border border-gray-200 bg-white"
+                  aria-hidden="true"
+                >
+                  <Newspaper size={24} strokeWidth={1.5} className="text-gray-300" />
                 </div>
-              ))}
-            </div>
-          </section>
+                <div className="flex min-w-0 flex-col justify-center gap-1.5">
+                  <h3 className="text-sm font-bold text-gray-900">{n.title}</h3>
+                  <p className="line-clamp-2 text-sm leading-relaxed text-gray-500">{n.summary}</p>
+                  <p className="mt-1 text-xs text-gray-400">
+                    {n.source} · {n.time}
+                  </p>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
 
-          {/* 실시간 뉴스 영역 */}
+        {/* 오른쪽 — 관심종목 + 커뮤니티 */}
+        <div className="flex flex-col gap-10">
           <section>
-            <h2 className="text-lg font-bold mb-4 flex items-center gap-2 text-gray-800">실시간 뉴스 <span className="text-gray-400 text-sm font-normal">&gt;</span></h2>
-            <div className="bg-gray-50 p-6 rounded-lg flex flex-col gap-6 border border-gray-100">
-              <div className="flex gap-5 cursor-pointer hover:opacity-80">
-                 <div className="w-24 h-24 bg-gray-200 rounded flex-shrink-0"></div>
-                 <div className="flex flex-col justify-center gap-1.5">
-                   <h3 className="font-bold text-gray-800 text-sm">'반도체 호조'에 1분기 경제성장률 1.8% ...속보치보다 0.1%p↑</h3>
-                   <p className="text-sm text-gray-500 line-clamp-1">올해 1분기 한국 경제가 반도체 수출 호조 등에 힘입어 큰 폭으로 성장했다. 9일 한국은행...</p>
-                   <span className="text-xs text-gray-400 mt-1">노컷뉴스</span>
-                 </div>
-              </div>
-              <div className="flex gap-5 cursor-pointer hover:opacity-80">
-                 <div className="w-24 h-24 bg-gray-200 rounded flex-shrink-0"></div>
-                 <div className="flex flex-col justify-center gap-1.5">
-                   <h3 className="font-bold text-gray-800 text-sm">"삼성 DNA 송두리째 바꾼다"...이재용 'AI 대전환' 선포</h3>
-                   <p className="text-sm text-gray-500 line-clamp-1">삼성이 전 관계사의 모든 업무에 외부 인공지능(AI)을 전면 도입한다. 삼성이 전사적으로...</p>
-                   <span className="text-xs text-gray-400 mt-1">디지털타임스</span>
-                 </div>
-              </div>
-            </div>
-            <button className="mt-4 text-sm font-bold text-gray-700 flex items-center gap-1 hover:text-blue-600 transition">
-              <span className="text-blue-500 text-base">✨</span> 오늘의 AI 뉴스 리포트 보기 &gt;
-            </button>
-          </section>
-          
-          {/* 커뮤니티 영역 */}
-          <section className="mb-20">
-            <h2 className="text-lg font-bold mb-4 flex items-center gap-2 text-gray-800">커뮤니티 <span className="text-gray-400 text-sm font-normal">&gt;</span></h2>
-            <div className="border-t border-gray-400 pt-1">
-              <div className="py-3 border-b border-gray-100 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer">가치투자 같이 하실 분 구합니다~</div>
-              <div className="py-3 border-b border-gray-100 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer">삼성전자 지금 매수 타이밍인가요? AI 분석 결과 공유합니다.</div>
-              <div className="py-3 border-b border-gray-100 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer">오늘 코스피 왜 이렇게 떨어지나요 ㅠㅠ</div>
-            </div>
+            <SectionTitle to="/favorites">관심종목</SectionTitle>
+            {favorites.length === 0 ? (
+              <EmptyState
+                Icon={Star}
+                title="관심종목이 아직 없어요"
+                description="마음에 드는 종목을 담아 두면 여기서 바로 확인할 수 있어요."
+                className="py-8"
+              />
+            ) : (
+              <ul className="divide-y divide-gray-100 border-t border-gray-300">
+                {favorites.slice(0, 5).map((code) => (
+                  <li key={code} className="flex items-center justify-between py-3">
+                    <span className="tabular rounded bg-gray-100 px-2 py-1 text-xs font-bold text-gray-600">
+                      {code}
+                    </span>
+                    {/* TODO(F-12): 종목명·현재가 표시 */}
+                    <span className="text-xs text-gray-400">시세 연동 예정</span>
+                  </li>
+                ))}
+              </ul>
+            )}
           </section>
 
-        </main>
+          <section>
+            <SectionTitle mock to="/community">
+              커뮤니티
+            </SectionTitle>
+            <ul className="divide-y divide-gray-100 border-t border-gray-300">
+              {MOCK_POSTS.map((p) => (
+                <li key={p.id} className="py-3">
+                  <p className="truncate text-sm font-medium text-gray-800">{p.title}</p>
+                  <p className="mt-1 flex items-center gap-2 text-xs text-gray-400">
+                    <span>{p.author}</span>
+                    <span aria-hidden="true">·</span>
+                    <span>{p.time}</span>
+                    {p.symbol && (
+                      <span className="tabular rounded bg-gray-100 px-1.5 py-0.5 font-bold text-gray-500">
+                        {p.symbol}
+                      </span>
+                    )}
+                    <span className="ml-auto flex items-center gap-2">
+                      <span className="flex items-center gap-0.5">
+                        <Heart size={12} strokeWidth={1.75} aria-hidden="true" />
+                        {p.likes}
+                      </span>
+                      <span className="flex items-center gap-0.5">
+                        <MessageSquare size={12} strokeWidth={1.75} aria-hidden="true" />
+                        {p.comments}
+                      </span>
+                    </span>
+                  </p>
+                </li>
+              ))}
+            </ul>
+          </section>
+        </div>
       </div>
+
+      {/* 초보자 안내 — 홈에서 학습 동선으로 연결 */}
+      <section className="mb-8 flex flex-wrap items-center justify-between gap-4 rounded-2xl bg-brand-50 px-6 py-5">
+        <div>
+          <p className="flex items-center text-sm font-extrabold text-brand-700">
+            처음이라 용어가 어렵나요?
+            <HelpIcon termId="per" label="PER 설명 미리보기" />
+          </p>
+          <p className="mt-1 text-sm text-gray-600">
+            화면 곳곳의 물음표를 누르면 그 자리에서 뜻을 알려 드려요. 용어 66개를 모아 두었어요.
+          </p>
+        </div>
+        <Link
+          to="/learn"
+          className="rounded-lg bg-brand-600 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-brand-700"
+        >
+          용어사전 보기
+        </Link>
+      </section>
     </div>
   );
 }
 
-export default Dashboard;
+/* ------------------------------------------------------------------ */
+
+function SectionTitle({ children, to, mock, hint }) {
+  return (
+    <div className="mb-3">
+      <h2 className="flex items-center gap-2 text-lg font-bold text-gray-800">
+        {children}
+        {to && (
+          <Link to={to} className="text-sm font-normal text-gray-400 hover:text-gray-700">
+            &gt;
+          </Link>
+        )}
+        {mock && <MockBadge className="ml-1" />}
+      </h2>
+      {hint && <p className="mt-0.5 text-xs text-gray-400">{hint}</p>}
+    </div>
+  );
+}

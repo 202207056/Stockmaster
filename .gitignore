@@ -4,14 +4,18 @@ frontend/dist/
 frontend/dist-ssr/
 frontend/*.local
 
-# backend (FastAPI / Python) 관련 제외
-backend/venv/
-backend/__pycache__/
-backend/*.pyc
-
 # 에디터 및 OS 관련 운영체제 찌꺼기 파일 제외
 .vscode/
 .idea/
 .DS_Store
 *.suo
 *.sln
+
+# 팀 작업 문서 중 일부만 로컬 보관 (문서 본문은 저장소에 포함)
+Doc/_archive/
+Doc/구현기록/
+Doc/자료/
+
+# 백엔드는 별도 저장소에서 관리 — https://github.com/202207048/gp-mock-inv
+# 이 폴더 안에 클론하면 프론트 저장소로 딸려 들어가므로 무시 처리
+gp-mock-inv/

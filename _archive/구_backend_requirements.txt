@@ -1,3 +1,4 @@
+# [보관용] gp-mock-inv 이전의 초기 백엔드 뼈대 의존성 — 사용하지 않음. 같은 폴더 README.md 참고.
 annotated-doc==0.0.4
 annotated-types==0.7.0
 anyio==4.14.0
