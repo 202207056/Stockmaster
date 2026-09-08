@@ -33,7 +33,8 @@ export async function fetchMe() {
  */
 export async function fetchAccounts() {
   const { data } = await api.get('/trading/accounts');
-  return Array.isArray(data) ? data : [];
+  if (!Array.isArray(data)) throw new Error('계좌 목록 응답 형식을 확인해 주세요.');
+  return data;
 }
 
 /** PUT /api/users/survey — 투자성향 저장 */

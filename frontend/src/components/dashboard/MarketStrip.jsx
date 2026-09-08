@@ -1,50 +1,12 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { ChartLine } from 'lucide-react';
-import MockBadge from '../common/MockBadge';
-import { MOCK_INDICES } from '../../constants/mockData';
-import {
-  marketChange,
-  marketValue,
-  rateWithMark,
-  signBgClass,
-  signBorderClass,
-  signTextClass,
-} from '../../utils/format';
 
-/**
- * 주요 시세 스트립 — 홈 상단
- *
- * 지수(코스피·코스닥·나스닥·S&P 500)와 금·환율을 카드로 늘어놓습니다.
- * 카드마다 우측에 추이 그래프가 들어갈 정사각형 자리를 잡아 두었습니다.
- *
- * 움직임 — 한 칸씩 "휙" 넘어감 + 마우스로 끌기
- *  · 2.5초마다 카드 한 장만큼 왼쪽으로 넘어갑니다. (연속으로 흐르지 않음)
- *  · `scroll-snap` 이 항상 카드 경계에 맞춰 세워 주므로 어중간하게 걸치지 않습니다.
- *  · 마우스로 좌우로 끌 수 있습니다. 끄는 동안에는 snap 을 잠시 꺼서 손을 그대로
- *    따라오게 하고, 놓으면 다시 켜서 가장 가까운 카드로 붙습니다.
- *
- * 끊김 없는 순환 — 마지막(달러) 다음에 코스피가 바로 이어집니다
- *  목록을 **두 벌** 이어 붙여 두고, 스크롤 위치가 절반을 넘어가면 그만큼 빼서
- *  첫 벌의 같은 자리로 되돌립니다. 두 벌이 완전히 같은 내용이라 눈에 보이지 않습니다.
- *  (반대로 끌어서 맨 앞을 지나면 절반을 더해 뒤쪽으로 넘깁니다)
- *
- *  ⚠️ 카드 간격을 flex 의 `gap` 이 아니라 카드의 `mr-4` 로 준 이유
- *     gap 은 마지막 카드 뒤에는 붙지 않습니다. 그러면 "절반"이 카드 경계와
- *     반 칸 어긋나 되돌리는 순간 덜컥 튑니다.
- *
- * 멈추는 경우
- *  · 마우스를 올렸을 때 (값을 읽는 중)
- *  · 끄는 중일 때
- *  · 카드 안 요소에 키보드 포커스가 있을 때
- *  · `prefers-reduced-motion` 이 켜져 있을 때 (자동 이동 안 함, 드래그는 그대로 동작)
- *
- * 🔴 값은 전부 목업입니다. TODO(F-지수): GET /api/market/indices
- *    TODO(F-지수): 정사각형 자리에 종목별 추이 스파크라인 차트를 넣습니다.
- */
+/** 기존 주요 시세 카드와 자동 스크롤·드래그를 유지합니다. 지표 API가 없어 값은 준비 중으로 표시합니다. */
 const STEP_MS = 2500;
 
 export default function MarketStrip() {
-  const items = MOCK_INDICES;
+  // Keep the original indicator slots; the backend has no indicator endpoint yet.
+  const items = ['코스피', '코스닥', '나스닥', 'S&P 500', '금', '달러'].map((name) => ({ name }));
 
   const stripRef = useRef(null);
   const pausedRef = useRef(false);
@@ -142,7 +104,6 @@ export default function MarketStrip() {
     >
       <h2 className="mb-3 flex items-center gap-2 text-lg font-bold text-gray-800">
         주요 시세
-        <MockBadge />
       </h2>
 
       <div
@@ -172,17 +133,17 @@ export default function MarketStrip() {
 function MarketCard({ item, ...rest }) {
   return (
     <article
-      className={`mr-4 flex h-36 w-72 shrink-0 items-center justify-between gap-4 rounded-xl border p-5 ${signBgClass(item.rate)} ${signBorderClass(item.rate)}`}
+      className="mr-4 flex h-36 w-72 shrink-0 items-center justify-between gap-4 rounded-xl border border-gray-100 bg-gray-50 p-5"
       {...rest}
     >
       <div className="flex min-w-0 flex-col justify-between self-stretch">
         <span className="truncate text-sm font-bold text-gray-800">{item.name}</span>
         <div>
-          <div className={`tabular text-2xl font-extrabold ${signTextClass(item.rate)}`}>
-            {marketValue(item.value, item.decimals, item.unit)}
+          <div className="tabular text-2xl font-extrabold text-gray-500">
+            —
           </div>
-          <div className={`tabular mt-1 text-xs font-medium ${signTextClass(item.rate)}`}>
-            {marketChange(item.change, item.decimals, item.unit)} ({rateWithMark(item.rate)})
+          <div className="tabular mt-1 text-xs font-medium text-gray-400">
+            준비 중
           </div>
         </div>
       </div>

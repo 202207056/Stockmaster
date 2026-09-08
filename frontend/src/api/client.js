@@ -99,6 +99,7 @@ const stopTracking = () => {
 api.interceptors.request.use(
   (config) => {
     const token = getToken();
+    config.sessionToken = token;
     if (token) config.headers.Authorization = `Bearer ${token}`;
     startTracking();
     return config;
@@ -121,7 +122,7 @@ api.interceptors.response.use(
 
     // 토큰 만료 / 무효 -> 자동 로그아웃.
     // 리프레시 토큰이 없으므로 재발급 시도는 불가능하고, 재로그인이 유일한 수단입니다.
-    if (status === 401) {
+    if (status === 401 && error.config?.sessionToken && error.config.sessionToken === getToken()) {
       clearToken();
       window.dispatchEvent(new CustomEvent(EVT_UNAUTHORIZED));
     }
@@ -138,6 +139,7 @@ api.interceptors.response.use(
  * detail 이 검증 오류일 때는 배열로도 옵니다.
  */
 export function toUserMessage(error) {
+  if (error instanceof Error && !error.isAxiosError) return error.message;
   if (error?.code === 'ECONNABORTED') {
     return '서버 응답이 너무 오래 걸립니다. 잠시 후 다시 시도해 주세요.';
   }

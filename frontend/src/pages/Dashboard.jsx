@@ -1,34 +1,32 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import useAuth from '../hooks/useAuth';
 import { Heart, MessageSquare, Newspaper, Star } from 'lucide-react';
-import { comma, rateWithMark, signTextClass } from '../utils/format';
+import { comma, rateWithMark, signTextClass, wonShort } from '../utils/format';
 import { FAVORITES_EVENT, getFavorites } from '../utils/favorites';
 import EmptyState from '../components/common/EmptyState';
-import MockBadge from '../components/common/MockBadge';
+import RemoteState from '../components/common/RemoteState';
+import StockQuote from '../components/common/StockQuote';
 import HelpIcon from '../components/learn/HelpIcon';
 import MarketStrip from '../components/dashboard/MarketStrip';
-import { MOCK_NEWS, MOCK_POSTS, MOCK_RANKINGS } from '../constants/mockData';
+import useRemote from '../hooks/useRemote';
+import { fetchRanking, fetchNews, fetchPosts } from '../api/data';
+import { numberOrNull, safeExternalUrl } from '../api/normalize';
 
-/**
- * 홈 (대시보드)
- *
- * 구성 원칙 — 홈은 "시장"을 보여 주고, "내 돈"은 내 자산 화면이 보여 줍니다.
- *  예수금·주문가능금액·평가손익·내 랭킹은 개인 정보이므로 /assets 에 있습니다.
- *  홈에 남은 것은 로그인 여부와 무관하게 누구나 볼 수 있는 시장 정보뿐입니다.
- *
- * 🔴 아래 지수·순위·뉴스·게시글은 전부 **목업**입니다. (constants/mockData.js)
- *    연동 전 레이아웃을 확인하기 위한 자리이며, 각 영역에 <MockBadge /> 를 붙여
- *    실제 데이터로 오해되지 않도록 했습니다.
- *
- *    TODO(F-지수)  지수 카드   → GET /api/market/indices (국내 + 해외)
- *    TODO(F-랭킹)  랭킹 3열    → GET /api/ranking/* (KIS 순위분석 TR 필요)
- *    TODO(F-16)   뉴스        → GET /api/news/market
- *    TODO(F-17)   커뮤니티     → GET /api/community/posts?page=1&size=4
- */
+/** 기존 홈 레이아웃을 유지하며 순위·뉴스·게시글은 실제 API 응답으로 표시합니다. */
 export default function Dashboard() {
   const { user, isAuthenticated } = useAuth();
   const [favorites, setFavorites] = useState(getFavorites);
+  const news = useRemote(useCallback((signal) => fetchNews(signal), []), isAuthenticated);
+  const posts = useRemote(useCallback((signal) => fetchPosts(1, signal, 4), []), isAuthenticated);
+  const amount = useRemote(useCallback((signal) => fetchRanking('amount', signal), []), isAuthenticated);
+  const change = useRemote(useCallback((signal) => fetchRanking('change', signal), []), isAuthenticated);
+  const volume = useRemote(useCallback((signal) => fetchRanking('volume', signal), []), isAuthenticated);
+  const rankings = [
+    { key: 'amount', title: '거래대금 상위', hint: '오늘 돈이 가장 많이 몰린 종목', resource: amount },
+    { key: 'change', title: '급상승', hint: '어제보다 많이 오른 종목', resource: change },
+    { key: 'volume', title: '인기 종목', hint: '거래가 가장 활발한 종목', resource: volume },
+  ];
 
   useEffect(() => {
     const sync = () => setFavorites(getFavorites());
@@ -63,23 +61,24 @@ export default function Dashboard() {
 
       {/* ── 실시간 랭킹 3열 ─────────────────────────────────────── */}
       <section>
-        <SectionTitle mock>실시간 랭킹</SectionTitle>
+        <SectionTitle>실시간 랭킹</SectionTitle>
         <div className="grid gap-8 lg:grid-cols-3">
-          {MOCK_RANKINGS.map((col) => (
+          {rankings.map((col) => (
             <div key={col.key}>
               <div className="mb-2">
                 <h3 className="text-sm font-bold text-gray-700">{col.title}</h3>
                 <p className="text-xs text-gray-400">{col.hint}</p>
               </div>
+              <RemoteState resource={col.resource} authenticated={isAuthenticated} empty={!col.resource.data?.length}>
               <ol className="border-t border-gray-400 pt-1">
-                {col.items.map((item) => (
+                {col.resource.data?.slice(0, 5).map((item, index) => (
                   <li
-                    key={item.rank}
+                    key={`${item.symbol_code}-${index}`}
                     className="flex items-center justify-between gap-2 border-b border-gray-100 py-2.5"
                   >
                     <div className="flex min-w-0 items-center gap-3">
                       <span className="tabular w-3 shrink-0 text-sm font-bold text-gray-400">
-                        {item.rank}
+                        {index + 1}
                       </span>
                       {/* 기업 로고 자리 — 로고 데이터가 없어 빈 원으로 자리만 잡아 둡니다.
                           TODO(F-랭킹): 종목 로고 이미지가 생기면 이 원을 <img> 로 교체 */}
@@ -88,21 +87,25 @@ export default function Dashboard() {
                         aria-hidden="true"
                       />
                       <div className="min-w-0">
-                        <p className="truncate text-sm font-bold text-gray-800">{item.name}</p>
-                        <p className="tabular text-xs text-gray-400">{item.sub}</p>
+                        <p className="truncate text-sm font-bold text-gray-800"><Link to={`/trading?code=${encodeURIComponent(item.symbol_code)}`}>{item.name}</Link></p>
+                        <p className="tabular text-xs text-gray-400">
+                          {col.key === 'amount' && numberOrNull(item.amount) !== null ? wonShort(item.amount)
+                            : col.key === 'volume' && numberOrNull(item.volume) !== null ? `${comma(item.volume)}주` : item.symbol_code}
+                        </p>
                       </div>
                     </div>
                     <div className="shrink-0 text-right">
                       <p className="tabular text-sm font-bold text-gray-800">
-                        {comma(item.price)}
+                        {numberOrNull(item.price) > 0 ? comma(item.price) : '—'}
                       </p>
-                      <p className={`tabular text-xs ${signTextClass(item.rate)}`}>
-                        {rateWithMark(item.rate)}
+                      <p className={`tabular text-xs ${signTextClass(item.change_rate)}`}>
+                        {numberOrNull(item.change_rate) === null ? '—' : rateWithMark(item.change_rate)}
                       </p>
                     </div>
                   </li>
                 ))}
               </ol>
+              </RemoteState>
             </div>
           ))}
         </div>
@@ -112,10 +115,11 @@ export default function Dashboard() {
       <div className="grid gap-10 lg:grid-cols-3">
         {/* 뉴스 */}
         <section className="lg:col-span-2">
-          <SectionTitle mock>오늘의 뉴스</SectionTitle>
+          <SectionTitle>오늘의 뉴스</SectionTitle>
+          <RemoteState resource={news} authenticated={isAuthenticated} empty={!news.data?.length}>
           <ul className="flex flex-col gap-5 rounded-xl border border-gray-100 bg-gray-50 p-6">
-            {MOCK_NEWS.map((n) => (
-              <li key={n.id} className="flex gap-5">
+            {news.data?.slice(0, 3).map((n, index) => (
+              <li key={`${n.url}-${index}`} className="flex gap-5">
                 {/* 기사 썸네일이 들어갈 자리 */}
                 <div
                   className="flex h-24 w-24 shrink-0 items-center justify-center rounded-lg border border-gray-200 bg-white"
@@ -124,15 +128,16 @@ export default function Dashboard() {
                   <Newspaper size={24} strokeWidth={1.5} className="text-gray-300" />
                 </div>
                 <div className="flex min-w-0 flex-col justify-center gap-1.5">
-                  <h3 className="text-sm font-bold text-gray-900">{n.title}</h3>
+                  <h3 className="text-sm font-bold text-gray-900">{safeExternalUrl(n.url) ? <a href={safeExternalUrl(n.url)} target="_blank" rel="noopener noreferrer">{n.title}</a> : n.title}</h3>
                   <p className="line-clamp-2 text-sm leading-relaxed text-gray-500">{n.summary}</p>
                   <p className="mt-1 text-xs text-gray-400">
-                    {n.source} · {n.time}
+                    {[n.source, n.date].filter(Boolean).join(' · ')}
                   </p>
                 </div>
               </li>
             ))}
           </ul>
+          </RemoteState>
         </section>
 
         {/* 오른쪽 — 관심종목 + 커뮤니티 */}
@@ -153,8 +158,7 @@ export default function Dashboard() {
                     <span className="tabular rounded bg-gray-100 px-2 py-1 text-xs font-bold text-gray-600">
                       {code}
                     </span>
-                    {/* TODO(F-12): 종목명·현재가 표시 */}
-                    <span className="text-xs text-gray-400">시세 연동 예정</span>
+                    <StockQuote code={code} />
                   </li>
                 ))}
               </ul>
@@ -162,36 +166,38 @@ export default function Dashboard() {
           </section>
 
           <section>
-            <SectionTitle mock to="/community">
+            <SectionTitle to="/community">
               커뮤니티
             </SectionTitle>
+            <RemoteState resource={posts} authenticated={isAuthenticated} empty={!posts.data?.items.length}>
             <ul className="divide-y divide-gray-100 border-t border-gray-300">
-              {MOCK_POSTS.map((p) => (
-                <li key={p.id} className="py-3">
-                  <p className="truncate text-sm font-medium text-gray-800">{p.title}</p>
+              {posts.data?.items.slice(0, 4).map((p) => (
+                <li key={p.post_id} className="py-3">
+                  <p className="truncate text-sm font-medium text-gray-800"><Link to={`/community?post=${p.post_id}`}>{p.title}</Link></p>
                   <p className="mt-1 flex items-center gap-2 text-xs text-gray-400">
-                    <span>{p.author}</span>
+                    <span>{p.author_name}</span>
                     <span aria-hidden="true">·</span>
-                    <span>{p.time}</span>
-                    {p.symbol && (
+                    <span>{String(p.created_at || '').replace('T', ' ').slice(0, 16)}</span>
+                    {p.symbol_code && (
                       <span className="tabular rounded bg-gray-100 px-1.5 py-0.5 font-bold text-gray-500">
-                        {p.symbol}
+                        {p.symbol_code}
                       </span>
                     )}
                     <span className="ml-auto flex items-center gap-2">
                       <span className="flex items-center gap-0.5">
                         <Heart size={12} strokeWidth={1.75} aria-hidden="true" />
-                        {p.likes}
+                        {p.like_count}
                       </span>
                       <span className="flex items-center gap-0.5">
                         <MessageSquare size={12} strokeWidth={1.75} aria-hidden="true" />
-                        {p.comments}
+                        {p.comment_count}
                       </span>
                     </span>
                   </p>
                 </li>
               ))}
             </ul>
+            </RemoteState>
           </section>
         </div>
       </div>
@@ -220,7 +226,7 @@ export default function Dashboard() {
 
 /* ------------------------------------------------------------------ */
 
-function SectionTitle({ children, to, mock, hint }) {
+function SectionTitle({ children, to, hint }) {
   return (
     <div className="mb-3">
       <h2 className="flex items-center gap-2 text-lg font-bold text-gray-800">
@@ -230,7 +236,6 @@ function SectionTitle({ children, to, mock, hint }) {
             &gt;
           </Link>
         )}
-        {mock && <MockBadge className="ml-1" />}
       </h2>
       {hint && <p className="mt-0.5 text-xs text-gray-400">{hint}</p>}
     </div>

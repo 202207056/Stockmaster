@@ -1,7 +1,14 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { SURVEY, STYLES, calcStyle, isComplete, totalScore } from '../constants/survey';
+import { SURVEY, STYLES, calcStyle, isComplete, totalScore, toAnswerPayload } from '../constants/survey';
 import HelpIcon from '../components/learn/HelpIcon';
+import useAuth from '../hooks/useAuth';
+import useRemote from '../hooks/useRemote';
+import { fetchSurvey, saveSurvey } from '../api/data';
+import { updateInvestmentStyle } from '../api/auth';
+import { getToken } from '../api/client';
+import RemoteState from '../components/common/RemoteState';
+import { InlineError } from '../components/common/ErrorState';
 
 /**
  * 투자성향 설문
@@ -21,30 +28,34 @@ import HelpIcon from '../components/learn/HelpIcon';
  *    항상 체크된 것처럼 보이는 눈속임이 있었습니다.
  *  - 제출하면 아무것도 저장하지 않고 alert 만 띄운 뒤 대시보드로 넘어갔습니다.
  *
- * TODO(F-19): 제출 시 POST /api/ai/survey 로 원본 답변을 저장하고,
- *             PUT /api/users/survey 로 계산된 성향 라벨을 저장합니다.
- *             (GET /api/ai/propensity 는 분석 주체가 없어 항상 null 이라 서버 결과를 쓸 수 없습니다)
+ * 제출 시 답변과 규칙 기반 성향을 각각 서버에 저장합니다.
+ * 두 번째 저장 실패는 부분 실패로 안내하고 재제출을 허용합니다.
  */
-const RESULT_KEY = 'gp_survey_result';
-
 export default function Survey() {
-  const navigate = useNavigate();
+  const { user, isAuthenticated } = useAuth();
+  const resource = useRemote(useCallback((signal) => fetchSurvey(signal), []), isAuthenticated);
+  return <RemoteState resource={resource} authenticated={isAuthenticated}>{resource.data && <SurveyForm key={user?.user_id} answers={resource.data} />}</RemoteState>;
+}
 
-  const [selections, setSelections] = useState({});
-  const [result, setResult] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem(RESULT_KEY) || 'null');
-    } catch {
-      return null;
-    }
-  });
+function SurveyForm({ answers }) {
+  const navigate = useNavigate();
+  const { user, setUser } = useAuth();
+  const [selections, setSelections] = useState(() => Object.fromEntries(SURVEY.flatMap((question) => {
+    const answer = answers.find((item) => item.question_number === question.number);
+    const index = question.options.findIndex((option) => option.label === answer?.selected_answer);
+    return index < 0 ? [] : [[question.number, index]];
+  })));
+  const [result, setResult] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState(null);
   const [touched, setTouched] = useState(false);
 
   const complete = isComplete(selections);
   const answered = SURVEY.filter((q) => selections[q.number] != null).length;
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    if (busy) return;
     setTouched(true);
     if (!complete) {
       // 첫 미응답 문항으로 스크롤해 어디가 비었는지 바로 보이게 합니다.
@@ -58,13 +69,24 @@ export default function Survey() {
     const score = totalScore(selections);
     const style = calcStyle(score);
     const payload = { score, code: style.code, label: style.label };
+    setBusy(true);
+    setError(null);
+    let answersSaved = false;
+    const token = getToken();
     try {
-      localStorage.setItem(RESULT_KEY, JSON.stringify(payload));
-    } catch {
-      /* 저장 실패해도 결과 화면은 보여 줍니다. */
+      await saveSurvey(toAnswerPayload(selections));
+      answersSaved = true;
+      if (token !== getToken()) throw new Error('로그인 계정이 바뀌어 성향 저장을 중단했습니다.');
+      await updateInvestmentStyle(style.label);
+      if (token !== getToken()) return;
+      setUser((current) => current?.user_id === user.user_id ? { ...current, investment_style: style.label } : current);
+      setResult(payload);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch (err) {
+      setError(answersSaved ? new Error('답변은 저장됐지만 성향 저장에 실패했습니다. 다시 제출해 주세요.') : err);
+    } finally {
+      setBusy(false);
     }
-    setResult(payload);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleRetry = () => {
@@ -163,9 +185,10 @@ export default function Survey() {
             <div className="flex items-center gap-3 pb-8">
               <button
                 type="submit"
+                disabled={busy}
                 className="rounded-lg bg-brand-600 px-8 py-2.5 text-sm font-bold text-white transition hover:bg-brand-700"
               >
-                결과 보기
+                {busy ? '서버에 저장 중…' : '저장하고 결과 보기'}
               </button>
               <Link
                 to="/dashboard"
@@ -174,6 +197,7 @@ export default function Survey() {
                 나중에 할게요
               </Link>
             </div>
+            <InlineError error={error} />
           </form>
         </>
       )}
@@ -252,9 +276,8 @@ function SurveyResult({ result, onRetry, onDone }) {
         <p className="mt-2 text-sm leading-relaxed text-gray-700">{style.advice}</p>
       </div>
 
-      {/* TODO(F-19): 서버 저장 전까지는 이 브라우저에만 남습니다. */}
       <p className="mt-4 text-xs text-gray-400">
-        아직 서버에 저장되지 않는 임시 결과예요. 다른 기기에서는 보이지 않습니다.
+        답변과 성향을 서버에 저장했어요. 현재 결과는 설문 점수 규칙에 따른 분류이며 AI 분석 결과는 아닙니다.
       </p>
 
       <div className="mt-8 flex flex-wrap gap-3 pb-8">

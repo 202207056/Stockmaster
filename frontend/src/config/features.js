@@ -1,27 +1,6 @@
-/**
- * 기능 플래그
- *
- * ─────────────────────────────────────────────────────────────────────────
- * REQUIRE_AUTH = false  (현재 설정)
- * ─────────────────────────────────────────────────────────────────────────
- * 로그인하지 않아도 모든 화면을 볼 수 있게 합니다.
- *
- * 왜 꺼 두는가
- *  1) 아직 백엔드를 붙이지 않아서, 로그인 자체가 불가능합니다.
- *     이 상태에서 라우트를 막으면 개발·시연 중에 첫 화면 밖으로 나갈 수 없습니다.
- *  2) 백엔드를 붙인 뒤에도 `GET /api/stocks` 계열의 인증을 해제해
- *     "로그인 없이 둘러보기"를 계속 지원할 계획입니다. (Doc/13 §7 요청 3번)
- *
- * 다시 켜려면
- *  이 값을 true 로 바꾸기만 하면 됩니다. `ProtectedRoute` 가 이 값을 읽어
- *  비로그인 사용자를 /login 으로 돌려보냅니다. App.jsx 의 라우트 구조는
- *  이미 보호 라우트로 감싸 두었으므로 다른 파일은 손대지 않아도 됩니다.
- *
- * 주의
- *  이것은 화면 접근 제어일 뿐, 보안 장치가 아닙니다. 실제 데이터 보호는
- *  서버가 토큰을 검사하는 것으로만 이뤄집니다. 로그인 없이 화면에 들어가면
- *  개인 데이터 영역은 "로그인하면 표시돼요" 안내가 대신 나옵니다.
- */
+/** 화면 둘러보기는 허용하고 개인 데이터·변경 작업은 로그인 후 제공합니다. */
 export const REQUIRE_AUTH = false;
+// Enable only on a verified test backend; the current deployed order contract trusts client prices.
+export const ENABLE_ORDER_SUBMISSION = import.meta.env.VITE_ENABLE_ORDER_SUBMISSION === 'true';
 
 export default { REQUIRE_AUTH };
