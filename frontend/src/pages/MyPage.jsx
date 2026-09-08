@@ -3,6 +3,7 @@ import useAuth from '../hooks/useAuth';
 import { num, won } from '../utils/format';
 import HelpIcon from '../components/learn/HelpIcon';
 import LoginNotice from '../components/common/LoginNotice';
+import AccountPicker from '../components/common/AccountPicker';
 
 /**
  * 마이페이지 (F-2 라우팅 연결)
@@ -53,6 +54,7 @@ export default function MyPage() {
 
           <section className="flex flex-col gap-3">
             <h2 className="text-sm font-bold text-gray-500">계좌</h2>
+            <AccountPicker />
             {account ? (
               <dl className="divide-y divide-gray-100 rounded-xl border border-gray-200">
                 <Row label="계좌명" value={account.account_name} />
@@ -64,7 +66,7 @@ export default function MyPage() {
                     </>
                   }
                   /* 계좌 API 의 금액은 문자열로 옵니다 — 반드시 num() 을 거칩니다. (§4-1) */
-                  value={<span className="tabular">{won(num(account.balance))}</span>}
+                  value={<span className="tabular">{account.withdrawable_cash == null ? '—' : won(num(account.withdrawable_cash))}</span>}
                 />
                 <Row
                   label={

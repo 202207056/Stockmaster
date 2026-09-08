@@ -4,6 +4,7 @@ import { X } from 'lucide-react';
 import EmptyState from '../components/common/EmptyState';
 import { EMPTY_MESSAGES } from '../constants/emptyMessages';
 import HelpIcon from '../components/learn/HelpIcon';
+import StockQuote from '../components/common/StockQuote';
 import {
   FAVORITES_EVENT,
   getFavorites,
@@ -11,16 +12,7 @@ import {
   clearFavorites,
 } from '../utils/favorites';
 
-/**
- * 관심종목 (F-3 복붙 오류 수정 + §5-2 localStorage 임시 구현)
- *
- * 이 파일은 원래 "여기는 회원가입(Register) 화면입니다." 를 렌더링하고 있었습니다.
- * (Community.jsx 와 함께 템플릿을 복사하면서 문구를 안 바꾼 상태였습니다.)
- *
- * 백엔드에 favorites API 가 없으므로 목록은 localStorage 에 저장합니다.
- * 로그인과 무관하게 동작하므로 둘러보기 모드에서도 그대로 쓸 수 있습니다.
- * 종목명·현재가 표시는 GET /api/stocks 연동(F-12) 이후에 붙습니다.
- */
+/** 사용자별 브라우저 관심종목과 로그인 후 실제 종목명·시세를 표시합니다. */
 export default function Favorites() {
   const [codes, setCodes] = useState(getFavorites);
 
@@ -78,8 +70,7 @@ export default function Favorites() {
                 <span className="tabular rounded bg-gray-100 px-2 py-1 text-xs font-bold text-gray-600">
                   {code}
                 </span>
-                {/* TODO(F-12): /api/stocks/{code} 로 종목명·현재가 표시 */}
-                <span className="text-sm text-gray-400">종목명 · 시세 연동 예정</span>
+                <StockQuote code={code} />
               </div>
               <button
                 type="button"

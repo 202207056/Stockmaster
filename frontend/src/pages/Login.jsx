@@ -13,8 +13,7 @@ import { InlineError } from '../components/common/ErrorState';
  * (로그인 응답에 사용자 정보가 없어 /users/me 를 한 번 더 부르는 처리는
  *  AuthContext 안에 들어 있습니다 — Doc/13 §3-1)
  *
- * ⚠️ 백엔드가 아직 연결되지 않아 지금 제출하면 "서버에 연결할 수 없습니다."가 뜹니다.
- *    이는 정상 동작입니다. 서버가 열리면 그대로 로그인됩니다.
+ * 환경설정의 API 서버를 호출하고 연결·인증 실패를 화면에 표시합니다.
  */
 export default function Login() {
   const { login } = useAuth();

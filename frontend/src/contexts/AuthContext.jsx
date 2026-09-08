@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AuthContext } from './auth-context';
-import { clearToken, getToken, setToken, EVT_UNAUTHORIZED } from '../api/client';
+import { clearToken, getToken, setToken, EVT_UNAUTHORIZED, TOKEN_KEY } from '../api/client';
 import * as authApi from '../api/auth';
+import { setFavoritesOwner } from '../utils/favorites';
 
 const ACCOUNT_KEY = 'gp_account_id';
 
@@ -39,8 +40,9 @@ export function AuthProvider({ children }) {
   const [accounts, setAccounts] = useState([]);
   const [accountId, setAccountId] = useState(readStoredAccountId);
 
-  // StrictMode 의 이중 마운트로 부트스트랩이 두 번 도는 것을 막습니다.
-  const bootstrapped = useRef(false);
+  const session = useRef(0);
+  const [accountError, setAccountError] = useState(null);
+  const [sessionError, setSessionError] = useState(null);
 
   const applyAccounts = useCallback((list) => {
     setAccounts(list);
@@ -53,11 +55,15 @@ export function AuthProvider({ children }) {
   }, []);
 
   const clearSession = useCallback(() => {
+    session.current += 1;
+    setFavoritesOwner(null);
     clearToken();
     storeAccountId(null);
     setUser(null);
     setAccounts([]);
     setAccountId(null);
+    setAccountError(null);
+    setSessionError(null);
     setStatus('unauthenticated');
   }, []);
 
@@ -70,40 +76,51 @@ export function AuthProvider({ children }) {
    * 토큰이 없거나 만료면 fetchMe 가 401 로 throw 하므로 사전 검사도 필요 없습니다.
    */
   const refresh = useCallback(async () => {
+    const generation = session.current;
+    const token = getToken();
     const me = await authApi.fetchMe();
+    if (generation !== session.current || token !== getToken()) return;
+    setFavoritesOwner(me.user_id);
     setUser(me);
     setStatus('authenticated');
+    setSessionError(null);
 
     // 계좌 조회가 실패해도 로그인 자체는 유효합니다. 화면이 통째로 막히면 안 되므로 분리합니다.
     try {
-      applyAccounts(await authApi.fetchAccounts());
-    } catch {
-      setAccounts([]);
+      const list = await authApi.fetchAccounts();
+      if (generation !== session.current || token !== getToken()) return;
+      applyAccounts(list);
+      setAccountError(null);
+    } catch (error) {
+      if (generation !== session.current || token !== getToken()) return;
+      applyAccounts([]);
+      setAccountError(error);
     }
   }, [applyAccounts]);
 
   /* 앱 시작 시 저장된 토큰으로 세션 복구 */
   useEffect(() => {
-    if (bootstrapped.current) return;
-    bootstrapped.current = true;
-
     // 토큰이 없으면 초기 status 가 이미 'unauthenticated' 이므로 할 일이 없습니다.
     if (!getToken()) return;
 
     let cancelled = false;
+    const generation = session.current;
     const bootstrap = async () => {
       try {
         await refresh();
-      } catch {
-        // 401 이면 인터셉터가 이미 토큰을 지웠습니다. 그 외 오류(서버 다운 등)도
-        // 사용자 정보를 못 받은 이상 비로그인으로 취급하는 편이 안전합니다.
-        if (!cancelled) clearSession();
+      } catch (error) {
+        // 인증 오류는 인터셉터가 처리하고, 일시적 연결 실패는 재시도를 허용합니다.
+        if (!cancelled && generation === session.current && getToken()) {
+          setStatus('error');
+          setSessionError(error);
+        }
       }
     };
     bootstrap();
 
     return () => {
       cancelled = true;
+      session.current += 1;
     };
   }, [refresh, clearSession]);
 
@@ -114,16 +131,35 @@ export function AuthProvider({ children }) {
     return () => window.removeEventListener(EVT_UNAUTHORIZED, onUnauthorized);
   }, [clearSession]);
 
+  useEffect(() => {
+    const onStorage = (event) => {
+      if (event.key !== TOKEN_KEY && event.key !== null) return;
+      session.current += 1;
+      setUser(null);
+      applyAccounts([]);
+      setFavoritesOwner(null);
+      if (!getToken()) { clearSession(); return; }
+      setStatus('loading');
+      const generation = session.current;
+      refresh().catch((error) => { if (generation === session.current && getToken()) { setStatus('error'); setSessionError(error); } });
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, [applyAccounts, clearSession, refresh]);
+
   const login = useCallback(
     async (loginId, passwd) => {
+      clearSession();
+      const generation = session.current;
       const { access_token } = await authApi.login({ login_id: loginId, passwd });
+      if (generation !== session.current) throw new Error('로그인 요청이 취소되었습니다. 다시 시도해 주세요.');
       if (!access_token) throw new Error('로그인 응답에 토큰이 없습니다.');
       setToken(access_token);
       setStatus('loading');
       try {
         await refresh();
       } catch (err) {
-        clearSession();
+        if (generation === session.current) clearSession();
         throw err;
       }
     },
@@ -147,9 +183,10 @@ export function AuthProvider({ children }) {
   const logout = useCallback(() => clearSession(), [clearSession]);
 
   const selectAccount = useCallback((id) => {
+    if (!accounts.some((a) => a.account_id === id)) return;
     setAccountId(id);
     storeAccountId(id);
-  }, []);
+  }, [accounts]);
 
   const value = useMemo(
     () => ({
@@ -159,6 +196,8 @@ export function AuthProvider({ children }) {
       user,
       accounts,
       accountId,
+      accountError,
+      sessionError,
       account: accounts.find((a) => a.account_id === accountId) ?? null,
       login,
       signup,
@@ -167,7 +206,7 @@ export function AuthProvider({ children }) {
       selectAccount,
       setUser,
     }),
-    [status, user, accounts, accountId, login, signup, logout, refresh, selectAccount],
+    [status, user, accounts, accountId, accountError, sessionError, login, signup, logout, refresh, selectAccount],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

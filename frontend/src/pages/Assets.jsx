@@ -1,37 +1,29 @@
+import { useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import useAuth from '../hooks/useAuth';
-import { num, won } from '../utils/format';
+import { won, wonSigned, signTextClass } from '../utils/format';
 import HelpIcon from '../components/learn/HelpIcon';
 import LoginNotice from '../components/common/LoginNotice';
+import useRemote from '../hooks/useRemote';
+import { fetchValuedPortfolio } from '../api/data';
+import { numberOrNull, portfolioTotals, quotePrice } from '../api/normalize';
+import AccountPicker from '../components/common/AccountPicker';
+import RemoteState from '../components/common/RemoteState';
 
-/**
- * 내 자산
- *
- * 홈에 있던 개인 지표(예수금 · 주문가능금액 · 평가손익 · 내 랭킹)를 이 화면으로 모았습니다.
- * 홈은 누구나 보는 시장 정보를, 이 화면은 로그인한 사람의 돈을 보여 줍니다.
- *
- * 걷어낸 것 (기존 시안의 하드코딩 값)
- *  - 총자산 22,616,925원 / 내 투자 12,616,925원 → 가짜 숫자
- *  - "달러 $5,000" 카드 → 이 서비스에는 외화 계좌 개념 자체가 없습니다
- *  - "총 수익 / 일간 수익" → 체결 테이블과 일별 스냅샷이 없어 계산이 불가능합니다
- *
- * 표시 원칙
- *  - 예수금·주문가능금액은 AuthContext 가 이미 들고 있어 로그인하면 바로 정확합니다.
- *  - 평가금액·평가손익은 보유종목의 현재가를 조회해 프론트가 직접 계산해야 합니다.
- *    (/trading/portfolio 의 total_value 는 평가금액이 아니라 "매입금액"입니다 — Doc/13 §3-5)
- *    이 계산은 F-14 에서 붙입니다.
- *  - 실현손익("총 수익")은 프론트에서도 계산할 수 없으므로 화면에서 뺐습니다.
- */
+/** 기존 총자산·개인 지표·내 투자·보유종목 배치에 실제 조회 결과를 표시합니다. */
 export default function Assets() {
-  const { account, isAuthenticated } = useAuth();
+  const { account, accountId, isAuthenticated } = useAuth();
+  const resource = useRemote(useCallback((signal) => fetchValuedPortfolio(accountId, signal), [accountId]), isAuthenticated && !!accountId);
+  const totals = portfolioTotals(resource.data);
 
-  const pending = isAuthenticated ? '불러오는 중이에요' : '로그인하면 표시돼요';
+  const pending = !isAuthenticated ? '로그인하면 표시돼요' : resource.loading ? '불러오는 중이에요' : '조회 불가';
 
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-12">
       <div className="border-b border-gray-200 pb-4">
         <h1 className="text-xl font-extrabold text-gray-900">내 자산</h1>
         {account && <p className="mt-1 text-sm text-gray-500">{account.account_name}</p>}
+        {isAuthenticated && <div className="mt-3"><AccountPicker /></div>}
       </div>
 
       {!isAuthenticated && <LoginNotice message="로그인하면 내 계좌의 실제 금액이 표시돼요" />}
@@ -44,9 +36,9 @@ export default function Assets() {
         </h2>
         {/* TODO(F-14): 예수금 + 보유종목 평가금액 합계 */}
         <p className="tabular mt-1 text-4xl font-extrabold text-gray-900">
-          {isAuthenticated ? (
+          {totals?.total != null ? won(totals.total) : isAuthenticated ? (
             <span className="text-base font-medium text-gray-300">
-              보유종목 시세 연동 후 표시
+              {pending}
             </span>
           ) : (
             <span className="text-base font-medium text-gray-300">로그인하면 표시돼요</span>
@@ -63,7 +55,7 @@ export default function Assets() {
               </>
             }
             /* 계좌 API 는 금액을 문자열로 돌려줍니다 — num() 필수 (Doc/13 §4-1) */
-            value={account ? won(num(account.balance)) : null}
+            value={numberOrNull(account?.withdrawable_cash) !== null ? won(account.withdrawable_cash) : null}
             pending={pending}
           />
           <StatCard
@@ -73,7 +65,7 @@ export default function Assets() {
                 <HelpIcon termId="orderable_cash" />
               </>
             }
-            value={account ? won(num(account.withdrawable_cash)) : null}
+            value={numberOrNull(account?.withdrawable_cash) !== null ? won(account.withdrawable_cash) : null}
             pending={pending}
           />
           <StatCard
@@ -84,7 +76,8 @@ export default function Assets() {
               </>
             }
             /* TODO(F-14): 보유종목 현재가로 직접 계산 (Doc/13 §5-1) */
-            pending="보유종목 시세 연동 후 표시"
+            value={totals?.unrealized != null ? wonSigned(totals.unrealized) : null}
+            pending={pending}
           />
           {/* 랭킹은 백엔드 계산식 버그로 "투자를 안 한 사람"이 1위로 올라옵니다.
               고쳐지기 전까지 숫자를 띄우면 오히려 신뢰를 잃으므로 비워 둡니다. (Doc/13 §6) */}
@@ -101,6 +94,7 @@ export default function Assets() {
 
         <dl className="mt-4 divide-y divide-gray-100 rounded-xl border border-gray-200">
           <PendingRow
+            value={totals?.cost != null ? won(totals.cost) : pending}
             label={
               <>
                 매입금액
@@ -109,6 +103,7 @@ export default function Assets() {
             }
           />
           <PendingRow
+            value={totals?.market != null ? won(totals.market) : pending}
             label={
               <>
                 평가금액
@@ -117,6 +112,7 @@ export default function Assets() {
             }
           />
           <PendingRow
+            value={totals?.unrealized != null ? wonSigned(totals.unrealized) : pending}
             label={
               <>
                 평가손익
@@ -140,15 +136,21 @@ export default function Assets() {
           <HelpIcon termId="hold_quantity" />
         </h2>
         {/* TODO(F-14): GET /api/trading/portfolio?account_id= + 종목별 /stocks/{code}/price */}
-        <div className="mt-4 rounded-lg border border-dashed border-gray-200 px-4 py-12 text-center">
-          <p className="text-sm text-gray-400">보유종목 연동 준비 중이에요</p>
+        <RemoteState resource={resource} authenticated={isAuthenticated}>
+        {resource.data?.holdings.length ? <div className="mt-4 overflow-x-auto"><table className="w-full min-w-[600px] text-right text-sm"><thead className="bg-gray-50"><tr>{['종목', '보유수량', '평균단가', '현재가', '평가손익'].map((label) => <th key={label} className="p-3">{label}</th>)}</tr></thead><tbody>{resource.data.holdings.map((holding) => {
+          const price = quotePrice(holding.quote); const average = numberOrNull(holding.avg_price); const quantity = numberOrNull(holding.hold_quantity); const pnl = price !== null && average !== null && quantity !== null ? (price - average) * quantity : null;
+          return <tr key={holding.portfolio_id ?? holding.symbol_code} className="border-b border-gray-100"><th className="p-3"><Link to={`/trading?code=${encodeURIComponent(holding.symbol_code)}`} className="text-brand-700">{holding.security_name || holding.symbol_code}</Link></th><td className="p-3">{quantity ?? '—'}</td><td className="p-3">{average === null ? '—' : won(average)}</td><td className="p-3">{price === null ? '시세 이용 불가' : won(price)}</td><td className={`p-3 ${signTextClass(pnl)}`}>{pnl === null ? '—' : wonSigned(pnl)}</td></tr>;
+        })}</tbody></table></div> : <div className="mt-4 rounded-lg border border-dashed border-gray-200 px-4 py-12 text-center">
+          <p className="text-sm text-gray-400">{accountId ? '보유한 종목이 없어요.' : '계좌를 선택해 주세요.'}</p>
           <Link
             to="/trading"
             className="mt-3 inline-block rounded-md border border-gray-300 px-4 py-1.5 text-sm font-bold text-gray-700 transition hover:bg-gray-50"
           >
             트레이딩으로 가기
           </Link>
-        </div>
+        </div>}
+        </RemoteState>
+        {resource.data && <div className="mt-3 text-xs leading-relaxed text-gray-400"><p>조회 완료: {new Date(resource.data.fetchedAt).toLocaleString('ko-KR')} · 종목별 조회 시세와 평균단가 기준 참고 평가액입니다. 시세 누락 시 합계를 표시하지 않습니다.</p><button onClick={resource.reload} className="mt-2 underline">새로고침</button></div>}
       </section>
     </div>
   );
@@ -167,11 +169,11 @@ function StatCard({ label, value, pending }) {
   );
 }
 
-function PendingRow({ label }) {
+function PendingRow({ label, value }) {
   return (
     <div className="flex items-center justify-between px-4 py-3">
       <dt className="flex items-center text-sm text-gray-500">{label}</dt>
-      <dd className="text-sm text-gray-300">연동 예정</dd>
+      <dd className="text-sm text-gray-600">{value}</dd>
     </div>
   );
 }

@@ -15,7 +15,7 @@ import { InlineError } from '../components/common/ErrorState';
  * 그 결과가 있어야 대시보드를 개인화할 수 있기 때문입니다.
  * 설문 화면에는 상단 메뉴가 없고 "나중에 할게요"로 건너뛸 수 있습니다.
  *
- * ⚠️ 백엔드가 아직 연결되지 않아 지금 제출하면 "서버에 연결할 수 없습니다."가 뜹니다.
+ * 환경설정의 API 서버에 가입 요청을 전송합니다.
  *    이는 정상 동작입니다.
  */
 export default function Signup() {

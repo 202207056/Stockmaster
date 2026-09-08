@@ -10,13 +10,19 @@
  */
 
 const KEY = 'gp_favorites';
+let owner = null;
+const storageKey = () => owner == null ? KEY : `${KEY}:user:${owner}`;
+export const setFavoritesOwner = (id) => {
+  owner = id ?? null;
+  window.dispatchEvent(new CustomEvent(FAVORITES_EVENT));
+};
 
 /** 같은 탭 안에서도 변경을 감지할 수 있도록 커스텀 이벤트를 씁니다. */
 export const FAVORITES_EVENT = 'favorites:change';
 
 const read = () => {
   try {
-    const raw = JSON.parse(localStorage.getItem(KEY) || '[]');
+    const raw = JSON.parse(localStorage.getItem(storageKey()) || '[]');
     return Array.isArray(raw) ? raw.filter((c) => typeof c === 'string') : [];
   } catch {
     return [];
@@ -25,7 +31,7 @@ const read = () => {
 
 const write = (list) => {
   try {
-    localStorage.setItem(KEY, JSON.stringify(list));
+    localStorage.setItem(storageKey(), JSON.stringify(list));
   } catch {
     /* 사파리 프라이빗 모드 등에서 저장 실패 — 무시하고 메모리 값만 반환 */
   }
