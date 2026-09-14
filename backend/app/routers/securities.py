@@ -8,6 +8,7 @@ routers/securities.py - 종목 관련 API 엔드포인트
     GET /stocks/{code}/price           → 현재가 조회 (KIS 모의 API)
     GET /stocks/{code}/chart           → 차트 데이터 조회
 
+⚠️ 시세·검색·순위·차트는 비로그인 조회를 허용한다. 주문·계좌는 해당 없음.
 ⚠️ /ranking/{rank_type} 은 반드시 /{symbol_code} 보다 먼저 등록해야 한다.
 FastAPI는 경로를 위에서부터 순서대로 매칭하므로, 순서가 바뀌면
 "ranking"이 symbol_code 값으로 처리된다.
@@ -18,10 +19,8 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models.security import ItemMaster
-from app.models.user import User
 from app.schemas.security import SecurityResponse
 from app.services.kis_service import get_current_price, get_stock_chart, get_stock_ranking
-from app.utils.deps import get_current_user
 
 # prefix는 main.py에서 /api/stocks 로 지정
 router = APIRouter(tags=["주식 시세"])
@@ -32,7 +31,6 @@ def get_securities(
     market_type: str | None = Query(None, description="국내주식, ELW, 선물옵션"),
     search: str | None = Query(None, description="종목명 또는 코드 검색"),
     db: Session = Depends(get_db),
-    _: User = Depends(get_current_user),
 ):
     """
     종목 목록을 조회합니다.
@@ -61,7 +59,6 @@ def get_securities(
 async def get_ranking(
     rank_type: str,
     limit: int = Query(10, ge=1, le=30, description="반환할 종목 수"),
-    _: User = Depends(get_current_user),
 ):
     """
     종목 순위를 조회합니다. 실전 KIS API를 사용합니다.
@@ -98,7 +95,6 @@ async def get_ranking(
 def get_security(
     symbol_code: str,
     db: Session = Depends(get_db),
-    _: User = Depends(get_current_user),
 ):
     """
     특정 종목의 기본 정보를 반환합니다. (종목명, 시장구분, 업종코드)
@@ -113,7 +109,6 @@ def get_security(
 @router.get("/{symbol_code}/price", summary="현재가 조회 (KIS API)")
 async def get_price(
     symbol_code: str,
-    _: User = Depends(get_current_user),
 ):
     """
     한국투자증권 모의투자 API를 통해 실시간 현재가를 조회합니다.
@@ -135,7 +130,6 @@ async def get_price(
 async def get_chart(
     symbol_code: str,
     period: str = Query("D", description="D(일봉), W(주봉), M(월봉)"),
-    _: User = Depends(get_current_user),
 ):
     """
     차트 데이터(캔들스틱)를 반환합니다.

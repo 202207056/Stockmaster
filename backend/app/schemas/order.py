@@ -20,8 +20,9 @@ class OrderRequest(BaseModel):
     account_id: int = Field(..., description="주문을 넣을 계좌 ID")
     symbol_code: str = Field(..., description="종목 코드 (예: 005930)", max_length=20)
     order_type: str = Field(..., description="주문 타입 (매수, 매도)")
-    price: Decimal = Field(..., description="주문 단가")
-    quantity: int = Field(..., description="주문 수량")
+    # price 는 프론트가 보내는 화면 표시용 값이다. 체결가는 서버가 현재가로 정한다.
+    price: Decimal = Field(..., gt=0, description="화면 표시용 희망가 (체결가는 서버가 현재가로 결정)")
+    quantity: int = Field(..., gt=0, description="주문 수량 (1주 이상)")
 
 
 class OrderResponse(BaseModel):

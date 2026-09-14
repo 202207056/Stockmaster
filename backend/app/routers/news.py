@@ -13,11 +13,9 @@ routers/news.py - 뉴스/이슈 API 엔드포인트
     - 실제 서비스에서는 주기적으로 크롤링 후 DB에 저장하는 방식 권장
 """
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Query
 
-from app.models.user import User
 from app.services.news_service import get_market_news, get_news_by_symbol
-from app.utils.deps import get_current_user
 
 # prefix는 main.py에서 /api/news 로 지정
 # 최종 경로 예시: /api/news/market, /api/news/005930
@@ -27,7 +25,6 @@ router = APIRouter(tags=["뉴스"])
 @router.get("/market", summary="전체 시장 뉴스")
 async def market_news(
     limit: int = Query(20, description="가져올 뉴스 수"),
-    _: User = Depends(get_current_user),
 ):
     """
     주식 시장 전체 뉴스를 반환합니다.
@@ -53,7 +50,6 @@ async def market_news(
 async def symbol_news(
     symbol_code: str,   # URL 경로에서 자동으로 추출
     limit: int = Query(10, description="가져올 뉴스 수"),
-    _: User = Depends(get_current_user),
 ):
     """
     특정 종목의 뉴스를 반환합니다.

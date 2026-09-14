@@ -10,6 +10,8 @@ routers/orders.py - 주문(매수/매도) API 엔드포인트
 모의투자이므로 주문 즉시 체결됩니다.
 """
 
+from decimal import Decimal
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
@@ -18,6 +20,7 @@ from app.models.account import Account
 from app.models.order import Order
 from app.models.user import User
 from app.schemas.order import OrderRequest, OrderResponse
+from app.services.kis_service import get_current_price
 from app.services.order_service import create_order
 from app.utils.deps import get_current_user
 
@@ -26,7 +29,7 @@ router = APIRouter(tags=["거래"])
 
 
 @router.post("", response_model=OrderResponse, summary="매수/매도 주문")
-def place_order(
+async def place_order(
     req: OrderRequest,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -34,7 +37,8 @@ def place_order(
     """
     매수 또는 매도 주문을 실행합니다.
 
-    모의투자에서는 주문 즉시 체결됩니다.
+    요청 JSON 형식은 그대로입니다.
+    다만 price 는 참고용이고, 체결가는 KIS 현재가로 결정합니다.
 
     요청 예시 (삼성전자 10주 매수):
         POST /api/trading/orders
@@ -45,14 +49,17 @@ def place_order(
             "price": 75000,
             "quantity": 10
         }
-
-    오류 케이스:
-        - 잔고 부족: "매수 가능 현금이 부족합니다"
-        - 수량 부족: "보유 수량이 부족합니다"
-        - 없는 종목: "종목을 찾을 수 없습니다"
     """
-    # create_order 서비스 함수에 처리를 위임
-    order = create_order(db, req, current_user.user_id)
+    try:
+        quote = await get_current_price(req.symbol_code)
+    except Exception:
+        raise HTTPException(status_code=400, detail="현재 시세를 확인할 수 없어 주문하지 않았습니다.")
+
+    fill_price = Decimal(quote.get("current_price") or 0)
+    if fill_price <= 0:
+        raise HTTPException(status_code=400, detail="현재 시세를 확인할 수 없어 주문하지 않았습니다.")
+
+    order = create_order(db, req, current_user.user_id, fill_price)
 
     # 체결 완료 메시지 생성 (프론트 알림용)
     # 예: "삼성전자(005930) 10주 매수가 완료되었습니다."

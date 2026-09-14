@@ -2,33 +2,36 @@
 routers/ai.py - AI 및 투자성향 설문 API 엔드포인트
 
 제공하는 API:
-    [설문 - 우리 DB와 직접 연동]
-    POST /api/ai/survey             → 설문 답변 저장
+    [백엔드가 Gemini를 직접 호출]
+    POST /api/ai/survey             → 설문 저장 후 Gemini 투자성향 분석
     GET  /api/ai/propensity         → 내 투자성향 분석 결과 조회
+    GET  /api/ai/coach              → 시세 요약 기반 모의투자 조언
 
     [AI 서버 연동 - AI팀 서버가 필요]
     GET  /api/ai/recommend          → AI 종목 추천
-    GET  /api/ai/coach              → AI 투자 코칭
     GET  /api/ai/pattern            → 매매 패턴 분석
     GET  /api/ai/news-summary/{code}→ 종목 뉴스 AI 요약
-
-AI팀 서버가 아직 없으면?
-    설문/성향 조회는 정상 동작하고,
-    AI 서버 연동 API만 503 오류가 납니다.
 """
 
 from datetime import datetime
+import asyncio
+import json
 
 import httpx
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.database import get_db
+from app.models.account import Account
 from app.models.ai_propensity_advice import AiPropensityAdvice
+from app.models.portfolio import Portfolio
+from app.models.security import ItemMaster
 from app.models.user import User
 from app.models.user_survey_response import UserSurveyResponse
+from app.services.ai_service import analyze_survey_answers, generate_coach_advice
+from app.services.kis_service import get_current_price
 from app.utils.deps import get_current_user
 
 # prefix는 main.py에서 /api/ai 로 지정
@@ -92,36 +95,24 @@ class PropensityAdviceResponse(BaseModel):
 # 설문 API (DB 직접 연동 - AI팀 서버 불필요)
 # -----------------------------------------------
 
-@router.post("/survey", summary="투자성향 설문 답변 저장")
-def submit_survey(
+@router.post("/survey", summary="투자성향 설문 저장 및 Gemini 분석")
+async def submit_survey(
     req: SurveySubmitRequest,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     """
-    사용자의 투자성향 설문 답변을 저장합니다.
+    설문 답변을 저장한 뒤 Gemini로 투자성향을 분석합니다.
 
     기존 답변이 있으면 덮어씁니다 (재설문 가능).
-
-    요청 예시:
-        POST /api/ai/survey
-        {
-            "answers": [
-                {"question_number": 1, "selected_answer": "30대"},
-                {"question_number": 2, "selected_answer": "시세차익 목적"},
-                {"question_number": 3, "selected_answer": "1년 이상"}
-            ]
-        }
-
-    응답: 저장된 답변 목록
+    분석 결과는 users.investment_style 과 ai_propensity_advice 에 저장됩니다.
     """
-    # 기존 답변 모두 삭제 (재설문 시 깨끗하게 다시 저장)
     db.query(UserSurveyResponse).filter(
         UserSurveyResponse.user_id == current_user.user_id
     ).delete()
 
-    # 새 답변 저장
     saved = []
+    payload = []
     for answer in req.answers:
         response = UserSurveyResponse(
             user_id=current_user.user_id,
@@ -131,14 +122,29 @@ def submit_survey(
         )
         db.add(response)
         saved.append(response)
+        payload.append({
+            "question_number": answer.question_number,
+            "selected_answer": answer.selected_answer,
+        })
 
+    analysis = await asyncio.to_thread(analyze_survey_answers, payload)
+
+    current_user.investment_style = analysis["investor_type"]
+    advice = AiPropensityAdvice(
+        user_id=current_user.user_id,
+        ai_analysis_result=analysis["investor_type"],
+        ai_detailed_advice=json.dumps(analysis, ensure_ascii=False),
+        created_at=datetime.utcnow(),
+    )
+    db.add(advice)
     db.commit()
 
-    # 저장된 답변 개수 반환
     return {
-        "message": f"설문 답변 {len(saved)}개가 저장되었습니다.",
+        "message": f"설문 답변 {len(saved)}개가 저장되었고 투자성향이 분석되었습니다.",
         "user_id": current_user.user_id,
         "answer_count": len(saved),
+        "investment_style": analysis["investor_type"],
+        "analysis": analysis,
     }
 
 
@@ -187,16 +193,23 @@ def get_my_propensity(
     )
 
     if not advice:
-        # 분석 결과가 아직 없는 경우
         return {
             "message": "아직 투자성향 분석 결과가 없습니다. 설문을 먼저 완료하세요.",
             "result": None,
         }
 
+    parsed = None
+    if advice.ai_detailed_advice:
+        try:
+            parsed = json.loads(advice.ai_detailed_advice)
+        except (json.JSONDecodeError, TypeError):
+            parsed = None
+
     return {
         "advice_id": advice.advice_id,
         "ai_analysis_result": advice.ai_analysis_result,
         "ai_detailed_advice": advice.ai_detailed_advice,
+        "analysis": parsed,
         "created_at": advice.created_at,
     }
 
@@ -240,6 +253,96 @@ async def _call_ai(path: str, payload: dict | None = None) -> dict:
         raise HTTPException(status_code=e.response.status_code, detail="AI 서버 오류")
 
 
+@router.get("/coach", summary="AI 투자 코칭 (Gemini)")
+async def ai_coach(
+    symbol: str = Query("005930", description="종목 코드 (예: 005930 삼성전자)"),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    현재가·보유 요약만 Gemini에 보내 모의투자 조언을 반환합니다.
+    매수·매도 지시가 아니라 관찰과 주의 문장입니다.
+
+    Swagger 사용:
+        1. 로그인 후 Authorize
+        2. symbol 기본값 005930 그대로 Execute
+
+    응답 예시:
+        {
+            "facts": {
+                "symbol_code": "005930",
+                "name": "삼성전자",
+                "current_price": 75000,
+                "change_rate": 1.2,
+                "investment_style": "안정추구형",
+                "holding": {"quantity": 10, "avg_price": 72000, "return_rate": 4.17}
+            },
+            "disclaimer": "모의투자 연습용 조언이며 투자 권유가 아닙니다.",
+            "observation": "오늘 변동이 크지 않습니다.",
+            "advice": "성향이 안정 쪽이면 수량을 나눠 연습해 보세요.",
+            "caution": "급등 직후 추격 매수는 신중히 보세요."
+        }
+    """
+    symbol_code = (symbol or "").strip()
+    if not symbol_code:
+        raise HTTPException(status_code=400, detail="종목 코드를 입력해 주세요.")
+
+    quote = {}
+    try:
+        quote = await get_current_price(symbol_code)
+    except Exception as e:
+        print(f"[coach] 현재가 조회 실패: {e}")
+
+    item = db.query(ItemMaster).filter(ItemMaster.symbol_code == symbol_code).first()
+    account = (
+        db.query(Account)
+        .filter(Account.user_id == current_user.user_id)
+        .order_by(Account.account_id.asc())
+        .first()
+    )
+    holding_row = None
+    if account:
+        holding_row = (
+            db.query(Portfolio)
+            .filter(
+                Portfolio.account_id == account.account_id,
+                Portfolio.symbol_code == symbol_code,
+            )
+            .first()
+        )
+
+    current_price = quote.get("current_price") or 0
+    holding = None
+    if holding_row:
+        avg_price = float(holding_row.avg_price or 0)
+        return_rate = None
+        if avg_price > 0 and current_price:
+            return_rate = round((float(current_price) - avg_price) / avg_price * 100, 2)
+        holding = {
+            "quantity": holding_row.hold_quantity,
+            "avg_price": avg_price,
+            "return_rate": return_rate,
+        }
+
+    facts = {
+        "symbol_code": symbol_code,
+        "name": item.name if item else symbol_code,
+        "current_price": current_price or None,
+        "change_rate": quote.get("change_rate"),
+        "high": quote.get("high") or None,
+        "low": quote.get("low") or None,
+        "investment_style": current_user.investment_style or "미설정",
+        "holding": holding,
+    }
+
+    coaching = await asyncio.to_thread(
+        generate_coach_advice,
+        facts,
+        f"{current_user.user_id}:{symbol_code}",
+    )
+    return {"facts": facts, **coaching}
+
+
 @router.get("/recommend", summary="AI 종목 추천 (AI팀 서버 필요)")
 async def ai_recommend(current_user: User = Depends(get_current_user)):
     """
@@ -263,18 +366,6 @@ async def ai_recommend(current_user: User = Depends(get_current_user)):
             "investment_style": current_user.investment_style,
         },
     )
-
-
-@router.get("/coach", summary="AI 투자 코칭 (AI팀 서버 필요)")
-async def ai_coach(current_user: User = Depends(get_current_user)):
-    """
-    유저의 최근 거래 내역을 AI가 분석해서 투자 피드백을 제공합니다.
-
-    예시 피드백:
-        "평균 보유 기간이 2일로 매우 짧습니다."
-        "손실 발생 후 즉시 재매수하는 경향이 있습니다."
-    """
-    return await _call_ai("/coach", {"user_id": current_user.user_id})
 
 
 @router.get("/pattern", summary="매매 패턴 분석 (AI팀 서버 필요)")

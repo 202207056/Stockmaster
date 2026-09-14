@@ -47,7 +47,12 @@ class Settings(BaseSettings):
     KIS_REAL_APP_KEY: str = ""
     KIS_REAL_APP_SECRET: str = ""
 
-    # AI팀 서버 주소 (AI팀이 서버를 띄우면 그 주소로 변경)
+    # Gemini API (설문 투자성향 분석)
+    # https://aistudio.google.com 에서 발급
+    GEMINI_API_KEY: str = ""
+    GEMINI_MODEL: str = "gemini-3.6-flash"
+
+    # 예전 별도 AI 서버 주소. 설문은 백엔드에서 Gemini를 직접 호출하므로 사용하지 않음.
     AI_SERVER_URL: str = "http://localhost:8001"
 
     class Config:

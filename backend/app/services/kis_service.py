@@ -14,6 +14,7 @@ services/kis_service.py - 한국투자증권 오픈API 연동 서비스
     모의투자·실전투자 토큰은 별도 캐시로 관리한다.
 """
 
+import asyncio
 from datetime import datetime, timedelta
 
 import httpx
@@ -252,10 +253,12 @@ async def get_stock_ranking(rank_type: str = "volume", limit: int = 10) -> list[
         return []
 
     # 순위 타입별 TR_ID·엔드포인트·파라미터 결정
+    # volume / amount 는 같은 API를 쓰되, FID_BLNG_CLS_CODE 만 다르게 보낸다.
+    #   0 = 평균거래량(인기 종목)  3 = 거래금액순(거래대금)
+    # change 는 등락률 API라 파라미터 구조가 다르다. 기존 값은 그대로 둔다.
     if rank_type == "change":
         tr_id = "FHPST01700000"
         path = "/uapi/domestic-stock/v1/ranking/fluctuation"
-        # fluctuation API 전용 파라미터 (volume-rank와 구조가 다름)
         params = {
             "FID_COND_MRKT_DIV_CODE": "J",
             "FID_COND_SCR_DIV_CODE": "20170",
@@ -272,15 +275,31 @@ async def get_stock_ranking(rank_type: str = "volume", limit: int = 10) -> list[
             "FID_RSFL_RATE1": "",
             "FID_RSFL_RATE2": "",
         }
-    else:
-        # volume 또는 amount — 거래량/거래대금 순위 TR 사용
+    elif rank_type == "amount":
         tr_id = "FHPST01710000"
         path = "/uapi/domestic-stock/v1/quotations/volume-rank"
         params = {
             "FID_COND_MRKT_DIV_CODE": "J",
             "FID_COND_SCR_DIV_CODE": "20171",
             "FID_INPUT_ISCD": "0000",
-            "FID_BLNG_CLS_CODE": "0",
+            "FID_BLNG_CLS_CODE": "3",  # 거래금액순
+            "FID_TRGT_CLS_CODE": "111111111",
+            "FID_TRGT_EXLS_CLS_CODE": "000000",
+            "FID_INPUT_PRICE_1": "",
+            "FID_INPUT_PRICE_2": "",
+            "FID_VOL_CNT": "",
+            "FID_INPUT_DATE_1": "",
+            "FID_DIV_CLS_CODE": "0",
+        }
+    else:
+        # volume (기본값) — 기존 파라미터 유지
+        tr_id = "FHPST01710000"
+        path = "/uapi/domestic-stock/v1/quotations/volume-rank"
+        params = {
+            "FID_COND_MRKT_DIV_CODE": "J",
+            "FID_COND_SCR_DIV_CODE": "20171",
+            "FID_INPUT_ISCD": "0000",
+            "FID_BLNG_CLS_CODE": "0",  # 평균거래량
             "FID_TRGT_CLS_CODE": "111111111",
             "FID_TRGT_EXLS_CLS_CODE": "000000",
             "FID_INPUT_PRICE_1": "",
@@ -336,4 +355,135 @@ async def get_stock_ranking(rank_type: str = "volume", limit: int = 10) -> list[
         except (ValueError, TypeError):
             continue
 
+    return result
+
+
+# ── 주요 시세 (실전투자 키) ───────────────────────────────────
+# 홈 상단 카드용. 코스피·코스닥만 KIS에서 가져오고, 나머지는 null로 둔다.
+# 프론트는 value 가 null 이면 "준비 중"을 그대로 보여 주면 된다.
+
+_INDEX_SLOTS = [
+    {"code": "kospi", "name": "코스피", "kis_code": "0001"},
+    {"code": "kosdaq", "name": "코스닥", "kis_code": "1001"},
+    {"code": "nasdaq", "name": "나스닥", "kis_code": None},
+    {"code": "sp500", "name": "S&P 500", "kis_code": None},
+    {"code": "gold", "name": "금", "kis_code": None},
+    {"code": "usd", "name": "달러", "kis_code": None},
+]
+_index_cache: dict = {}
+
+
+def _to_float(value) -> float | None:
+    if value is None or value == "":
+        return None
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
+async def get_index_price(kis_code: str) -> dict | None:
+    """
+    국내 업종 현재지수를 조회한다. (실전 API 전용)
+
+    kis_code:
+        0001 코스피, 1001 코스닥
+    """
+    if not settings.KIS_REAL_APP_KEY:
+        return None
+
+    tr_id = "FHPUP02100000"
+    _assert_read_only(tr_id)
+
+    try:
+        token = await get_real_kis_token()
+    except Exception as e:
+        print(f"[KIS 지수 토큰 오류] {e}")
+        return None
+
+    try:
+        async with httpx.AsyncClient() as client:
+            resp = await client.get(
+                f"{KIS_REAL_URL}/uapi/domestic-stock/v1/quotations/inquire-index-price",
+                headers={
+                    "authorization": f"Bearer {token}",
+                    "appkey": settings.KIS_REAL_APP_KEY,
+                    "appsecret": settings.KIS_REAL_APP_SECRET,
+                    "tr_id": tr_id,
+                    "custtype": "P",
+                },
+                params={
+                    "FID_COND_MRKT_DIV_CODE": "U",
+                    "FID_INPUT_ISCD": kis_code,
+                },
+            )
+            if resp.status_code >= 400:
+                print(f"[KIS 지수 오류] code={kis_code} status={resp.status_code} body={resp.text}")
+                return None
+            raw = resp.json()
+            print(
+                f"[KIS 지수 응답] code={kis_code} rt_cd={raw.get('rt_cd')} "
+                f"msg={raw.get('msg1')} keys={list(raw.keys())}"
+            )
+            output = raw.get("output") or {}
+            if isinstance(output, list):
+                output = output[0] if output else {}
+    except Exception as e:
+        print(f"[KIS 지수 요청 오류] {e}")
+        return None
+
+    value = _to_float(output.get("bstp_nmix_prpr"))
+    change_rate = _to_float(output.get("bstp_nmix_prdy_ctrt"))
+    if value is None:
+        print(f"[KIS 지수 파싱 실패] code={kis_code} output_keys={list(output.keys())}")
+        return None
+    return {"value": value, "change_rate": change_rate}
+
+
+async def get_market_indices() -> list[dict]:
+    """
+    홈 상단 주요 시세 카드용 목록을 반환한다.
+
+    Returns:
+        [
+            {"code": "kospi", "name": "코스피", "value": 2650.12, "change_rate": 0.85},
+            {"code": "kosdaq", "name": "코스닥", "value": 850.33, "change_rate": -0.42},
+            {"code": "nasdaq", "name": "나스닥", "value": None, "change_rate": None},
+            ...
+        ]
+    """
+    now = datetime.utcnow()
+    if (
+        _index_cache.get("data")
+        and _index_cache.get("expires_at")
+        and now < _index_cache["expires_at"]
+    ):
+        return _index_cache["data"]
+
+    live_slots = [slot for slot in _INDEX_SLOTS if slot["kis_code"]]
+    # 코스피·코스닥을 동시에 부르기 전에 토큰을 한 번만 받아 둔다.
+    try:
+        await get_real_kis_token()
+    except Exception as e:
+        print(f"[KIS 지수 토큰 오류] {e}")
+        live_slots = []
+    quotes = await asyncio.gather(
+        *[get_index_price(slot["kis_code"]) for slot in live_slots]
+    )
+    quote_by_code = {
+        slot["code"]: quote for slot, quote in zip(live_slots, quotes)
+    }
+
+    result = []
+    for slot in _INDEX_SLOTS:
+        quote = quote_by_code.get(slot["code"])
+        result.append({
+            "code": slot["code"],
+            "name": slot["name"],
+            "value": quote["value"] if quote else None,
+            "change_rate": quote["change_rate"] if quote else None,
+        })
+
+    _index_cache["data"] = result
+    _index_cache["expires_at"] = now + timedelta(seconds=15)
     return result

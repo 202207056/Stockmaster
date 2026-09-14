@@ -13,6 +13,7 @@ API 경로 구조 (팀장 요청 반영):
     /api/news/...     → 뉴스 크롤링
     /api/community/.. → 게시판, 댓글, 좋아요
     /api/ranking/...  → 수익률 랭킹
+    /api/market/...   → 주요 시세 (코스피·코스닥)
 """
 
 from fastapi import FastAPI
@@ -24,6 +25,7 @@ from app.routers import (
     ai,          # AI 연동 API
     auth,        # 회원가입/로그인 API
     community,   # 커뮤니티 게시판 API
+    market,      # 주요 시세 API
     news,        # 뉴스 크롤링 API
     orders,      # 주문(매수/매도) API
     portfolio,   # 포트폴리오(보유종목) API
@@ -49,6 +51,7 @@ app = FastAPI(
 | 뉴스 | `/api/news` | 종목별/시장 뉴스 |
 | 커뮤니티 | `/api/community` | 게시판, 댓글, 좋아요 |
 | 랭킹 | `/api/ranking` | 수익률 랭킹 |
+| 시장 시세 | `/api/market` | 코스피·코스닥 등 주요 시세 |
 
 ### 인증 방법
 1. `POST /api/users/login` 으로 로그인
@@ -114,6 +117,10 @@ app.include_router(community.router, prefix="/api/community", tags=["커뮤니�
 
 # 랭킹: 수익률 기준 사용자 랭킹
 app.include_router(ranking.router, prefix="/api/ranking", tags=["랭킹"])
+
+# 시장 시세: 홈 상단 코스피·코스닥
+# /api/market/indices
+app.include_router(market.router, prefix="/api/market", tags=["시장 시세"])
 
 
 # 서버 상태 확인용 기본 API
