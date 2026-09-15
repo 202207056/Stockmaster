@@ -1,145 +1,59 @@
-import { useMemo, useState } from 'react';
-import {
-  CATEGORIES,
-  GLOSSARY,
-  GLOSSARY_COUNT,
-  groupByCategory,
-  searchGlossary,
-} from '../constants/glossary';
-import { BookOpen } from 'lucide-react';
-import EmptyState from '../components/common/EmptyState';
+import { Link, useSearchParams } from 'react-router-dom';
+import useAuth from '../hooks/useAuth';
+import useLearning from '../hooks/useLearning';
+import { learningScope, EMPTY_ANSWER } from '../utils/learning';
+import { CONTEXT_QUESTIONS, LESSONS } from '../constants/learningContent';
+import AllocationPractice from '../components/learn/AllocationPractice';
+import ContextQuestion from '../components/learn/ContextQuestion';
+import CourseLessons from '../components/learn/CourseLessons';
+import GlossaryBrowser from '../components/learn/GlossaryBrowser';
+import TradeScenario from '../components/learn/TradeScenario';
+import { LearningButton, LearningCard, StorageNotice } from '../components/learn/LearningUI';
 
-/**
- * 용어사전 (F-9 확장) ★
- *
- * 왜 만들었나
- *  - 헤더 네비의 "학습" 메뉴가 갈 곳이 없었습니다. (learn API 가 없어 화면 자체가 없었음)
- *  - 용어집이 이미 로컬 데이터라 백엔드 없이 완성되는 유일한 학습 화면입니다.
- *  - 로그인·백엔드 둘 다 없어도 100% 동작하므로, 지금 시연에서 보여 줄 수 있는
- *    가장 완성도 높은 화면입니다.
- *
- * 개념 설명·퀴즈는 learn API 가 생긴 뒤에 붙입니다.
- */
+const tabs = [['home', '추천 활동'], ['practice', '짧은 실습·퀴즈'], ['review', '거래 복기'], ['courses', '코스']];
+
 export default function Learn() {
-  const [keyword, setKeyword] = useState('');
-  const [category, setCategory] = useState('all');
-
-  const groups = useMemo(() => {
-    const ids = searchGlossary(keyword);
-    const byCat = groupByCategory(ids);
-    if (category === 'all') return byCat;
-    return { [category]: byCat[category] ?? [] };
-  }, [keyword, category]);
-
-  const hitCount = Object.values(groups).reduce((sum, ids) => sum + ids.length, 0);
-
-  return (
-    <div className="flex flex-col gap-6">
-      <div className="border-b border-gray-200 pb-4">
-        <h1 className="text-xl font-extrabold text-gray-900">투자 용어사전</h1>
-        <p className="mt-1 text-sm text-gray-500">
-          어려운 말은 하나도 없어요. 총 {GLOSSARY_COUNT}개 용어를 쉬운 말로 풀어 두었습니다.
-        </p>
-      </div>
-
-      {/* 검색 */}
-      <div className="flex flex-col gap-3">
-        <label className="relative block">
-          <span className="sr-only">용어 검색</span>
-          <input
-            type="search"
-            value={keyword}
-            onChange={(e) => setKeyword(e.target.value)}
-            placeholder="궁금한 용어를 검색해 보세요 (예: PER, 지정가, 평가손익)"
-            className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:border-brand-500 focus:outline-none"
-          />
-        </label>
-
-        {/* 카테고리 */}
-        <div className="flex flex-wrap gap-2">
-          <CategoryChip active={category === 'all'} onClick={() => setCategory('all')}>
-            전체
-          </CategoryChip>
-          {Object.entries(CATEGORIES).map(([key, label]) => (
-            <CategoryChip key={key} active={category === key} onClick={() => setCategory(key)}>
-              {label}
-            </CategoryChip>
-          ))}
-        </div>
-      </div>
-
-      {hitCount === 0 ? (
-        <EmptyState
-          Icon={BookOpen}
-          title="찾는 용어가 아직 없어요"
-          description="다른 검색어로 찾아보시거나, 팀에 추가를 요청해 주세요."
-        />
-      ) : (
-        <div className="flex flex-col gap-10">
-          {Object.entries(groups).map(([cat, ids]) => {
-            if (!ids.length) return null;
-            return (
-              <section key={cat}>
-                <h2 className="mb-3 border-b border-gray-300 pb-2 text-base font-extrabold text-gray-800">
-                  {CATEGORIES[cat]}
-                  <span className="ml-2 text-xs font-medium text-gray-400">{ids.length}개</span>
-                </h2>
-                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                  {ids.map((id) => (
-                    <TermCard key={id} id={id} onPickRelated={setKeyword} />
-                  ))}
-                </div>
-              </section>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
+  const { user, isAuthenticated } = useAuth();
+  const scope = learningScope(isAuthenticated ? user?.user_id : null);
+  return <LearningHub key={scope} scope={scope} />;
 }
 
-function CategoryChip({ active, onClick, children }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-pressed={active}
-      className={`rounded-full border px-3 py-1 text-sm font-medium transition ${
-        active
-          ? 'border-brand-600 bg-brand-600 text-white'
-          : 'border-gray-200 text-gray-600 hover:border-gray-400'
-      }`}
-    >
-      {children}
-    </button>
-  );
+function LearningHub({ scope }) {
+  const [params] = useSearchParams();
+  const requested = params.get('tab') || 'home';
+  const tab = [...tabs.map(([id]) => id), 'glossary'].includes(requested) ? requested : 'home';
+  const { store, state } = useLearning(scope);
+  const pending = LESSONS.filter((lesson) => {
+    const progress = store.read(`lesson:${lesson.id}`, { step: 0, completed: false });
+    return progress.step > 0 && !progress.completed;
+  });
+  return <div className="flex flex-col gap-6">
+    <header className="flex flex-wrap items-start justify-between gap-3 border-b border-gray-200 pb-4"><div><h1 className="text-xl font-extrabold text-gray-900">학습</h1><p className="mt-1 text-sm text-gray-500">궁금한 순간에 실험하고, 내 판단을 돌아보세요.</p></div><Link to="/learn?tab=glossary" className="text-sm text-gray-500 underline">도움말·용어 검색</Link></header>
+    <nav aria-label="학습 콘텐츠" className="flex flex-wrap gap-2">{tabs.map(([id, label]) => <Link key={id} to={`/learn?tab=${id}`} aria-current={tab === id ? 'page' : undefined} className={`rounded-lg border px-4 py-2 text-sm font-bold ${tab === id ? 'border-brand-600 bg-brand-600 text-white' : 'border-gray-200 text-gray-600 hover:bg-gray-50'}`}>{label}</Link>)}</nav>
+    {(tab === 'home' || tab === 'practice') && <>
+      <div><h2 className="text-lg font-bold text-gray-800">이런 방식으로 이해를 돕습니다</h2><p className="mt-1 text-sm text-gray-500">코스를 먼저 듣지 않아도 바로 해볼 수 있어요.</p></div>
+      <div className="grid items-start gap-4 lg:grid-cols-2"><LearningCard title="보유 비중 비교하기"><AllocationPractice /></LearningCard><LearningCard title="문장 속 개념 찾기"><ContextPractice scope={scope} /></LearningCard></div>
+      {tab === 'home' && <div className="grid gap-4 sm:grid-cols-2"><LearningCard title="매수부터 복기까지 가상으로"><p className="mb-4 text-sm text-gray-500">매수 근거를 남기고, 보유 중 계획과 매도 이유를 연결해 보세요.</p><Link className="text-sm font-bold text-brand-700" to="/learn?tab=review">{state.records.scenario ? '가상 거래 이어하기' : '가상 거래 시작하기'} →</Link></LearningCard><LearningCard title={pending.length ? '이어서 살펴볼 설명' : '설명이 더 필요할 때'}><p className="mb-4 text-sm text-gray-500">{pending[0]?.title || '주문·손익·뉴스·판단 과정을 상황별 코스에서 살펴보세요.'}</p><Link className="text-sm font-bold text-brand-700" to={pending.length ? `/learn?tab=courses&lesson=${pending[0].id}` : '/learn?tab=courses'}>{pending.length ? '이어보기' : '선택형 코스 보기'} →</Link></LearningCard></div>}
+      {tab === 'practice' && <ReviewQuestions scope={scope} />}
+    </>}
+    {tab === 'courses' && <CourseLessons scope={scope} lessonId={params.get('lesson')} />}
+    {tab === 'review' && <><LearningCard title="가상 거래 · 판단과 결과 돌아보기"><TradeScenario scope={scope} /></LearningCard><LearningCard title="내 모의투자 기록"><p className="text-sm leading-relaxed text-gray-500">실제 모의투자에서는 트레이딩의 판단 기록과 주문내역의 돌아보기를 사용할 수 있습니다. 기록은 해당 사용자·계좌의 브라우저 저장이며, 거래별 손익 타임라인의 서버 연결은 준비 중입니다.</p><Link to="/trading" className="mt-3 inline-block text-sm text-brand-700 underline">트레이딩에서 내 주문 확인</Link></LearningCard></>}
+    {tab === 'glossary' && <GlossaryBrowser />}
+    <details className="rounded-lg border border-gray-200 p-3 text-xs text-gray-500"><summary className="cursor-pointer">이 기기의 학습 기록 관리</summary><StorageNotice state={state} /><p className="my-3">현재 {scope === 'guest' ? '비로그인' : '사용자'}의 수업·퀴즈·가상 거래 기록을 지웁니다. 실제 모의투자 계좌와 주문 기록에는 영향을 주지 않습니다.</p><LearningButton secondary onClick={() => store.clear()}>이 학습 기록 삭제</LearningButton></details>
+  </div>;
 }
 
-function TermCard({ id, onPickRelated }) {
-  const t = GLOSSARY[id];
-  return (
-    <article className="flex h-full flex-col rounded-xl border border-gray-200 p-4 transition hover:border-brand-300">
-      <h3 className="text-sm font-extrabold text-gray-900">{t.term}</h3>
-      <p className="mt-2 flex-1 text-sm leading-relaxed text-gray-600">{t.desc}</p>
-      {t.example && (
-        <p className="mt-3 rounded-lg bg-gray-50 p-2 text-xs leading-relaxed text-gray-500">
-          예: {t.example}
-        </p>
-      )}
-      {t.related?.length > 0 && (
-        <div className="mt-3 flex flex-wrap gap-1">
-          {t.related.map((rid) => (
-            <button
-              key={rid}
-              type="button"
-              onClick={() => onPickRelated(GLOSSARY[rid]?.term ?? '')}
-              className="rounded-full border border-gray-200 px-2 py-0.5 text-xs text-gray-500 transition hover:border-brand-400 hover:text-brand-700"
-            >
-              {GLOSSARY[rid]?.term ?? rid}
-            </button>
-          ))}
-        </div>
-      )}
-    </article>
-  );
+function ContextPractice({ scope }) {
+  const [params, setParams] = useSearchParams();
+  const raw = Number(params.get('q') || 0);
+  const index = Number.isInteger(raw) && raw >= 0 && raw < CONTEXT_QUESTIONS.length ? raw : 0;
+  const choose = (next) => { const p = new URLSearchParams(params); p.set('q', String(next)); setParams(p); };
+  return <div className="flex flex-col gap-4"><p className="text-xs text-gray-500">가상 문장 · {index + 1} / {CONTEXT_QUESTIONS.length}</p><ContextQuestion key={CONTEXT_QUESTIONS[index].id} question={CONTEXT_QUESTIONS[index]} scope={scope} /><div className="flex gap-2"><LearningButton secondary disabled={index === 0} onClick={() => choose(index - 1)}>이전 문장</LearningButton><LearningButton secondary onClick={() => choose((index + 1) % CONTEXT_QUESTIONS.length)}>{index === CONTEXT_QUESTIONS.length - 1 ? '첫 문장' : '다음 문장'}</LearningButton></div></div>;
+}
+
+function ReviewQuestions({ scope }) {
+  const { store } = useLearning(scope);
+  const questions = [...CONTEXT_QUESTIONS, ...LESSONS.flatMap((lesson) => lesson.questions)];
+  const wrong = questions.filter((question) => { const answer = store.read(`question:${question.id}`, EMPTY_ANSWER); return answer.answered && !answer.correct; });
+  return <LearningCard title="다시 확인할 상황">{wrong.length ? <div className="space-y-6">{wrong.map((question) => <ContextQuestion key={question.id} question={question} scope={scope} />)}</div> : <p className="text-sm text-gray-500">다시 확인할 문제가 아직 없어요. 문장 퀴즈나 선택형 코스에서 궁금한 상황을 살펴보세요.</p>}</LearningCard>;
 }

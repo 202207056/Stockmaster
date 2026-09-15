@@ -9,6 +9,7 @@ import { fetchValuedPortfolio } from '../api/data';
 import { numberOrNull, portfolioTotals, quotePrice } from '../api/normalize';
 import AccountPicker from '../components/common/AccountPicker';
 import RemoteState from '../components/common/RemoteState';
+import HoldingLearning from '../components/learn/HoldingLearning';
 
 /** 기존 총자산·개인 지표·내 투자·보유종목 배치에 실제 조회 결과를 표시합니다. */
 export default function Assets() {
@@ -150,6 +151,7 @@ export default function Assets() {
           </Link>
         </div>}
         </RemoteState>
+        {!resource.loading && !resource.error && <HoldingLearning holdings={resource.data?.holdings} />}
         {resource.data && <div className="mt-3 text-xs leading-relaxed text-gray-400"><p>조회 완료: {new Date(resource.data.fetchedAt).toLocaleString('ko-KR')} · 종목별 조회 시세와 평균단가 기준 참고 평가액입니다. 시세 누락 시 합계를 표시하지 않습니다.</p><button onClick={resource.reload} className="mt-2 underline">새로고침</button></div>}
       </section>
     </div>

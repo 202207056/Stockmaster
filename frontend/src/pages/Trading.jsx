@@ -15,6 +15,9 @@ import { getToken } from '../api/client';
 import StockQuote from '../components/common/StockQuote';
 import StockCoach from '../components/common/StockCoach';
 import HelpIcon from '../components/learn/HelpIcon';
+import TradingLearning from '../components/learn/TradingLearning';
+import OrderReflection from '../components/learn/OrderReflection';
+import { learningScope } from '../utils/learning';
 
 export default function Trading() {
   const [params, setParams] = useSearchParams();
@@ -114,15 +117,20 @@ function StockPanel({ code }) {
       <button disabled={!ENABLE_ORDER_SUBMISSION || !accountId || total === null || busy || uncertain} className="rounded-lg bg-brand-600 px-5 py-3 font-bold text-white disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-500">{busy ? '주문 처리 중…' : `모의 ${kind}`}</button>
       <InlineError error={error} />{message && <p role="status" className="text-sm text-gray-700">{message} <Link to="/assets" className="underline">내 자산 보기</Link></p>}
     </form> : <p className="text-sm text-gray-400">로그인 후 주문 정보를 확인할 수 있어요.</p>}
+    <TradingLearning symbol={code} side={kind} quantity={qty} price={price} cash={account?.withdrawable_cash} busy={busy || uncertain} />
   </section></>;
 }
 
 function OrderHistory() {
-  const { accountId } = useAuth();
+  const { user, accountId } = useAuth();
+  const [reviewId, setReviewId] = useState(null);
   const orders = useRemote(useCallback((signal) => fetchOrders(accountId, signal), [accountId]), !!accountId);
+  const scope = learningScope(user?.user_id, accountId);
+  const review = !orders.loading && !orders.error && orders.data?.find((order) => `${accountId}:${order.order_id}` === reviewId && order.status === '체결');
   return <section className="rounded-xl border border-gray-200 p-5"><div className="mb-4 flex justify-between"><h2 className="font-bold">주문내역</h2><button disabled={orders.loading || !accountId} onClick={orders.reload} className="text-sm underline">내역 새로고침</button></div>
     <OrderUpdates reload={orders.reload} />
-    {!accountId ? <p className="text-sm text-gray-500">계좌를 선택해 주세요.</p> : <RemoteState resource={orders} empty={!orders.data?.length}><div className="max-h-80 overflow-auto"><table className="w-full min-w-[480px] text-right text-sm"><thead><tr>{['번호', '종목', '구분', '수량', '체결가', '상태'].map((label) => <th className="p-2" key={label}>{label}</th>)}</tr></thead><tbody>{orders.data?.map((order) => <tr key={order.order_id} className="border-t border-gray-100"><td className="p-2">{order.order_id}</td><td className="p-2">{order.symbol_code}</td><td className="p-2">{order.order_type}</td><td className="p-2">{order.quantity}</td><td className="p-2">{numberOrNull(order.price) === null ? '—' : won(order.price)}</td><td className="p-2">{order.status}</td></tr>)}</tbody></table></div></RemoteState>}
+    {!accountId ? <p className="text-sm text-gray-500">계좌를 선택해 주세요.</p> : <RemoteState resource={orders} empty={!orders.data?.length}><div className="max-h-80 overflow-auto"><table className="w-full min-w-[480px] text-right text-sm"><thead><tr>{['번호', '종목', '구분', '수량', '체결가', '상태', '복기'].map((label) => <th className="p-2" key={label}>{label}</th>)}</tr></thead><tbody>{orders.data?.map((order) => <tr key={order.order_id} className="border-t border-gray-100"><td className="p-2">{order.order_id}</td><td className="p-2">{order.symbol_code}</td><td className="p-2">{order.order_type}</td><td className="p-2">{order.quantity}</td><td className="p-2">{numberOrNull(order.price) === null ? '—' : won(order.price)}</td><td className="p-2">{order.status}</td><td className="p-2">{order.status === '체결' ? <button type="button" onClick={() => setReviewId(`${accountId}:${order.order_id}`)} className="whitespace-nowrap text-xs text-brand-700 underline">돌아보기</button> : '—'}</td></tr>)}</tbody></table></div></RemoteState>}
+    {review && <OrderReflection key={`${scope}:${review.order_id}`} scope={scope} order={review} onClose={() => setReviewId(null)} />}
   </section>;
 }
 

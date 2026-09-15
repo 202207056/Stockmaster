@@ -5,6 +5,8 @@ import React from 'react';
 import { renderToString } from 'react-dom/server';
 import { MemoryRouter } from 'react-router-dom';
 
+// Learning UI below is also rendered with local fixtures; no live order submission.
+
 // Local adapter tests: never register users, send orders or publish to the live server.
 const storage = new Map();
 globalThis.localStorage = { getItem: (key) => storage.get(key) ?? null, setItem: (key, value) => storage.set(key, value), removeItem: (key) => storage.delete(key) };
@@ -150,4 +152,45 @@ test('favorites remain separate for guests and different users', async () => {
   assert.deepEqual(favorites.getFavorites(), ['USER_ONE']);
   favorites.setFavoritesOwner(null);
   assert.deepEqual(favorites.getFavorites(), ['GUEST']);
+});
+
+test('learning home prioritizes short activities and retains the glossary as optional help', async () => {
+  const { AuthContext } = await server.ssrLoadModule('/src/contexts/auth-context.js');
+  const { default: Learn } = await server.ssrLoadModule('/src/pages/Learn.jsx');
+  const render = (url) => renderToString(React.createElement(AuthContext.Provider, { value: { user: null, isAuthenticated: false } }, React.createElement(MemoryRouter, { initialEntries: [url] }, React.createElement(Learn))));
+  const home = render('/learn');
+  assert(home.includes('보유 비중 비교하기') && home.includes('문장 속 개념 찾기'));
+  assert(home.includes('코스를 먼저 듣지 않아도'));
+  assert(!home.includes('용어 카드'));
+  assert(render('/learn?tab=glossary').includes('투자 용어사전'));
+  assert(render('/learn?tab=courses&lesson=unknown').includes('수업을 찾을 수 없어요'));
+});
+
+test('every lesson practice renders and completion stays gated until both questions are attempted', async () => {
+  const { default: Courses } = await server.ssrLoadModule('/src/components/learn/CourseLessons.jsx');
+  const { LESSONS } = await server.ssrLoadModule('/src/constants/learningContent.js');
+  const { getLearningStore } = await server.ssrLoadModule('/src/utils/learningStore.js');
+  const scope = 'lesson-render-test'; const store = getLearningStore(scope);
+  for (const lesson of LESSONS) {
+    store.write(`lesson:${lesson.id}`, { step: 1, completed: false, updatedAt: '' });
+    const markup = renderToString(React.createElement(MemoryRouter, null, React.createElement(Courses, { scope, lessonId: lesson.id })));
+    assert(markup.includes(lesson.title), lesson.id);
+    assert(markup.includes('교육용 가상 데이터'), lesson.id);
+  }
+  store.write('lesson:A1', { step: 3, completed: false, updatedAt: '' });
+  const gated = renderToString(React.createElement(MemoryRouter, null, React.createElement(Courses, { scope, lessonId: 'A1' })));
+  assert(gated.includes('확인 문제 2개에 답하면'));
+  assert(gated.includes('disabled=""'));
+});
+
+test('local notebook displays original and revisions without leaking another account or injecting HTML', async () => {
+  const { default: Notebook } = await server.ssrLoadModule('/src/components/learn/DecisionNotebook.jsx');
+  const { getLearningStore } = await server.ssrLoadModule('/src/utils/learningStore.js');
+  getLearningStore('account-a').write('plan:X', { reason: '<script>secret</script>', evidence: '', uncertainty: '', condition: '', createdAt: '2026-09-15T00:00:00Z', revisions: [{ choice: '계획 수정', reason: '새 정보 확인', createdAt: '2026-09-15T01:00:00Z' }] });
+  const a = renderToString(React.createElement(Notebook, { scope: 'account-a', symbol: 'X' }));
+  const b = renderToString(React.createElement(Notebook, { scope: 'account-b', symbol: 'X' }));
+  assert(a.includes('&lt;script&gt;secret&lt;/script&gt;'));
+  assert(a.includes('새 정보 확인'));
+  assert(!b.includes('secret'));
+  assert(!a.includes('type="submit"'));
 });
