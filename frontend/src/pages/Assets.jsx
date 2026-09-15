@@ -9,7 +9,7 @@ import { fetchValuedPortfolio } from '../api/data';
 import { numberOrNull, portfolioTotals, quotePrice } from '../api/normalize';
 import AccountPicker from '../components/common/AccountPicker';
 import RemoteState from '../components/common/RemoteState';
-import HoldingLearning from '../components/learn/HoldingLearning';
+import { LearningCard } from '../components/learn/LearningUI';
 
 /** 기존 총자산·개인 지표·내 투자·보유종목 배치에 실제 조회 결과를 표시합니다. */
 export default function Assets() {
@@ -130,6 +130,7 @@ export default function Assets() {
         </p>
       </section>
 
+
       {/* ── 보유종목 ────────────────────────────────────────────── */}
       <section className="pb-8">
         <h2 className="flex items-center text-lg font-bold text-gray-700">
@@ -151,9 +152,9 @@ export default function Assets() {
           </Link>
         </div>}
         </RemoteState>
-        {!resource.loading && !resource.error && <HoldingLearning holdings={resource.data?.holdings} />}
         {resource.data && <div className="mt-3 text-xs leading-relaxed text-gray-400"><p>조회 완료: {new Date(resource.data.fetchedAt).toLocaleString('ko-KR')} · 종목별 조회 시세와 평균단가 기준 참고 평가액입니다. 시세 누락 시 합계를 표시하지 않습니다.</p><button onClick={resource.reload} className="mt-2 underline">새로고침</button></div>}
       </section>
+      <LearningCard title="손실/이익 발생 시 관련 개념 학습 (현재 미구현)"><p className="text-sm text-gray-500">보유 종목의 손익과 연결된 개념을 살펴보는 기능을 준비하고 있습니다.</p></LearningCard>
     </div>
   );
 }

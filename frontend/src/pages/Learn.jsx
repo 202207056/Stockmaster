@@ -1,16 +1,17 @@
 import { Link, useSearchParams } from 'react-router-dom';
 import useAuth from '../hooks/useAuth';
 import useLearning from '../hooks/useLearning';
-import { learningScope, EMPTY_ANSWER } from '../utils/learning';
-import { CONTEXT_QUESTIONS, LESSONS } from '../constants/learningContent';
-import AllocationPractice from '../components/learn/AllocationPractice';
+import { learningScope } from '../utils/learning';
+import { CONTEXT_QUESTIONS } from '../constants/learningContent';
+
 import ContextQuestion from '../components/learn/ContextQuestion';
 import CourseLessons from '../components/learn/CourseLessons';
 import GlossaryBrowser from '../components/learn/GlossaryBrowser';
-import TradeScenario from '../components/learn/TradeScenario';
+import AllocationPractice from '../components/learn/AllocationPractice';
+
 import { LearningButton, LearningCard, StorageNotice } from '../components/learn/LearningUI';
 
-const tabs = [['home', '추천 활동'], ['practice', '짧은 실습·퀴즈'], ['review', '거래 복기'], ['courses', '코스']];
+const tabs = [['guide', '기본 투자 가이드'], ['courses', '투자 기초 과정'], ['allocation', '투자 비중에 따른 손익 변화'], ['price', '내 주식은 왜 올랐을까/내렸을까?']];
 
 export default function Learn() {
   const { user, isAuthenticated } = useAuth();
@@ -20,26 +21,21 @@ export default function Learn() {
 
 function LearningHub({ scope }) {
   const [params] = useSearchParams();
-  const requested = params.get('tab') || 'home';
-  const tab = [...tabs.map(([id]) => id), 'glossary'].includes(requested) ? requested : 'home';
+  const requested = params.get('tab') || 'courses';
+  const tab = [...tabs.map(([id]) => id), 'glossary'].includes(requested) ? requested : 'courses';
   const { store, state } = useLearning(scope);
-  const pending = LESSONS.filter((lesson) => {
-    const progress = store.read(`lesson:${lesson.id}`, { step: 0, completed: false });
-    return progress.step > 0 && !progress.completed;
-  });
   return <div className="flex flex-col gap-6">
-    <header className="flex flex-wrap items-start justify-between gap-3 border-b border-gray-200 pb-4"><div><h1 className="text-xl font-extrabold text-gray-900">학습</h1><p className="mt-1 text-sm text-gray-500">궁금한 순간에 실험하고, 내 판단을 돌아보세요.</p></div><Link to="/learn?tab=glossary" className="text-sm text-gray-500 underline">도움말·용어 검색</Link></header>
-    <nav aria-label="학습 콘텐츠" className="flex flex-wrap gap-2">{tabs.map(([id, label]) => <Link key={id} to={`/learn?tab=${id}`} aria-current={tab === id ? 'page' : undefined} className={`rounded-lg border px-4 py-2 text-sm font-bold ${tab === id ? 'border-brand-600 bg-brand-600 text-white' : 'border-gray-200 text-gray-600 hover:bg-gray-50'}`}>{label}</Link>)}</nav>
-    {(tab === 'home' || tab === 'practice') && <>
-      <div><h2 className="text-lg font-bold text-gray-800">이런 방식으로 이해를 돕습니다</h2><p className="mt-1 text-sm text-gray-500">코스를 먼저 듣지 않아도 바로 해볼 수 있어요.</p></div>
-      <div className="grid items-start gap-4 lg:grid-cols-2"><LearningCard title="보유 비중 비교하기"><AllocationPractice /></LearningCard><LearningCard title="문장 속 개념 찾기"><ContextPractice scope={scope} /></LearningCard></div>
-      {tab === 'home' && <div className="grid gap-4 sm:grid-cols-2"><LearningCard title="매수부터 복기까지 가상으로"><p className="mb-4 text-sm text-gray-500">매수 근거를 남기고, 보유 중 계획과 매도 이유를 연결해 보세요.</p><Link className="text-sm font-bold text-brand-700" to="/learn?tab=review">{state.records.scenario ? '가상 거래 이어하기' : '가상 거래 시작하기'} →</Link></LearningCard><LearningCard title={pending.length ? '이어서 살펴볼 설명' : '설명이 더 필요할 때'}><p className="mb-4 text-sm text-gray-500">{pending[0]?.title || '주문·손익·뉴스·판단 과정을 상황별 코스에서 살펴보세요.'}</p><Link className="text-sm font-bold text-brand-700" to={pending.length ? `/learn?tab=courses&lesson=${pending[0].id}` : '/learn?tab=courses'}>{pending.length ? '이어보기' : '선택형 코스 보기'} →</Link></LearningCard></div>}
-      {tab === 'practice' && <ReviewQuestions scope={scope} />}
-    </>}
-    {tab === 'courses' && <CourseLessons scope={scope} lessonId={params.get('lesson')} />}
-    {tab === 'review' && <><LearningCard title="가상 거래 · 판단과 결과 돌아보기"><TradeScenario scope={scope} /></LearningCard><LearningCard title="내 모의투자 기록"><p className="text-sm leading-relaxed text-gray-500">실제 모의투자에서는 트레이딩의 판단 기록과 주문내역의 돌아보기를 사용할 수 있습니다. 기록은 해당 사용자·계좌의 브라우저 저장이며, 거래별 손익 타임라인의 서버 연결은 준비 중입니다.</p><Link to="/trading" className="mt-3 inline-block text-sm text-brand-700 underline">트레이딩에서 내 주문 확인</Link></LearningCard></>}
+    <header className="flex flex-wrap items-start justify-between gap-3 border-b border-gray-200 pb-4"><div><h1 className="text-xl font-extrabold text-gray-900">학습</h1><p className="mt-1 text-sm text-gray-500">투자 기초부터 판단과 복기까지, 단계별로 이해하고 적용해 보세요.</p></div><Link to="/learn?tab=glossary" className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-bold text-gray-600 hover:bg-gray-50">용어집 열기</Link></header>
+    <div className="grid min-w-0 items-start gap-6 md:grid-cols-[220px_minmax(0,1fr)]">
+    <nav aria-label="학습 콘텐츠" className="divide-y divide-gray-200 border-y border-gray-200">{tabs.map(([id, label]) => <Link key={id} to={`/learn?tab=${id}`} aria-current={tab === id ? 'page' : undefined} className={`block border-l-2 px-4 py-5 text-sm leading-relaxed ${tab === id ? 'border-brand-600 bg-brand-50 font-bold text-brand-700' : 'border-transparent text-gray-600 hover:bg-gray-50'}`}>{label}</Link>)}</nav>
+    <div className="flex min-w-0 flex-col gap-6">
+    {tab === 'guide' && <LearningCard title="기본 투자 가이드"><p className="mb-4 text-sm text-gray-500">처음 이용한다면 아래 순서로 화면과 숫자를 확인해 보세요. 각 항목은 필요한 설명으로 이어집니다.</p><ol className="divide-y divide-gray-100 text-sm">{[['A1', '1. 계좌 읽기', '현금·주식 평가액·총자산을 구분합니다.'], ['A2', '2. 주문 상태 확인하기', '주문 접수와 실제 체결을 구분합니다.'], ['B1', '3. 손익 읽기', '아직 보유 중인 평가손익의 의미를 확인합니다.'], ['E1', '4. 판단 근거 남기기', '확인한 사실과 불확실한 점, 다시 확인할 조건을 적습니다.']].map(([id, title, description]) => <li key={id} className="py-4"><Link to={`/learn?tab=courses&lesson=${id}`} className="font-bold text-brand-700 underline">{title}</Link><p className="mt-2 text-gray-500">{description}</p></li>)}</ol></LearningCard>}
+    {tab === 'allocation' && <LearningCard title="투자 비중에 따른 손익 변화"><p className="mb-4 text-sm text-gray-500">같은 주가 변화도 투자 비중에 따라 계좌에 미치는 영향이 달라집니다. 가상 계좌를 비교하며 확인해 보세요.</p><AllocationPractice /><Link to="/learn?tab=courses&lesson=C1" className="mt-4 inline-block text-sm text-brand-700 underline">관련 수업: 투자 비중 이해하기</Link></LearningCard>}
+    {tab === 'price' && <LearningCard title="내 주식은 왜 올랐을까/내렸을까?"><p className="mb-4 text-sm text-gray-500">주가가 움직였다는 사실과 그 이유에 대한 해석을 구분하는 학습입니다. 내 보유 종목의 상승·하락 원인을 자동 분석하는 기능은 아직 제공하지 않습니다.</p><ol className="list-inside list-decimal space-y-3 text-sm text-gray-700"><li>언제부터 언제까지 가격이 변했는지 확인합니다.</li><li>같은 기간의 공시·실적·시장 변화를 확인합니다.</li><li>확인된 사실과 추측을 나누고, 근거가 없으면 원인을 단정하지 않습니다.</li></ol><div className="mt-5 flex flex-col gap-3 text-sm"><Link to="/learn?tab=courses&lesson=D1" className="text-brand-700 underline">좋은 뉴스면 가격도 오를까?</Link><Link to="/learn?tab=courses&lesson=D2" className="text-brand-700 underline">같은 실적, 왜 다른 반응일까?</Link></div></LearningCard>}
+    {tab === 'courses' && <><CourseLessons scope={scope} lessonId={params.get('lesson')} />{!params.get('lesson') && <details className="rounded-xl border border-gray-200 p-4"><summary className="cursor-pointer text-sm font-bold text-gray-700">잠깐 퀴즈 · 문장 속 개념 찾기</summary><div className="mt-4 space-y-4"><p className="text-xs text-gray-500">생각날 때 한 문장씩. 뉴스 문맥에서 개념을 구분하는 선택 활동이며 과정 진도에는 포함되지 않습니다.</p><ContextPractice scope={scope} /></div></details>}</>}
     {tab === 'glossary' && <GlossaryBrowser />}
     <details className="rounded-lg border border-gray-200 p-3 text-xs text-gray-500"><summary className="cursor-pointer">이 기기의 학습 기록 관리</summary><StorageNotice state={state} /><p className="my-3">현재 {scope === 'guest' ? '비로그인' : '사용자'}의 수업·퀴즈·가상 거래 기록을 지웁니다. 실제 모의투자 계좌와 주문 기록에는 영향을 주지 않습니다.</p><LearningButton secondary onClick={() => store.clear()}>이 학습 기록 삭제</LearningButton></details>
+    </div></div>
   </div>;
 }
 
@@ -49,11 +45,4 @@ function ContextPractice({ scope }) {
   const index = Number.isInteger(raw) && raw >= 0 && raw < CONTEXT_QUESTIONS.length ? raw : 0;
   const choose = (next) => { const p = new URLSearchParams(params); p.set('q', String(next)); setParams(p); };
   return <div className="flex flex-col gap-4"><p className="text-xs text-gray-500">가상 문장 · {index + 1} / {CONTEXT_QUESTIONS.length}</p><ContextQuestion key={CONTEXT_QUESTIONS[index].id} question={CONTEXT_QUESTIONS[index]} scope={scope} /><div className="flex gap-2"><LearningButton secondary disabled={index === 0} onClick={() => choose(index - 1)}>이전 문장</LearningButton><LearningButton secondary onClick={() => choose((index + 1) % CONTEXT_QUESTIONS.length)}>{index === CONTEXT_QUESTIONS.length - 1 ? '첫 문장' : '다음 문장'}</LearningButton></div></div>;
-}
-
-function ReviewQuestions({ scope }) {
-  const { store } = useLearning(scope);
-  const questions = [...CONTEXT_QUESTIONS, ...LESSONS.flatMap((lesson) => lesson.questions)];
-  const wrong = questions.filter((question) => { const answer = store.read(`question:${question.id}`, EMPTY_ANSWER); return answer.answered && !answer.correct; });
-  return <LearningCard title="다시 확인할 상황">{wrong.length ? <div className="space-y-6">{wrong.map((question) => <ContextQuestion key={question.id} question={question} scope={scope} />)}</div> : <p className="text-sm text-gray-500">다시 확인할 문제가 아직 없어요. 문장 퀴즈나 선택형 코스에서 궁금한 상황을 살펴보세요.</p>}</LearningCard>;
 }

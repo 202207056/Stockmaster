@@ -17,6 +17,7 @@ import StockCoach from '../components/common/StockCoach';
 import HelpIcon from '../components/learn/HelpIcon';
 import TradingLearning from '../components/learn/TradingLearning';
 import OrderReflection from '../components/learn/OrderReflection';
+import OrderDialog from '../components/common/OrderDialog';
 import { learningScope } from '../utils/learning';
 
 export default function Trading() {
@@ -68,15 +69,16 @@ function StockPanel({ code }) {
   const [error, setError] = useState(null);
   const [message, setMessage] = useState('');
   const [uncertain, setUncertain] = useState(false);
+  const [pendingOrder, setPendingOrder] = useState(null);
+  const [orderResult, setOrderResult] = useState(null);
   const price = quotePrice(quote.data);
   const qty = Number(quantity);
   const validQuantity = Number.isSafeInteger(qty) && qty > 0 && qty <= 1_000_000;
   const total = price !== null && validQuantity && Number.isSafeInteger(price * qty) ? price * qty : null;
-  const place = async (event) => {
+  const prepare = async (event) => {
     event.preventDefault();
     if (submitting.current || !ENABLE_ORDER_SUBMISSION || !accountId || !code || !validQuantity || uncertain) return;
     submitting.current = true; setBusy(true); setError(null); setMessage('');
-    let sent = false;
     const token = getToken();
     try {
       const latest = quotePrice(await fetchPrice(code));
@@ -84,8 +86,21 @@ function StockPanel({ code }) {
       if (latest === null) throw new Error('현재 시세를 확인할 수 없어 주문하지 않았습니다.');
       if (!Number.isSafeInteger(latest * qty)) throw new Error('주문 금액이 허용 범위를 넘었습니다.');
       if (kind === '매수' && numberOrNull(account?.withdrawable_cash) !== null && latest * qty > Number(account.withdrawable_cash)) throw new Error('조회된 주문가능금액이 부족합니다.');
+      setOrderResult(null);
+      setPendingOrder({ accountId, accountName: account?.account_name, accountNumber: account?.account_number, code, name: detail.data?.name || code, kind, quantity: qty, price: latest, token });
+    } catch (err) { setError(err); }
+    finally { submitting.current = false; setBusy(false); }
+  };
+  const place = async () => {
+    if (submitting.current || !pendingOrder || orderResult || uncertain || !ENABLE_ORDER_SUBMISSION) return;
+    submitting.current = true; setBusy(true); setError(null); setMessage('');
+    let sent = false;
+    try {
+      if (pendingOrder.token !== getToken() || pendingOrder.accountId !== accountId) throw new Error('계좌가 바뀌어 주문을 중단했습니다. 창을 닫고 주문 정보를 다시 확인해 주세요.');
       sent = true;
-      const result = await submitOrder({ account_id: accountId, symbol_code: code, order_type: kind, quantity: qty, price: latest });
+      const result = await submitOrder({ account_id: pendingOrder.accountId, symbol_code: pendingOrder.code, order_type: pendingOrder.kind, quantity: pendingOrder.quantity, price: pendingOrder.price });
+      if (!result?.order_id || result.status !== '체결' || !quotePrice({ current_price: result.price }) || !Number.isSafeInteger(Number(result.quantity)) || Number(result.quantity) <= 0) throw new Error('주문 응답을 확인할 수 없습니다. 주문내역을 확인해 주세요.');
+      setOrderResult(result);
       setMessage(`주문 #${result.order_id} · ${result.status} · ${result.quantity}주 · ${won(result.price)}`);
       window.dispatchEvent(new Event('orders:changed'));
       try { await refresh(); } catch { setMessage((value) => `${value} / 계좌 갱신에 실패했습니다. 자산 화면에서 다시 조회해 주세요.`); }
@@ -109,7 +124,7 @@ function StockPanel({ code }) {
     <p className="mt-3 text-xs text-gray-500">제공된 일봉만 표시합니다. 시세는 자동 갱신되지 않으며 기준시각을 제공받지 못해 지연 여부를 확인할 수 없습니다.</p>
   </section><section className="rounded-xl border border-gray-200 p-4 lg:col-span-1">
     <h2 className="mb-3 text-sm font-bold text-gray-700">주문</h2>
-    {isAuthenticated ? <form onSubmit={place} className="flex flex-col gap-3">
+    {isAuthenticated ? <form onSubmit={prepare} className="flex flex-col gap-3">
       <AccountPicker />
       <fieldset disabled={busy || uncertain} className="flex flex-wrap gap-3"><legend className="mb-2 font-bold">모의 주문</legend><label className="text-sm">구분<select value={kind} onChange={(event) => setKind(event.target.value)} className="ml-2 rounded border border-gray-300 px-3 py-2"><option>매수</option><option>매도</option></select></label><label className="text-sm">수량<input type="number" min="1" max="1000000" step="1" required value={quantity} onChange={(event) => setQuantity(event.target.value)} className="ml-2 w-28 rounded border border-gray-300 px-3 py-2" /></label></fieldset>
       <p className="text-sm text-gray-600">조회 가격 기준 예상 금액: {total === null ? '—' : won(total)} · 실제 체결가는 서버가 주문 처리 시 조회한 현재가로 결정되어 예상 금액과 다를 수 있어요.</p>
@@ -118,7 +133,7 @@ function StockPanel({ code }) {
       <InlineError error={error} />{message && <p role="status" className="text-sm text-gray-700">{message} <Link to="/assets" className="underline">내 자산 보기</Link></p>}
     </form> : <p className="text-sm text-gray-400">로그인 후 주문 정보를 확인할 수 있어요.</p>}
     <TradingLearning symbol={code} side={kind} quantity={qty} price={price} cash={account?.withdrawable_cash} busy={busy || uncertain} />
-  </section></>;
+  </section>{pendingOrder && <OrderDialog order={pendingOrder} result={orderResult} busy={busy} uncertain={uncertain} error={error} message={message} onConfirm={place} onClose={() => { if (!busy) setPendingOrder(null); }} />}</>;
 }
 
 function OrderHistory() {

@@ -154,33 +154,78 @@ test('favorites remain separate for guests and different users', async () => {
   assert.deepEqual(favorites.getFavorites(), ['GUEST']);
 });
 
-test('learning home prioritizes short activities and retains the glossary as optional help', async () => {
+test('learning home prioritizes curriculum with a secondary quiz and optional glossary', async () => {
   const { AuthContext } = await server.ssrLoadModule('/src/contexts/auth-context.js');
   const { default: Learn } = await server.ssrLoadModule('/src/pages/Learn.jsx');
   const render = (url) => renderToString(React.createElement(AuthContext.Provider, { value: { user: null, isAuthenticated: false } }, React.createElement(MemoryRouter, { initialEntries: [url] }, React.createElement(Learn))));
   const home = render('/learn');
-  assert(home.includes('보유 비중 비교하기') && home.includes('문장 속 개념 찾기'));
-  assert(home.includes('코스를 먼저 듣지 않아도'));
+  assert(!home.includes('보유 비중 비교하기') && home.includes('문장 속 개념 찾기'));
+  assert(home.indexOf('투자 기초 과정') < home.indexOf('문장 속 개념 찾기'));
+  assert(home.includes('권장 순서:'));
   assert(!home.includes('용어 카드'));
   assert(render('/learn?tab=glossary').includes('투자 용어사전'));
   assert(render('/learn?tab=courses&lesson=unknown').includes('수업을 찾을 수 없어요'));
+  assert(home.includes('기본 투자 가이드') && home.includes('내 주식은 왜 올랐을까/내렸을까?'));
+  assert(render('/learn?tab=allocation').includes('두 계좌의 총자산 각각 100만원'));
+  assert(render('/learn?tab=price').includes('자동 분석하는 기능은 아직 제공하지 않습니다'));
 });
 
-test('every lesson practice renders and completion stays gated until both questions are attempted', async () => {
+test('every lesson opens with a sourced explanation before practice, including saved progress', async () => {
   const { default: Courses } = await server.ssrLoadModule('/src/components/learn/CourseLessons.jsx');
   const { LESSONS } = await server.ssrLoadModule('/src/constants/learningContent.js');
+  const { LESSON_EXPLANATIONS } = await server.ssrLoadModule('/src/constants/lessonExplanations.js');
+  const { default: Practice } = await server.ssrLoadModule('/src/components/learn/InteractivePractice.jsx');
   const { getLearningStore } = await server.ssrLoadModule('/src/utils/learningStore.js');
   const scope = 'lesson-render-test'; const store = getLearningStore(scope);
   for (const lesson of LESSONS) {
     store.write(`lesson:${lesson.id}`, { step: 1, completed: false, updatedAt: '' });
     const markup = renderToString(React.createElement(MemoryRouter, null, React.createElement(Courses, { scope, lessonId: lesson.id })));
     assert(markup.includes(lesson.title), lesson.id);
-    assert(markup.includes('교육용 가상 데이터'), lesson.id);
+    assert(markup.includes(LESSON_EXPLANATIONS[lesson.id].answer), lesson.id);
+    assert(markup.includes('참고 자료') && markup.includes('직접 해보며 이해하기'), lesson.id);
+    assert(!markup.includes('교육용 가상 데이터'), lesson.id);
+    const practice = renderToString(React.createElement(Practice, { type: lesson.activity }));
+    assert(practice.includes('교육용 가상 데이터'), lesson.id);
   }
   store.write('lesson:A1', { step: 3, completed: false, updatedAt: '' });
   const gated = renderToString(React.createElement(MemoryRouter, null, React.createElement(Courses, { scope, lessonId: 'A1' })));
-  assert(gated.includes('확인 문제 2개에 답하면'));
-  assert(gated.includes('disabled=""'));
+  assert(gated.includes(LESSON_EXPLANATIONS.A1.answer));
+  assert(!gated.includes('학습 과정 완료로 표시'));
+});
+
+test('order dialog distinguishes estimates, confirmed fills and uncertain responses', async () => {
+  const { default: Dialog } = await server.ssrLoadModule('/src/components/common/OrderDialog.jsx');
+  const order = { accountId: 7, accountName: '연습 계좌', code: '005930', name: '삼성전자', kind: '매수', quantity: 2, price: 10000 };
+  const render = (props = {}) => renderToString(React.createElement(MemoryRouter, null, React.createElement(Dialog, { order, ...props })));
+  const confirm = render();
+  for (const label of ['매수 주문확인', '계좌번호', '모의 계좌 ID 7', '매매구분', '미구현', '삼성전자', '2주', '10,000', '20,000', '매수주문']) assert(confirm.includes(label), label);
+  assert(!confirm.includes('주문 완료!'));
+  const completed = render({ result: { order_id: 1, status: '체결', quantity: 2, price: 11000 } });
+  for (const label of ['주문 완료!', '11,000', '22,000', '이 주식 관련 뉴스 보기', '관련 개념 살펴보기', 'lesson=A1']) assert(completed.includes(label), label);
+  assert(!completed.includes('주문가격 (예상)'));
+  const uncertain = render({ uncertain: true });
+  assert(uncertain.includes('주문 결과 확인 필요'));
+  assert(!uncertain.includes('>매수주문<'));
+  assert(!uncertain.includes('주문 완료!'));
+});
+
+test('assets show holdings before the future learning notice and the scenario stays in buy assistance', async () => {
+  const { AuthContext } = await server.ssrLoadModule('/src/contexts/auth-context.js');
+  const { default: Assets } = await server.ssrLoadModule('/src/pages/Assets.jsx');
+  const { default: TradingLearning } = await server.ssrLoadModule('/src/components/learn/TradingLearning.jsx');
+  const value = { user: { user_id: 'placement-test' }, isAuthenticated: true, accountId: 1, accounts: [] };
+  const render = (component) => renderToString(React.createElement(AuthContext.Provider, { value }, React.createElement(MemoryRouter, null, component)));
+  const assets = render(React.createElement(Assets));
+  assert(!assets.includes('투자 비중에 따른 손익 변화'));
+  assert(!assets.includes('내 손익을 이해하는 기초'));
+  assert(assets.includes('손실/이익 발생 시 관련 개념 학습 (현재 미구현)'));
+  assert(assets.indexOf('보유종목') < assets.indexOf('손실/이익 발생 시 관련 개념 학습'));
+  const props = { symbol: '005930', quantity: 2, price: 10000, cash: 100000, busy: false };
+  const buy = render(React.createElement(TradingLearning, { ...props, side: '매수' }));
+  const sell = render(React.createElement(TradingLearning, { ...props, side: '매도' }));
+  assert(buy.includes('매수 전 판단 점검') && buy.includes('가상 사례로 매수 이후까지 확인하기'));
+  assert(!sell.includes('가상 사례로 매수 이후까지 확인하기'));
+  assert(!buy.includes('type="submit"'));
 });
 
 test('local notebook displays original and revisions without leaking another account or injecting HTML', async () => {
