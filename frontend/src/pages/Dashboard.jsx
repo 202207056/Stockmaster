@@ -17,11 +17,11 @@ import { numberOrNull, safeExternalUrl } from '../api/normalize';
 export default function Dashboard() {
   const { user, isAuthenticated } = useAuth();
   const [favorites, setFavorites] = useState(getFavorites);
-  const news = useRemote(useCallback((signal) => fetchNews(signal), []), isAuthenticated);
+  const news = useRemote(useCallback((signal) => fetchNews(signal), []));
   const posts = useRemote(useCallback((signal) => fetchPosts(1, signal, 4), []), isAuthenticated);
-  const amount = useRemote(useCallback((signal) => fetchRanking('amount', signal), []), isAuthenticated);
-  const change = useRemote(useCallback((signal) => fetchRanking('change', signal), []), isAuthenticated);
-  const volume = useRemote(useCallback((signal) => fetchRanking('volume', signal), []), isAuthenticated);
+  const amount = useRemote(useCallback((signal) => fetchRanking('amount', signal), []));
+  const change = useRemote(useCallback((signal) => fetchRanking('change', signal), []));
+  const volume = useRemote(useCallback((signal) => fetchRanking('volume', signal), []));
   const rankings = [
     { key: 'amount', title: '거래대금 상위', hint: '오늘 돈이 가장 많이 몰린 종목', resource: amount },
     { key: 'change', title: '급상승', hint: '어제보다 많이 오른 종목', resource: change },
@@ -69,7 +69,7 @@ export default function Dashboard() {
                 <h3 className="text-sm font-bold text-gray-700">{col.title}</h3>
                 <p className="text-xs text-gray-400">{col.hint}</p>
               </div>
-              <RemoteState resource={col.resource} authenticated={isAuthenticated} empty={!col.resource.data?.length}>
+              <RemoteState resource={col.resource} requiresAuth={false} empty={!col.resource.data?.length}>
               <ol className="border-t border-gray-400 pt-1">
                 {col.resource.data?.slice(0, 5).map((item, index) => (
                   <li
@@ -116,7 +116,7 @@ export default function Dashboard() {
         {/* 뉴스 */}
         <section className="lg:col-span-2">
           <SectionTitle>오늘의 뉴스</SectionTitle>
-          <RemoteState resource={news} authenticated={isAuthenticated} empty={!news.data?.length}>
+          <RemoteState resource={news} requiresAuth={false} empty={!news.data?.length}>
           <ul className="flex flex-col gap-5 rounded-xl border border-gray-100 bg-gray-50 p-6">
             {news.data?.slice(0, 3).map((n, index) => (
               <li key={`${n.url}-${index}`} className="flex gap-5">
