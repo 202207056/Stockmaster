@@ -1,11 +1,10 @@
 import { useCallback, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { SURVEY, STYLES, calcStyle, isComplete, totalScore, toAnswerPayload } from '../constants/survey';
+import { SURVEY, STYLES, isComplete, toAnswerPayload } from '../constants/survey';
 import HelpIcon from '../components/learn/HelpIcon';
 import useAuth from '../hooks/useAuth';
 import useRemote from '../hooks/useRemote';
 import { fetchSurvey, saveSurvey } from '../api/data';
-import { updateInvestmentStyle } from '../api/auth';
 import { getToken } from '../api/client';
 import RemoteState from '../components/common/RemoteState';
 import { InlineError } from '../components/common/ErrorState';
@@ -28,8 +27,7 @@ import { InlineError } from '../components/common/ErrorState';
  *    항상 체크된 것처럼 보이는 눈속임이 있었습니다.
  *  - 제출하면 아무것도 저장하지 않고 alert 만 띄운 뒤 대시보드로 넘어갔습니다.
  *
- * 제출 시 답변과 규칙 기반 성향을 각각 서버에 저장합니다.
- * 두 번째 저장 실패는 부분 실패로 안내하고 재제출을 허용합니다.
+ * 제출 API가 답변 저장과 AI 분석을 함께 처리하며 서버 결과를 그대로 표시합니다.
  */
 export default function Survey() {
   const { user, isAuthenticated } = useAuth();
@@ -66,24 +64,17 @@ function SurveyForm({ answers }) {
       return;
     }
 
-    const score = totalScore(selections);
-    const style = calcStyle(score);
-    const payload = { score, code: style.code, label: style.label };
     setBusy(true);
     setError(null);
-    let answersSaved = false;
     const token = getToken();
     try {
-      await saveSurvey(toAnswerPayload(selections));
-      answersSaved = true;
-      if (token !== getToken()) throw new Error('로그인 계정이 바뀌어 성향 저장을 중단했습니다.');
-      await updateInvestmentStyle(style.label);
+      const payload = await saveSurvey(toAnswerPayload(selections));
       if (token !== getToken()) return;
-      setUser((current) => current?.user_id === user.user_id ? { ...current, investment_style: style.label } : current);
+      setUser((current) => current?.user_id === user.user_id ? { ...current, investment_style: payload.investment_style } : current);
       setResult(payload);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err) {
-      setError(answersSaved ? new Error('답변은 저장됐지만 성향 저장에 실패했습니다. 다시 제출해 주세요.') : err);
+      if (token === getToken()) setError(err);
     } finally {
       setBusy(false);
     }
@@ -225,18 +216,18 @@ function SurveyShell({ children }) {
   );
 }
 
-function SurveyResult({ result, onRetry, onDone }) {
-  const style = calcStyle(result.score);
-  const position = STYLES.findIndex((s) => s.code === style.code);
+export function SurveyResult({ result, onRetry, onDone }) {
+  const analysis = result.analysis;
+  const position = STYLES.findIndex((s) => s.label === result.investment_style);
 
   return (
     <div>
       <p className="text-sm font-bold text-brand-600">투자성향 분석 결과</p>
       <h1 className="mt-2 flex items-center text-3xl font-extrabold text-gray-900">
-        {style.label}
+        {result.investment_style}
         <HelpIcon termId="risk_profile" />
       </h1>
-      <p className="mt-3 text-sm leading-relaxed text-gray-600">{style.summary}</p>
+      <p className="mt-3 text-sm leading-relaxed text-gray-600">{analysis.summary}</p>
 
       {/* 총점 대신 성향 스펙트럼에서의 위치를 보여 줍니다 */}
       <div className="mt-8 rounded-xl border border-gray-200 p-6">
@@ -262,22 +253,16 @@ function SurveyResult({ result, onRetry, onDone }) {
           ))}
         </div>
 
-        <div className="mt-6 flex items-center justify-between border-t border-gray-100 pt-4">
-          <span className="flex items-center text-sm text-gray-500">
-            권장 주식 비중
-            <HelpIcon termId="diversification" />
-          </span>
-          <span className="text-sm font-bold text-gray-900">{style.stockRatio}</span>
-        </div>
       </div>
 
       <div className="mt-4 rounded-xl bg-brand-50 p-5">
         <p className="text-sm font-bold text-brand-700">이렇게 시작해 보세요</p>
-        <p className="mt-2 text-sm leading-relaxed text-gray-700">{style.advice}</p>
+        <p className="mt-2 text-sm leading-relaxed text-gray-700">{analysis.advice}</p>
+        {Array.isArray(analysis.learning_roadmap) && <ul className="mt-3 list-inside list-disc text-sm text-gray-700">{analysis.learning_roadmap.filter((topic) => typeof topic === 'string').map((topic, index) => <li key={index}>{topic}</li>)}</ul>}
       </div>
 
       <p className="mt-4 text-xs text-gray-400">
-        답변과 성향을 서버에 저장했어요. 현재 결과는 설문 점수 규칙에 따른 분류이며 AI 분석 결과는 아닙니다.
+        서버가 반환한 분석 결과를 표시합니다. AI 분석을 사용할 수 없는 경우에는 서버의 기본 성향 안내가 표시됩니다.
       </p>
 
       <div className="mt-8 flex flex-wrap gap-3 pb-8">

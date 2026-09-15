@@ -53,19 +53,71 @@ test('current-session 401 clears the token', async () => {
   assert.equal(client.getToken(), null);
 });
 
-test('survey answers and style use the existing two API contracts', async () => {
-  const auth = await server.ssrLoadModule('/src/api/auth.js');
+test('survey uses a single save-and-analyze API and preserves the server result', async () => {
   const requests = [];
-  client.default.defaults.adapter = async (config) => { requests.push({ url: config.url, method: config.method, body: JSON.parse(config.data) }); return { data: { message: 'ok' }, status: 200, headers: {}, config }; };
-  await data.saveSurvey([{ question_number: 1, selected_answer: '테스트 답변' }]);
-  await auth.updateInvestmentStyle('안정형');
+  const response = { investment_style: '적극투자형', analysis: { summary: '서버 요약', advice: '서버 조언', learning_roadmap: ['분산 투자 연습'] } };
+  client.default.defaults.adapter = async (config) => { requests.push({ url: config.url, method: config.method, body: JSON.parse(config.data) }); return { data: response, status: 200, headers: {}, config }; };
+  const result = await data.saveSurvey([{ question_number: 1, selected_answer: '테스트 답변' }]);
+  assert.deepEqual(result, response);
   assert.deepEqual(requests, [
     { url: '/ai/survey', method: 'post', body: { answers: [{ question_number: 1, selected_answer: '테스트 답변' }] } },
-    { url: '/users/survey', method: 'put', body: { investment_style: '안정형' } },
   ]);
+  const { SurveyResult } = await server.ssrLoadModule('/src/pages/Survey.jsx');
+  const markup = renderToString(React.createElement(SurveyResult, { result }));
+  for (const text of ['적극투자형', '서버 요약', '서버 조언', '분산 투자 연습']) assert.ok(markup.includes(text));
+  assert.ok(!markup.includes('권장 주식 비중'));
 });
 
-test('guest routes render login states without mock prices or posts', async () => {
+test('indices allow guests and coaching sends the selected symbol with authentication', async () => {
+  const requests = [];
+  client.default.defaults.adapter = async (config) => {
+    requests.push(config);
+    return { data: config.url === '/market/indices' ? [{ code: 'kospi', value: 2650.12, change_rate: 0.85 }] : { facts: { symbol_code: config.params.symbol }, advice: '연습' }, status: 200, headers: {}, config };
+  };
+  client.clearToken();
+  assert.equal((await data.fetchMarketIndices())[0].value, 2650.12);
+  assert.equal(requests[0].headers.Authorization, undefined);
+  client.setToken('coach-test-token');
+  assert.equal((await data.fetchCoach('000660')).facts.symbol_code, '000660');
+  assert.equal(requests[1].url, '/ai/coach');
+  assert.equal(requests[1].params.symbol, '000660');
+  assert.equal(requests[1].headers.Authorization, 'Bearer coach-test-token');
+  client.clearToken();
+});
+
+test('market cards display actual values and keep unavailable indices pending', async () => {
+  const { MarketCard } = await server.ssrLoadModule('/src/components/dashboard/MarketStrip.jsx');
+  const markup = renderToString(React.createElement(MarketCard, { item: { name: '코스피', value: 2650.12, change_rate: -0.42 } }));
+  assert.ok(markup.includes('2,650.12'));
+  assert.ok(markup.includes('▼ 0.42%'));
+  const missing = renderToString(React.createElement(MarketCard, { item: { name: '나스닥', value: null, change_rate: null } }));
+  assert.ok(missing.includes('준비 중'));
+  assert.ok(!missing.includes('0.00'));
+});
+
+test('public data renders even while session verification is pending or failed', async () => {
+  const { AuthContext } = await server.ssrLoadModule('/src/contexts/auth-context.js');
+  const { default: RemoteState } = await server.ssrLoadModule('/src/components/common/RemoteState.jsx');
+  for (const session of [{ isLoading: false }, { isLoading: true }, { sessionError: new Error('session unavailable') }]) {
+    const value = { user: null, isAuthenticated: false, ...session };
+    const markup = renderToString(React.createElement(AuthContext.Provider, { value },
+      React.createElement(RemoteState, { requiresAuth: false, authenticated: false, resource: { loading: false, error: null } }, 'PUBLIC_QUOTE')));
+    assert.ok(markup.includes('PUBLIC_QUOTE'));
+  }
+});
+
+test('guest trading starts public data loading and retains the order login notice', async () => {
+  const { AuthContext } = await server.ssrLoadModule('/src/contexts/auth-context.js');
+  const { default: Trading } = await server.ssrLoadModule('/src/pages/Trading.jsx');
+  const value = { user: null, isAuthenticated: false, isLoading: false, accounts: [], accountId: null };
+  const markup = renderToString(React.createElement(AuthContext.Provider, { value },
+    React.createElement(MemoryRouter, { initialEntries: ['/trading?code=005930'] }, React.createElement(Trading))));
+  assert.equal((markup.match(/불러오는 중이에요/g) || []).length, 3);
+  assert.ok(markup.includes('로그인'));
+  assert.equal((markup.match(/로그인하면 최신 데이터를/g) || []).length, 1); // Authenticated coaching only.
+});
+
+test('guest routes render public or login states without mock prices or posts', async () => {
   const { AuthContext } = await server.ssrLoadModule('/src/contexts/auth-context.js');
   const value = { user: null, isAuthenticated: false, isLoading: false, accounts: [], accountId: null };
   for (const name of ['Dashboard', 'Trading', 'Assets', 'Community', 'Survey', 'Favorites', 'MyPage']) {

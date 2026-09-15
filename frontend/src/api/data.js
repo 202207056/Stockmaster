@@ -8,6 +8,8 @@ export const fetchPrice = async (code, signal) => requireObject(await get(`/stoc
 export const fetchChart = async (code, signal) => chartRows(await get(`/stocks/${encodeURIComponent(code)}/chart`, { period: 'D' }, signal));
 export const fetchRanking = async (type, signal) => requireArray(await get(`/stocks/ranking/${type}`, { limit: 10 }, signal));
 export const fetchNews = async (signal) => requireArray(await get('/news/market', { limit: 8 }, signal));
+export const fetchMarketIndices = async (signal) => requireArray(await get('/market/indices', undefined, signal));
+export const fetchCoach = async (symbol, signal) => requireObject(await get('/ai/coach', { symbol }, signal));
 export const fetchPosts = async (page, signal, size = 20) => {
   const data = requireObject(await get('/community/posts', { page, size }, signal));
   return { ...data, items: requireArray(data.items) };
@@ -23,7 +25,12 @@ export const fetchPortfolio = async (accountId, signal) => {
   return { ...data, holdings: requireArray(data.holdings) };
 };
 export const fetchSurvey = async (signal) => requireArray(await get('/ai/survey', undefined, signal));
-export const saveSurvey = async (answers) => (await api.post('/ai/survey', { answers })).data;
+export const saveSurvey = async (answers) => {
+  const data = requireObject((await api.post('/ai/survey', { answers })).data);
+  requireObject(data.analysis);
+  if (typeof data.investment_style !== 'string' || !data.investment_style.trim()) throw new Error('서버의 투자성향 분석 결과를 확인할 수 없습니다.');
+  return data;
+};
 
 // Fetch sequentially: one request per holding, no burst polling against the upstream provider.
 export async function fetchValuedPortfolio(accountId, signal) {

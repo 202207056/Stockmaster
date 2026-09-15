@@ -1,12 +1,17 @@
 import { useCallback, useEffect, useRef } from 'react';
-import { ChartLine } from 'lucide-react';
+import useRemote from '../../hooks/useRemote';
+import { fetchMarketIndices } from '../../api/data';
+import { numberOrNull } from '../../api/normalize';
+import { marketValue, rateWithMark, signTextClass, signBgClass, signBorderClass } from '../../utils/format';
+import RemoteState from '../common/RemoteState';
+import { marketChartPoints } from '../../utils/marketChart';
 
-/** 기존 주요 시세 카드와 자동 스크롤·드래그를 유지합니다. 지표 API가 없어 값은 준비 중으로 표시합니다. */
+/** 공개 지수 API를 표시하고 자동 스크롤·드래그를 유지합니다. */
 const STEP_MS = 2500;
 
 export default function MarketStrip() {
-  // Keep the original indicator slots; the backend has no indicator endpoint yet.
-  const items = ['코스피', '코스닥', '나스닥', 'S&P 500', '금', '달러'].map((name) => ({ name }));
+  const resource = useRemote(useCallback((signal) => fetchMarketIndices(signal), []));
+  const items = resource.data ?? [];
 
   const stripRef = useRef(null);
   const pausedRef = useRef(false);
@@ -106,6 +111,7 @@ export default function MarketStrip() {
         주요 시세
       </h2>
 
+      <RemoteState resource={resource} requiresAuth={false} empty={!items.length}>
       <div
         ref={stripRef}
         className="card-strip -mx-1 px-1 py-1"
@@ -126,35 +132,50 @@ export default function MarketStrip() {
           <MarketCard key={`dup-${idx.name}`} item={idx} aria-hidden="true" />
         ))}
       </div>
+      </RemoteState>
     </section>
   );
 }
 
-function MarketCard({ item, ...rest }) {
+export function MarketCard({ item, ...rest }) {
+  const value = numberOrNull(item.value);
+  const change = numberOrNull(item.change_rate);
+  const direction = value === null ? 0 : change ?? 0;
   return (
     <article
-      className="mr-4 flex h-36 w-72 shrink-0 items-center justify-between gap-4 rounded-xl border border-gray-100 bg-gray-50 p-5"
+      className={`mr-4 flex h-36 w-72 shrink-0 items-center justify-between gap-4 rounded-xl border p-5 ${signBgClass(direction)} ${signBorderClass(direction)}`}
       {...rest}
     >
       <div className="flex min-w-0 flex-col justify-between self-stretch">
         <span className="truncate text-sm font-bold text-gray-800">{item.name}</span>
         <div>
-          <div className="tabular text-2xl font-extrabold text-gray-500">
-            —
+          <div className={`tabular text-2xl font-extrabold ${signTextClass(direction)}`}>
+            {value === null ? '—' : marketValue(value)}
           </div>
           <div className="tabular mt-1 text-xs font-medium text-gray-400">
-            준비 중
+            {value === null ? '준비 중' : change === null ? '등락률 정보 없음' : <span className={signTextClass(change)}>{rateWithMark(change)}</span>}
           </div>
         </div>
       </div>
 
-      {/* 추이 그래프가 들어갈 정사각형 자리 */}
-      <div
-        className="pointer-events-none flex aspect-square h-24 w-24 shrink-0 items-center justify-center rounded-lg border border-dashed border-gray-300 bg-white/60"
-        aria-hidden="true"
-      >
-        <ChartLine size={22} strokeWidth={1.5} className="text-gray-300" />
-      </div>
+      <MarketChangeChart name={item.name} change={direction} intraday={item.intraday} />
     </article>
   );
+}
+
+/** Compact one-day chart using actual ten-minute index bars. */
+export function MarketChangeChart({ name, change, intraday }) {
+  const points = marketChartPoints(intraday);
+  if (points.length < 2) return <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-lg bg-white/60 text-[11px] text-gray-400">차트 준비 중</div>;
+  const line = points.map(({ x, y }, index) => `${index ? 'L' : 'M'} ${x} ${y}`).join(' ');
+  const first = points[0];
+  const last = points[points.length - 1];
+  return <div className={`h-24 w-24 shrink-0 rounded-lg bg-white/60 ${signTextClass(change)}`}>
+    <svg viewBox="0 0 96 96" className="h-full w-full" role="img" aria-label={`${name} ${intraday.date ?? ''} 당일 지수 추이`}>
+      <title>당일 09:00–15:30 · 10분 간격 지수</title>
+      <path d={`${line} L ${last.x} 88 L ${first.x} 88 Z`} fill="currentColor" fillOpacity="0.1" />
+      <path d={line} fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx={last.x} cy={last.y} r="3" fill="currentColor" />
+    </svg>
+  </div>;
 }

@@ -12,7 +12,7 @@ import {
   clearFavorites,
 } from '../utils/favorites';
 
-/** 사용자별 브라우저 관심종목과 로그인 후 실제 종목명·시세를 표시합니다. */
+/** 사용자별 브라우저 관심종목과 비로그인으로도 조회 가능한 종목명·시세를 표시합니다. */
 export default function Favorites() {
   const [codes, setCodes] = useState(getFavorites);
 
