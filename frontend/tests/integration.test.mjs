@@ -174,6 +174,7 @@ test('every lesson opens with a sourced explanation before practice, including s
   const { default: Courses } = await server.ssrLoadModule('/src/components/learn/CourseLessons.jsx');
   const { LESSONS } = await server.ssrLoadModule('/src/constants/learningContent.js');
   const { LESSON_EXPLANATIONS } = await server.ssrLoadModule('/src/constants/lessonExplanations.js');
+  const { PRACTICE_GUIDES } = await server.ssrLoadModule('/src/constants/practiceGuides.js');
   const { default: Practice } = await server.ssrLoadModule('/src/components/learn/InteractivePractice.jsx');
   const { getLearningStore } = await server.ssrLoadModule('/src/utils/learningStore.js');
   const scope = 'lesson-render-test'; const store = getLearningStore(scope);
@@ -182,15 +183,38 @@ test('every lesson opens with a sourced explanation before practice, including s
     const markup = renderToString(React.createElement(MemoryRouter, null, React.createElement(Courses, { scope, lessonId: lesson.id })));
     assert(markup.includes(lesson.title), lesson.id);
     assert(markup.includes(LESSON_EXPLANATIONS[lesson.id].answer), lesson.id);
-    assert(markup.includes('참고 자료') && markup.includes('직접 해보며 이해하기'), lesson.id);
+    assert(markup.includes('참고 자료') && markup.includes(PRACTICE_GUIDES[lesson.id].title), lesson.id);
+    assert(!markup.includes('질문의 답'), lesson.id);
     assert(!markup.includes('교육용 가상 데이터'), lesson.id);
-    const practice = renderToString(React.createElement(Practice, { type: lesson.activity }));
+    const practice = renderToString(React.createElement(Practice, { type: lesson.activity, lessonId: lesson.id }));
     assert(practice.includes('교육용 가상 데이터'), lesson.id);
   }
   store.write('lesson:A1', { step: 3, completed: false, updatedAt: '' });
   const gated = renderToString(React.createElement(MemoryRouter, null, React.createElement(Courses, { scope, lessonId: 'A1' })));
   assert(gated.includes(LESSON_EXPLANATIONS.A1.answer));
   assert(!gated.includes('학습 과정 완료로 표시'));
+});
+
+test('guided activities state a learning goal and distinguish lessons sharing the same simulator', async () => {
+  const { default: Guided } = await server.ssrLoadModule('/src/components/learn/GuidedPractice.jsx');
+  const { LESSONS } = await server.ssrLoadModule('/src/constants/learningContent.js');
+  const { PRACTICE_GUIDES } = await server.ssrLoadModule('/src/constants/practiceGuides.js');
+  const rendered = {};
+  for (const lesson of LESSONS) {
+    const markup = renderToString(React.createElement(Guided, { lesson }));
+    rendered[lesson.id] = markup;
+    assert(markup.includes(PRACTICE_GUIDES[lesson.id].goal), lesson.id);
+    assert(markup.includes('이 순서로 확인하세요'), lesson.id);
+    assert(markup.includes('비교한 결과, 어떻게 해석할까요?'), lesson.id);
+  }
+  assert(rendered.B1.includes('실현손익 + 남은 평가손익'));
+  assert(!rendered.B1.includes('여기서 주가가 1,000원 더 하락하면 생기는 추가 손실'));
+  assert(rendered.C2.includes('여기서 주가가 1,000원 더 하락하면 생기는 추가 손실'));
+  assert(rendered.B3.includes('7,000원으로 더 하락하면 추가 손실'));
+  assert(rendered.D2.includes('발표 전 기대를 웃돈 기업은 어디인가요?'));
+  assert(rendered.E1.includes('아직 확인하지 못한 나의 기대'));
+  assert(rendered.E2.includes('달라진 근거와 다음에 확인할 조건'));
+  assert(rendered.E3.includes('결과와 별개로 두 판단의 공통 문제'));
 });
 
 test('order dialog distinguishes estimates, confirmed fills and uncertain responses', async () => {
