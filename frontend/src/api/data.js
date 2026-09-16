@@ -5,7 +5,7 @@ const get = async (path, params, signal) => (await api.get(path, { params, signa
 export const fetchStocks = async (search, signal) => requireArray(await get('/stocks', { search: search || undefined }, signal));
 export const fetchStock = async (code, signal) => requireObject(await get(`/stocks/${encodeURIComponent(code)}`, undefined, signal));
 export const fetchPrice = async (code, signal) => requireObject(await get(`/stocks/${encodeURIComponent(code)}/price`, undefined, signal));
-export const fetchChart = async (code, signal) => chartRows(await get(`/stocks/${encodeURIComponent(code)}/chart`, { period: 'D' }, signal));
+export const fetchChart = async (code, signal, period = 'D') => chartRows(await get(`/stocks/${encodeURIComponent(code)}/chart`, { period }, signal));
 export const fetchRanking = async (type, signal) => requireArray(await get(`/stocks/ranking/${type}`, { limit: 10 }, signal));
 export const fetchNews = async (signal) => requireArray(await get('/news/market', { limit: 8 }, signal));
 export const fetchMarketIndices = async (signal) => requireArray(await get('/market/indices', undefined, signal));

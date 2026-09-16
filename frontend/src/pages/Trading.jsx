@@ -2,7 +2,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import useAuth from '../hooks/useAuth';
 import useRemote from '../hooks/useRemote';
-import { fetchStocks, fetchStock, fetchPrice, fetchChart, fetchOrders, submitOrder } from '../api/data';
+import { fetchStocks, fetchStock, fetchPrice, fetchOrders, submitOrder } from '../api/data';
+import { fetchChartHistory } from '../api/chartHistory';
 import { numberOrNull, quotePrice } from '../api/normalize';
 import { won, rateWithMark } from '../utils/format';
 import { addFavorite, FAVORITES_EVENT, getFavorites } from '../utils/favorites';
@@ -49,8 +50,8 @@ export default function Trading() {
           {stocks.data?.length === 100 && <p className="mt-2 text-xs text-gray-500">최대 100개입니다. 검색어를 입력해 범위를 줄여 주세요.</p>}
         </RemoteState>
       </aside>
-      <StockPanel key={`${user?.user_id ?? 'guest'}:${code}`} code={code} />
-      {code && <StockCoach key={`${user?.user_id ?? 'guest'}:${code}`} code={code} />}
+      <StockPanel key={`chart:${user?.user_id ?? 'guest'}:${code}`} code={code} />
+      {code && <StockCoach key={`coach:${user?.user_id ?? 'guest'}:${code}`} code={code} />}
       {isAuthenticated && <div className="lg:col-span-4"><OrderHistory key={user?.user_id} /></div>}
     </div>
   </div>;
@@ -60,7 +61,11 @@ function StockPanel({ code }) {
   const { isAuthenticated, accountId, account, refresh } = useAuth();
   const detail = useRemote(useCallback((signal) => fetchStock(code, signal), [code]), !!code);
   const quote = useRemote(useCallback((signal) => fetchPrice(code, signal), [code]), !!code);
-  const chart = useRemote(useCallback((signal) => fetchChart(code, signal), [code]), !!code);
+  const [chartType, setChartType] = useState('candle');
+  const [chartPeriod, setChartPeriod] = useState('D');
+  const chart = useRemote(useCallback((signal) => fetchChartHistory(code, chartPeriod, signal), [code, chartPeriod]), !!code);
+  const chartRows = chart.data?.rows;
+  const periodLabel = { D: '1일', W: '1주', M: '3개월', Y: '1년' }[chartPeriod];
   const [favorite, setFavorite] = useState(false);
   const [kind, setKind] = useState('매수');
   const [quantity, setQuantity] = useState('1');
@@ -120,8 +125,14 @@ function StockPanel({ code }) {
     {code && <RemoteState resource={quote} requiresAuth={false}>
       <div className="mb-4 flex flex-wrap items-center gap-3"><p className="text-2xl font-extrabold">{price === null ? '시세 이용 불가' : won(price)}</p><span className="text-sm">{numberOrNull(quote.data?.change_rate) === null ? '—' : rateWithMark(quote.data.change_rate)}</span><button className="text-xs text-gray-500 underline" onClick={quote.reload}>시세 새로고침</button></div>
     </RemoteState>}
-    {code ? <RemoteState resource={chart} requiresAuth={false} empty={!chart.data?.length}><CandleChart rows={chart.data} /></RemoteState> : <div className="flex h-[420px] items-center justify-center rounded-lg border border-dashed border-gray-200"><p className="text-center text-sm leading-relaxed text-gray-400">조회할 종목을 선택해 주세요.</p></div>}
-    <p className="mt-3 text-xs text-gray-500">제공된 일봉만 표시합니다. 시세는 자동 갱신되지 않으며 기준시각을 제공받지 못해 지연 여부를 확인할 수 없습니다.</p>
+    {code && <div className="mb-4 flex flex-wrap items-center gap-3">
+      <label className="text-sm text-gray-600">그래프 종류<select value={chartType} onChange={(event) => setChartType(event.target.value)} className="ml-2 rounded-lg border border-gray-300 bg-white px-3 py-2"><option value="candle">캔들</option><option value="line">꺾은선</option></select></label>
+      <div role="group" aria-label="차트 표시 기간" className="flex gap-1">{Object.entries({ D: '1일', W: '1주', M: '3개월', Y: '1년' }).map(([value, label]) => <button key={value} type="button" aria-pressed={chartPeriod === value} onClick={() => setChartPeriod(value)} className={`rounded-lg px-3 py-2 text-sm font-bold ${chartPeriod === value ? 'bg-brand-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>{label}</button>)}</div>
+    </div>}
+    {code ? <RemoteState resource={chart} requiresAuth={false} empty={!chartRows?.length}><CandleChart key={`${chartPeriod}:${chartType}`} rows={chartRows} type={chartType} periodLabel={chart.data?.displayLabel || periodLabel} /></RemoteState> : <div className="flex h-[420px] items-center justify-center rounded-lg border border-dashed border-gray-200"><p className="text-center text-sm leading-relaxed text-gray-400">조회할 종목을 선택해 주세요.</p></div>}
+    {chart.data && <p className="mt-3 text-xs text-gray-500">{chart.data.displayLabel || periodLabel} · {{ '1m': '1분봉', '5m': '5분봉', '1d': '일봉', '1w': '주봉', '1mo': '월봉' }[chart.data.resolution]} · {chartRows.length}개 가격 데이터</p>}
+    {chart.data?.notice && <p className="mt-2 text-xs text-gray-500">{chart.data.notice}</p>}
+    <p className="mt-3 text-xs text-gray-500">제공된 기간의 데이터만 표시되며, 꺾은선은 각 기간의 종가를 연결합니다. 시세는 자동 갱신되지 않으며 기준시각을 제공받지 못해 지연 여부를 확인할 수 없습니다.</p>
   </section><section className="rounded-xl border border-gray-200 p-4 lg:col-span-1">
     <h2 className="mb-3 text-sm font-bold text-gray-700">주문</h2>
     {isAuthenticated ? <form onSubmit={prepare} className="flex flex-col gap-3">

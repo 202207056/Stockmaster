@@ -11,7 +11,7 @@ import AllocationPractice from '../components/learn/AllocationPractice';
 
 import { LearningButton, LearningCard, StorageNotice } from '../components/learn/LearningUI';
 
-const tabs = [['guide', '기본 투자 가이드'], ['courses', '투자 기초 과정'], ['allocation', '투자 비중에 따른 손익 변화'], ['price', '내 주식은 왜 올랐을까/내렸을까?']];
+const tabs = [['guide', '기본 투자 가이드'], ['courses', '투자 기초 과정'], ['allocation', '투자 비중에 따른 손익 변화'], ['price', '내 주식은 왜 올랐을까/내렸을까?'], ['glossary', '용어집']];
 
 export default function Learn() {
   const { user, isAuthenticated } = useAuth();
@@ -22,7 +22,7 @@ export default function Learn() {
 function LearningHub({ scope }) {
   const [params] = useSearchParams();
   const requested = params.get('tab') || 'courses';
-  const tab = [...tabs.map(([id]) => id), 'glossary'].includes(requested) ? requested : 'courses';
+  const tab = tabs.some(([id]) => id === requested) ? requested : 'courses';
   const { store, state } = useLearning(scope);
   return <div className="flex flex-col gap-6">
     <header className="flex flex-wrap items-start justify-between gap-3 border-b border-gray-200 pb-4"><div><h1 className="text-xl font-extrabold text-gray-900">학습</h1><p className="mt-1 text-sm text-gray-500">투자 기초부터 판단과 복기까지, 단계별로 이해하고 적용해 보세요.</p></div><Link to="/learn?tab=glossary" className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-bold text-gray-600 hover:bg-gray-50">용어집 열기</Link></header>

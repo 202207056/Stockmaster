@@ -135,8 +135,35 @@ test('daily candles render an accessible price table', async () => {
   const { default: Chart } = await server.ssrLoadModule('/src/components/common/CandleChart.jsx');
   const markup = renderToString(React.createElement(Chart, { rows: [{ date: '2026-09-08', open: 100, high: 120, low: 90, close: 110 }] }));
   assert.ok(markup.includes('role="img"'));
-  assert.ok(markup.includes('일별 가격 표 보기'));
+  assert.ok(markup.includes('일<!-- --> 단위 가격 표 보기'));
   assert.ok(markup.includes('110원'));
+});
+
+test('line charts have no dots and explain insufficient observations', async () => {
+  const { default: Chart } = await server.ssrLoadModule('/src/components/common/CandleChart.jsx');
+  const row = { date: '2026', open: 100, high: 120, low: 90, close: 110 };
+  const single = renderToString(React.createElement(Chart, { rows: [row], type: 'line', periodLabel: '년' }));
+  assert.ok(single.includes('년 기간 종가 꺾은선 차트'));
+  assert.ok(!single.includes('<circle'));
+  assert.ok(single.includes('꺾은선을 표시할 데이터가 부족합니다.'));
+  assert.ok(!single.includes('<polyline'));
+  const multiple = renderToString(React.createElement(Chart, { rows: [row, { ...row, date: '2027' }], type: 'line' }));
+  assert.ok(multiple.includes('<polyline'));
+  assert.ok(!multiple.includes('<circle'));
+  assert.ok(!multiple.includes('NaN'));
+  assert.ok(!multiple.includes('<rect'));
+});
+
+test('chart adapter forwards supported periods and defaults to daily', async () => {
+  const periods = [];
+  client.default.defaults.adapter = async (config) => {
+    periods.push(config.params.period);
+    return { data: [], status: 200, headers: {}, config };
+  };
+  await data.fetchChart('TEST');
+  await data.fetchChart('TEST', undefined, 'W');
+  await data.fetchChart('TEST', undefined, 'M');
+  assert.deepEqual(periods, ['D', 'W', 'M']);
 });
 
 test('favorites remain separate for guests and different users', async () => {
