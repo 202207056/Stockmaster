@@ -6,13 +6,14 @@ import { fetchStocks, fetchStock, fetchPrice, fetchOrders, submitOrder } from '.
 import { fetchChartHistory } from '../api/chartHistory';
 import { numberOrNull, quotePrice } from '../api/normalize';
 import { won, rateWithMark } from '../utils/format';
-import { addFavorite, FAVORITES_EVENT, getFavorites } from '../utils/favorites';
+import { toggleFavorite, FAVORITES_EVENT, getFavorites } from '../utils/favorites';
 import RemoteState from '../components/common/RemoteState';
 import AccountPicker from '../components/common/AccountPicker';
 import CandleChart from '../components/common/CandleChart';
 import { InlineError } from '../components/common/ErrorState';
 import { ENABLE_ORDER_SUBMISSION } from '../config/features';
 import { getToken } from '../api/client';
+import FavoriteButton from '../components/common/FavoriteButton';
 import StockQuote from '../components/common/StockQuote';
 import StockCoach from '../components/common/StockCoach';
 import HelpIcon from '../components/learn/HelpIcon';
@@ -50,14 +51,14 @@ export default function Trading() {
           {stocks.data?.length === 100 && <p className="mt-2 text-xs text-gray-500">최대 100개입니다. 검색어를 입력해 범위를 줄여 주세요.</p>}
         </RemoteState>
       </aside>
-      <StockPanel key={`chart:${user?.user_id ?? 'guest'}:${code}`} code={code} />
+      <StockPanel key={`chart:${user?.user_id ?? 'guest'}:${code}`} code={code} favorite={favorites.includes(code)} onFavoriteChange={() => setFavorites(toggleFavorite(code))} />
       {code && <StockCoach key={`coach:${user?.user_id ?? 'guest'}:${code}`} code={code} />}
       {isAuthenticated && <div className="lg:col-span-4"><OrderHistory key={user?.user_id} /></div>}
     </div>
   </div>;
 }
 
-function StockPanel({ code }) {
+function StockPanel({ code, favorite, onFavoriteChange }) {
   const { isAuthenticated, accountId, account, refresh } = useAuth();
   const detail = useRemote(useCallback((signal) => fetchStock(code, signal), [code]), !!code);
   const quote = useRemote(useCallback((signal) => fetchPrice(code, signal), [code]), !!code);
@@ -66,7 +67,6 @@ function StockPanel({ code }) {
   const chart = useRemote(useCallback((signal) => fetchChartHistory(code, chartPeriod, signal), [code, chartPeriod]), !!code);
   const chartRows = chart.data?.rows;
   const periodLabel = { D: '1일', W: '1주', M: '3개월', Y: '1년' }[chartPeriod];
-  const [favorite, setFavorite] = useState(false);
   const [kind, setKind] = useState('매수');
   const [quantity, setQuantity] = useState('1');
   const [busy, setBusy] = useState(false);
@@ -120,7 +120,7 @@ function StockPanel({ code }) {
   };
   return <><section className="rounded-xl border border-gray-200 p-4 lg:col-span-2">
     <h2 className="mb-3 flex items-center text-sm font-bold text-gray-700">차트<HelpIcon termId="candle" /></h2>
-    {code && <div className="mb-5 flex flex-wrap justify-between gap-3"><h3 className="text-lg font-bold">{detail.data?.name || code} <span className="text-sm font-normal text-gray-500">{code}</span></h3><button onClick={() => { addFavorite(code); setFavorite(true); }} className="text-sm font-bold text-brand-700">{favorite ? '관심종목에 담았어요' : '☆ 관심종목 담기'}</button></div>}
+    {code && <div className="mb-5 flex flex-wrap justify-between gap-3"><h3 className="text-lg font-bold">{detail.data?.name || code} <span className="text-sm font-normal text-gray-500">{code}</span></h3><FavoriteButton selected={favorite} onClick={onFavoriteChange} /></div>}
     {detail.error && <InlineError error={detail.error} />}
     {code && <RemoteState resource={quote} requiresAuth={false}>
       <div className="mb-4 flex flex-wrap items-center gap-3"><p className="text-2xl font-extrabold">{price === null ? '시세 이용 불가' : won(price)}</p><span className="text-sm">{numberOrNull(quote.data?.change_rate) === null ? '—' : rateWithMark(quote.data.change_rate)}</span><button className="text-xs text-gray-500 underline" onClick={quote.reload}>시세 새로고침</button></div>

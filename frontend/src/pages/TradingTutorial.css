@@ -1,0 +1,19 @@
+.trading-tutorial .tutorial-panel { border: 1px solid #e5e7eb; border-radius: 12px; padding: 20px; min-width: 0; }
+.trading-tutorial .tutorial-panel > h2 { margin-bottom: 14px; font-size: 14px; font-weight: 700; color: #374151; }
+.tutorial-target { position: relative; border-radius: 9px; }
+.tutorial-anchor { min-width: 0; }
+.tutorial-local-note { position: fixed; z-index: 80; margin: 0; padding: 16px; border: 1px solid #a5b4fc; border-radius: 12px; background: white; box-shadow: 0 8px 28px #312e8126; overflow: auto; overflow-wrap: anywhere; visibility: hidden; }
+.tutorial-target-active { outline: 3px solid #6366f1; outline-offset: 4px; scroll-margin-block: 100px; }
+.tutorial-pointer { position: absolute; right: 8px; bottom: -19px; z-index: 1; display: flex; align-items: center; gap: 3px; pointer-events: none; color: #4338ca; filter: drop-shadow(0 1px 1px white); }
+.tutorial-pointer span { border: 1px solid #c7d2fe; border-radius: 5px; background: white; padding: 2px 5px; font-size: 10px; font-weight: 700; white-space: nowrap; }
+.tutorial-action { border-radius: 8px; background: #4f46e5; padding: 10px 16px; color: white; font-size: 14px; font-weight: 700; }
+.trading-tutorial button:not(:disabled) { cursor: pointer; }
+.trading-tutorial button:disabled { cursor: default; }
+.tutorial-action:disabled { background: #f3f4f6; color: #6b7280; }
+.trading-tutorial :is(button, input, a):focus-visible { outline: 2px solid #312e81; outline-offset: 2px; }
+.tutorial-order-dialog::backdrop { background: transparent; }
+.tutorial-order-dialog { border: 1px solid #c7d2fe; }
+.trading-tutorial progress { appearance: none; border: 0; border-radius: 8px; overflow: hidden; background: #eef2ff; }
+.trading-tutorial progress::-webkit-progress-bar { background: #eef2ff; }
+.trading-tutorial progress::-webkit-progress-value { background: #6366f1; }
+.trading-tutorial progress::-moz-progress-bar { background: #6366f1; }

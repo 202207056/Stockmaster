@@ -9,6 +9,8 @@ import Landing from './pages/Landing';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import Learn from './pages/Learn';
+import TradingTutorial from './pages/TradingTutorial';
+import GuideTutorial from './pages/GuideTutorial';
 import Dashboard from './pages/Dashboard';
 import Trading from './pages/Trading';
 import Assets from './pages/Assets';
@@ -62,6 +64,8 @@ export default function App() {
             <Route path="/signup" element={<Signup />} />
             <Route path="/register" element={<Navigate to="/signup" replace />} />
             <Route path="/learn" element={<Learn />} />
+            <Route path="/learn/trading-tutorial" element={<TradingTutorial />} />
+            <Route path="/learn/guide/:guideId" element={<GuideTutorial />} />
 
             {/* 원래는 로그인 필요 — 현재 REQUIRE_AUTH=false 로 통과 */}
             <Route element={<ProtectedRoute />}>
