@@ -15,7 +15,9 @@ import { ENABLE_ORDER_SUBMISSION } from '../config/features';
 import { getToken } from '../api/client';
 import FavoriteButton from '../components/common/FavoriteButton';
 import StockQuote from '../components/common/StockQuote';
+import StockLogo from '../components/common/StockLogo';
 import StockCoach from '../components/common/StockCoach';
+import StockNewsSummary from '../components/common/StockNewsSummary';
 import HelpIcon from '../components/learn/HelpIcon';
 import TradingLearning from '../components/learn/TradingLearning';
 import OrderReflection from '../components/learn/OrderReflection';
@@ -52,6 +54,7 @@ export default function Trading() {
         </RemoteState>
       </aside>
       <StockPanel key={`chart:${user?.user_id ?? 'guest'}:${code}`} code={code} favorite={favorites.includes(code)} onFavoriteChange={() => setFavorites(toggleFavorite(code))} />
+      {code && <StockNewsSummary key={`news:${user?.user_id ?? 'guest'}:${code}`} code={code} />}
       {code && <StockCoach key={`coach:${user?.user_id ?? 'guest'}:${code}`} code={code} />}
       {isAuthenticated && <div className="lg:col-span-4"><OrderHistory key={user?.user_id} /></div>}
     </div>
@@ -120,7 +123,7 @@ function StockPanel({ code, favorite, onFavoriteChange }) {
   };
   return <><section className="rounded-xl border border-gray-200 p-4 lg:col-span-2">
     <h2 className="mb-3 flex items-center text-sm font-bold text-gray-700">차트<HelpIcon termId="candle" /></h2>
-    {code && <div className="mb-5 flex flex-wrap justify-between gap-3"><h3 className="text-lg font-bold">{detail.data?.name || code} <span className="text-sm font-normal text-gray-500">{code}</span></h3><FavoriteButton selected={favorite} onClick={onFavoriteChange} /></div>}
+    {code && <div className="mb-5 flex flex-wrap justify-between gap-3"><div className="flex items-center gap-2"><StockLogo code={code} name={detail.data?.name} /><h3 className="text-lg font-bold">{detail.data?.name || code} <span className="text-sm font-normal text-gray-500">{code}</span></h3></div><FavoriteButton selected={favorite} onClick={onFavoriteChange} /></div>}
     {detail.error && <InlineError error={detail.error} />}
     {code && <RemoteState resource={quote} requiresAuth={false}>
       <div className="mb-4 flex flex-wrap items-center gap-3"><p className="text-2xl font-extrabold">{price === null ? '시세 이용 불가' : won(price)}</p><span className="text-sm">{numberOrNull(quote.data?.change_rate) === null ? '—' : rateWithMark(quote.data.change_rate)}</span><button className="text-xs text-gray-500 underline" onClick={quote.reload}>시세 새로고침</button></div>

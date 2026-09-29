@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import useAuth from '../hooks/useAuth';
-import { Heart, MessageSquare, Newspaper, Star } from 'lucide-react';
+import { Heart, MessageSquare, Star } from 'lucide-react';
+import NewsThumbnail from '../components/common/NewsThumbnail';
 import { comma, rateWithMark, signTextClass, wonShort } from '../utils/format';
 import { FAVORITES_EVENT, getFavorites } from '../utils/favorites';
 import EmptyState from '../components/common/EmptyState';
 import RemoteState from '../components/common/RemoteState';
 import StockQuote from '../components/common/StockQuote';
+import StockLogo from '../components/common/StockLogo';
 import HelpIcon from '../components/learn/HelpIcon';
 import MarketStrip from '../components/dashboard/MarketStrip';
 import useRemote from '../hooks/useRemote';
@@ -80,12 +82,7 @@ export default function Dashboard() {
                       <span className="tabular w-3 shrink-0 text-sm font-bold text-gray-400">
                         {index + 1}
                       </span>
-                      {/* 기업 로고 자리 — 로고 데이터가 없어 빈 원으로 자리만 잡아 둡니다.
-                          TODO(F-랭킹): 종목 로고 이미지가 생기면 이 원을 <img> 로 교체 */}
-                      <span
-                        className="h-6 w-6 shrink-0 rounded-full bg-gray-200"
-                        aria-hidden="true"
-                      />
+                      <StockLogo code={item.symbol_code} name={item.name} className="h-6 w-6" />
                       <div className="min-w-0">
                         <p className="truncate text-sm font-bold text-gray-800"><Link to={`/trading?code=${encodeURIComponent(item.symbol_code)}`}>{item.name}</Link></p>
                         <p className="tabular text-xs text-gray-400">
@@ -120,13 +117,7 @@ export default function Dashboard() {
           <ul className="flex flex-col gap-5 rounded-xl border border-gray-100 bg-gray-50 p-6">
             {news.data?.slice(0, 3).map((n, index) => (
               <li key={`${n.url}-${index}`} className="flex gap-5">
-                {/* 기사 썸네일이 들어갈 자리 */}
-                <div
-                  className="flex h-24 w-24 shrink-0 items-center justify-center rounded-lg border border-gray-200 bg-white"
-                  aria-hidden="true"
-                >
-                  <Newspaper size={24} strokeWidth={1.5} className="text-gray-300" />
-                </div>
+                <NewsThumbnail url={n.image_url} />
                 <div className="flex min-w-0 flex-col justify-center gap-1.5">
                   <h3 className="text-sm font-bold text-gray-900">{safeExternalUrl(n.url) ? <a href={safeExternalUrl(n.url)} target="_blank" rel="noopener noreferrer">{n.title}</a> : n.title}</h3>
                   <p className="line-clamp-2 text-sm leading-relaxed text-gray-500">{n.summary}</p>

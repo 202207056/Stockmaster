@@ -4,12 +4,24 @@ import { chartRows, requireArray, requireObject } from './normalize';
 const get = async (path, params, signal) => (await api.get(path, { params, signal })).data;
 export const fetchStocks = async (search, signal) => requireArray(await get('/stocks', { search: search || undefined }, signal));
 export const fetchStock = async (code, signal) => requireObject(await get(`/stocks/${encodeURIComponent(code)}`, undefined, signal));
+export const fetchStockLogo = async (code, signal) => requireObject(await get(`/stocks/${encodeURIComponent(code)}/logo`, undefined, signal));
 export const fetchPrice = async (code, signal) => requireObject(await get(`/stocks/${encodeURIComponent(code)}/price`, undefined, signal));
 export const fetchChart = async (code, signal, period = 'D') => chartRows(await get(`/stocks/${encodeURIComponent(code)}/chart`, { period }, signal));
 export const fetchRanking = async (type, signal) => requireArray(await get(`/stocks/ranking/${type}`, { limit: 10 }, signal));
-export const fetchNews = async (signal) => requireArray(await get('/news/market', { limit: 8 }, signal));
+export const fetchNews = async (signal) => {
+  // Optional local news preview; production uses the shared backend by default.
+  const newsBaseURL = import.meta.env.DEV
+    ? import.meta.env.VITE_NEWS_API_BASE_URL?.replace(/\/+$/, '') : undefined;
+  const response = await api.get('/news/market', {
+    params: { limit: 8 },
+    signal,
+    ...(newsBaseURL ? { baseURL: newsBaseURL } : {}),
+  });
+  return requireArray(response.data);
+};
 export const fetchMarketIndices = async (signal) => requireArray(await get('/market/indices', undefined, signal));
 export const fetchCoach = async (symbol, signal) => requireObject(await get('/ai/coach', { symbol }, signal));
+export const fetchNewsSummary = async (code, signal) => requireObject(await get(`/ai/news-summary/${encodeURIComponent(code)}`, undefined, signal));
 export const fetchPosts = async (page, signal, size = 20) => {
   const data = requireObject(await get('/community/posts', { page, size }, signal));
   return { ...data, items: requireArray(data.items) };

@@ -116,7 +116,8 @@ test('guest trading starts public data loading and retains the order login notic
     React.createElement(MemoryRouter, { initialEntries: ['/trading?code=005930'] }, React.createElement(Trading))));
   assert.equal((markup.match(/불러오는 중이에요/g) || []).length, 3);
   assert.ok(markup.includes('로그인'));
-  assert.equal((markup.match(/로그인하면 최신 데이터를/g) || []).length, 1); // Authenticated coaching only.
+  assert.equal((markup.match(/로그인하면 최신 데이터를/g) || []).length, 2); // Coaching and news summary require authentication.
+  assert.ok(markup.includes('AI 뉴스 요약'));
 });
 
 test('guest routes render public or login states without mock prices or posts', async () => {
@@ -128,6 +129,18 @@ test('guest routes render public or login states without mock prices or posts', 
     assert.ok(markup.length > 100, name);
     assert.ok(!markup.includes('목업'), name);
     if (!['Favorites'].includes(name)) assert.ok(markup.includes('로그인'), name);
+  }
+});
+
+test('news thumbnails accept HTTP images and keep an icon for missing or unsafe URLs', async () => {
+  const { default: NewsThumbnail } = await server.ssrLoadModule('/src/components/common/NewsThumbnail.jsx');
+  const image = renderToString(React.createElement(NewsThumbnail, { url: 'https://example.com/news.jpg' }));
+  assert.ok(image.includes('<img'));
+  assert.ok(image.includes('referrerPolicy="no-referrer"'));
+  for (const url of [undefined, '', 'javascript:alert(1)', 'data:image/svg+xml,test']) {
+    const fallback = renderToString(React.createElement(NewsThumbnail, { url }));
+    assert.ok(!fallback.includes('<img'));
+    assert.ok(fallback.includes('<svg'));
   }
 });
 
