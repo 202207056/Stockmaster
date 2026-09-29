@@ -14,7 +14,7 @@ import { LearningCard } from '../components/learn/LearningUI';
 /** 기존 총자산·개인 지표·내 투자·보유종목 배치에 실제 조회 결과를 표시합니다. */
 export default function Assets() {
   const { account, accountId, isAuthenticated } = useAuth();
-  const resource = useRemote(useCallback((signal) => fetchValuedPortfolio(accountId, signal), [accountId]), isAuthenticated && !!accountId);
+  const resource = useRemote(useCallback((signal) => fetchValuedPortfolio(accountId, signal), [accountId]), isAuthenticated && !!accountId, { keepPreviousData: true });
   const totals = portfolioTotals(resource.data);
 
   const pending = !isAuthenticated ? '로그인하면 표시돼요' : resource.loading ? '불러오는 중이에요' : '조회 불가';
@@ -28,6 +28,8 @@ export default function Assets() {
       </div>
 
       {!isAuthenticated && <LoginNotice message="로그인하면 내 계좌의 실제 금액이 표시돼요" />}
+      {resource.stale && <p role="status" className="text-sm text-gray-500">이전 조회 금액을 표시합니다. {resource.loading ? '최신 정보를 확인 중이에요.' : '갱신에 실패했어요. 다시 조회해 주세요.'}</p>}
+      {resource.data?.holdings.some((holding) => holding.quoteError) && <div role="status" className="text-sm text-gray-600"><p>일부 종목의 시세 조회가 실패해 총자산·평가금액을 계산할 수 없어요.</p><ul>{resource.data.holdings.filter((holding) => holding.quoteError).map((holding) => <li key={holding.portfolio_id ?? holding.symbol_code}>{holding.security_name || holding.symbol_code}: {holding.quoteError}</li>)}</ul><button disabled={resource.loading} onClick={resource.reload} className="mt-2 underline">시세 다시 조회</button></div>}
 
       {/* ── 총자산 ──────────────────────────────────────────────── */}
       <section>

@@ -1,5 +1,6 @@
-import api from './client';
-import { chartRows, requireArray, requireObject } from './normalize';
+import api, { getToken, toUserMessage } from './client';
+import { chartRows, quotePrice, requireArray, requireObject } from './normalize';
+import { abortableDelay, createSharedRequest } from './sharedRequest';
 
 const get = async (path, params, signal) => (await api.get(path, { params, signal })).data;
 export const fetchStocks = async (search, signal) => requireArray(await get('/stocks', { search: search || undefined }, signal));
@@ -45,16 +46,37 @@ export const saveSurvey = async (answers) => {
 };
 
 // Fetch sequentially: one request per holding, no burst polling against the upstream provider.
-export async function fetchValuedPortfolio(accountId, signal) {
+async function loadValuedPortfolio(signal, accountId) {
   const portfolio = await fetchPortfolio(accountId, signal);
   const holdings = [];
   for (const holding of portfolio.holdings) {
     try {
-      holdings.push({ ...holding, quote: await fetchPrice(holding.symbol_code, signal) });
+      const quote = await fetchPortfolioPrice(holding.symbol_code, signal);
+      holdings.push({ ...holding, quote });
     } catch (error) {
       if (signal?.aborted || error.response?.status === 401) throw error;
-      holdings.push({ ...holding, quote: null });
+      holdings.push({ ...holding, quote: null, quoteError: toUserMessage(error) });
     }
   }
   return { ...portfolio, holdings, fetchedAt: new Date().toISOString() };
+}
+
+async function fetchPortfolioPrice(code, signal) {
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      const quote = await fetchPrice(code, signal);
+      if (quotePrice(quote) === null) throw new Error(quote.message || '유효한 현재가를 받지 못했습니다.');
+      return quote;
+    } catch (error) {
+      const status = error.response?.status;
+      if (signal?.aborted || attempt === 1 || (status && status !== 429 && status < 500)) throw error;
+      await abortableDelay(1000, signal);
+    }
+  }
+}
+
+const sharedPortfolio = createSharedRequest(loadValuedPortfolio);
+export function fetchValuedPortfolio(accountId, signal) {
+  // No completed data is cached; neither sessions nor accounts share private data.
+  return sharedPortfolio(JSON.stringify([getToken(), accountId]), signal, accountId);
 }

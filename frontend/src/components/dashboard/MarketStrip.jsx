@@ -10,8 +10,21 @@ import { marketChartPoints } from '../../utils/marketChart';
 const STEP_MS = 2500;
 
 export default function MarketStrip() {
-  const resource = useRemote(useCallback((signal) => fetchMarketIndices(signal), []));
+  const resource = useRemote(useCallback((signal) => fetchMarketIndices(signal), []), true, { keepPreviousData: true });
   const items = resource.data ?? [];
+  const { reload } = resource;
+
+  useEffect(() => {
+    const refresh = () => {
+      if (document.visibilityState === 'visible') reload();
+    };
+    const timer = setInterval(refresh, 60_000);
+    document.addEventListener('visibilitychange', refresh);
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener('visibilitychange', refresh);
+    };
+  }, [reload]);
 
   const stripRef = useRef(null);
   const pausedRef = useRef(false);
@@ -111,7 +124,7 @@ export default function MarketStrip() {
         주요 시세
       </h2>
 
-      <RemoteState resource={resource} requiresAuth={false} empty={!items.length}>
+      <RemoteState resource={{ ...resource, loading: resource.loading && !items.length, error: items.length ? null : resource.error }} requiresAuth={false} empty={!items.length}>
       <div
         ref={stripRef}
         className="card-strip -mx-1 px-1 py-1"
@@ -163,7 +176,7 @@ export function MarketCard({ item, ...rest }) {
   );
 }
 
-/** Compact one-day chart using actual ten-minute index bars. */
+/** Compact one-day chart using actual ten-minute market prices. */
 export function MarketChangeChart({ name, change, intraday }) {
   const points = marketChartPoints(intraday);
   if (points.length < 2) return <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-lg bg-white/60 text-[11px] text-gray-400">차트 준비 중</div>;
@@ -171,8 +184,8 @@ export function MarketChangeChart({ name, change, intraday }) {
   const first = points[0];
   const last = points[points.length - 1];
   return <div className={`h-24 w-24 shrink-0 rounded-lg bg-white/60 ${signTextClass(change)}`}>
-    <svg viewBox="0 0 96 96" className="h-full w-full" role="img" aria-label={`${name} ${intraday.date ?? ''} 당일 지수 추이`}>
-      <title>당일 09:00–15:30 · 10분 간격 지수</title>
+    <svg viewBox="0 0 96 96" className="h-full w-full" role="img" aria-label={`${name} ${intraday.date ?? ''} 당일 시세 추이`}>
+      <title>{`${name} ${intraday.date ?? ''} · 현지 시각 · 10분 간격 시세`}</title>
       <path d={`${line} L ${last.x} 88 L ${first.x} 88 Z`} fill="currentColor" fillOpacity="0.1" />
       <path d={line} fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
       <circle cx={last.x} cy={last.y} r="3" fill="currentColor" />

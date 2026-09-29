@@ -9,7 +9,6 @@ import EmptyState from '../components/common/EmptyState';
 import RemoteState from '../components/common/RemoteState';
 import StockQuote from '../components/common/StockQuote';
 import StockLogo from '../components/common/StockLogo';
-import HelpIcon from '../components/learn/HelpIcon';
 import MarketStrip from '../components/dashboard/MarketStrip';
 import useRemote from '../hooks/useRemote';
 import { fetchRanking, fetchNews, fetchPosts } from '../api/data';
@@ -193,24 +192,6 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* 초보자 안내 — 홈에서 학습 동선으로 연결 */}
-      <section className="mb-8 flex flex-wrap items-center justify-between gap-4 rounded-2xl bg-brand-50 px-6 py-5">
-        <div>
-          <p className="flex items-center text-sm font-extrabold text-brand-700">
-            처음이라 용어가 어렵나요?
-            <HelpIcon termId="per" label="PER 설명 미리보기" />
-          </p>
-          <p className="mt-1 text-sm text-gray-600">
-            화면 곳곳의 물음표를 누르면 그 자리에서 뜻을 알려 드려요. 용어 66개를 모아 두었어요.
-          </p>
-        </div>
-        <Link
-          to="/learn"
-          className="rounded-lg bg-brand-600 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-brand-700"
-        >
-          용어사전 보기
-        </Link>
-      </section>
     </div>
   );
 }

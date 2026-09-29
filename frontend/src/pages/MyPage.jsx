@@ -4,6 +4,7 @@ import { num, won } from '../utils/format';
 import HelpIcon from '../components/learn/HelpIcon';
 import LoginNotice from '../components/common/LoginNotice';
 import AccountPicker from '../components/common/AccountPicker';
+import useMiniAssetsSetting from '../hooks/useMiniAssetsSetting';
 
 /**
  * 마이페이지 (F-2 라우팅 연결)
@@ -17,12 +18,31 @@ import AccountPicker from '../components/common/AccountPicker';
  */
 export default function MyPage() {
   const { user, account, isAuthenticated } = useAuth();
+  const [miniAssetsEnabled, setMiniAssetsEnabled] = useMiniAssetsSetting();
 
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-8">
       <div className="border-b border-gray-200 pb-4">
         <h1 className="text-xl font-extrabold text-gray-900">내 정보</h1>
       </div>
+
+      <section className="flex flex-col gap-3" aria-labelledby="display-settings-title">
+        <h2 id="display-settings-title" className="text-sm font-bold text-gray-500">화면 설정</h2>
+        <div className="flex items-center justify-between gap-4 rounded-xl border border-gray-200 px-4 py-4">
+          <div>
+            <p id="mini-assets-setting-label" className="text-sm font-bold text-gray-900">미니 내 자산 탭</p>
+            <p id="mini-assets-setting-description" className="mt-1 text-xs text-gray-500">모든 화면에서 내 자산 버튼을 표시해요. 설정은 이 브라우저에 저장돼요.</p>
+          </div>
+          <button type="button" role="switch" aria-checked={miniAssetsEnabled} aria-labelledby="mini-assets-setting-label" aria-describedby="mini-assets-setting-description"
+            onClick={() => setMiniAssetsEnabled(!miniAssetsEnabled)}
+            className={`flex shrink-0 items-center gap-2 rounded-full px-3 py-2 text-xs font-bold transition-colors ${miniAssetsEnabled ? 'bg-brand-600 text-white' : 'bg-gray-200 text-gray-600'}`}>
+            {miniAssetsEnabled ? 'ON' : 'OFF'}
+            <span aria-hidden="true" className={`relative h-5 w-9 rounded-full ${miniAssetsEnabled ? 'bg-brand-400' : 'bg-gray-400'}`}>
+              <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white transition-transform ${miniAssetsEnabled ? 'translate-x-4' : 'translate-x-0.5'} left-0`} />
+            </span>
+          </button>
+        </div>
+      </section>
 
       {!isAuthenticated ? (
         <LoginNotice message="내 정보는 로그인해야 볼 수 있어요" />

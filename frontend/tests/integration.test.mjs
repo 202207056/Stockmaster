@@ -303,3 +303,61 @@ test('local notebook displays original and revisions without leaking another acc
   assert(!b.includes('secret'));
   assert(!a.includes('type="submit"'));
 });
+
+test('portfolio retries transient quote failures and shares reads between the page and popup', async () => {
+  client.setToken('portfolio-recovery-test');
+  let portfolioCalls = 0;
+  let quoteCalls = 0;
+  client.default.defaults.adapter = async (config) => {
+    let response;
+    if (config.url === '/trading/portfolio') {
+      portfolioCalls++;
+      response = { withdrawable_cash: 100, holdings: [{ symbol_code: 'RECOVER', hold_quantity: 2, avg_price: 10 }] };
+    } else {
+      quoteCalls++;
+      if (quoteCalls === 1) throw Object.assign(new Error('temporary outage'), { response: { status: 503 }, config, isAxiosError: true });
+      response = { current_price: 15 };
+    }
+    return { data: response, status: 200, statusText: 'OK', headers: {}, config };
+  };
+  const [page, popup] = await Promise.all([data.fetchValuedPortfolio(7), data.fetchValuedPortfolio(7)]);
+  const { portfolioTotals } = await server.ssrLoadModule('/src/api/normalize.js');
+  assert.equal(portfolioCalls, 1);
+  assert.equal(quoteCalls, 2);
+  assert.equal(page, popup);
+  assert.equal(portfolioTotals(page).total, 130);
+  assert.equal(portfolioTotals(page).market, 30);
+});
+
+test('zero quote responses are retried and persistent failures retain their reason without fake totals', async () => {
+  client.setToken('portfolio-invalid-price-test');
+  let quotes = 0;
+  client.default.defaults.adapter = async (config) => {
+    const response = config.url === '/trading/portfolio'
+      ? { withdrawable_cash: 100, holdings: [{ symbol_code: 'ZERO', hold_quantity: 2, avg_price: 10 }] }
+      : (quotes++, { current_price: 0, message: '시세 서비스 설정을 확인해 주세요.' });
+    return { data: response, status: 200, statusText: 'OK', headers: {}, config };
+  };
+  const portfolio = await data.fetchValuedPortfolio(7);
+  const { portfolioTotals } = await server.ssrLoadModule('/src/api/normalize.js');
+  assert.equal(quotes, 2);
+  assert.equal(portfolio.holdings[0].quote, null);
+  assert.equal(portfolio.holdings[0].quoteError, '시세 서비스 설정을 확인해 주세요.');
+  assert.equal(portfolioTotals(portfolio).total, null);
+  assert.equal(portfolioTotals(portfolio).cash, 100);
+});
+
+test('permanent quote errors are not retried', async () => {
+  client.setToken('portfolio-permanent-error-test');
+  let quotes = 0;
+  client.default.defaults.adapter = async (config) => {
+    if (config.url !== '/trading/portfolio') {
+      quotes++;
+      throw Object.assign(new Error('missing'), { response: { status: 404 }, config, isAxiosError: true });
+    }
+    return { data: { withdrawable_cash: 100, holdings: [{ symbol_code: 'MISSING', hold_quantity: 1, avg_price: 10 }] }, status: 200, statusText: 'OK', headers: {}, config };
+  };
+  const portfolio = await data.fetchValuedPortfolio(7);
+  assert.equal(quotes, 1);
+  assert(portfolio.holdings[0].quoteError);
+});

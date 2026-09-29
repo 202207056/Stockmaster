@@ -4,6 +4,7 @@ import AuthProvider from './contexts/AuthContext';
 import Layout from './components/layout/Layout';
 import ProtectedRoute from './components/routing/ProtectedRoute';
 import ApiStatusBanner from './components/system/ApiStatusBanner';
+import FloatingAssets from './components/common/FloatingAssets';
 
 import Landing from './pages/Landing';
 import Login from './pages/Login';
@@ -80,6 +81,7 @@ export default function App() {
             <Route path="*" element={<NotFound />} />
           </Route>
         </Routes>
+        <FloatingAssets />
       </BrowserRouter>
 
       {/* 콜드스타트 안내는 라우트와 무관하게 항상 떠 있어야 합니다. */}
