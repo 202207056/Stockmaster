@@ -74,7 +74,7 @@ function TradingExperience() {
       <div><Link to="/learn?tab=guide" className="mb-3 inline-flex items-center gap-1 text-sm text-gray-600"><ArrowLeft size={16} /> 기본 투자 가이드</Link><h1 className="text-xl font-extrabold">트레이딩 매수·매도 튜토리얼</h1></div>
       <button onClick={restart} className="flex items-center gap-2 rounded-lg border border-gray-200 px-4 py-2 text-sm font-bold"><RotateCcw size={16} /> 처음부터</button>
     </header>
-    <p className="rounded-lg bg-gray-50 p-4 text-sm text-gray-600">예비 조작 연습입니다. 이 기존 과정은 수수료·세금·결제 시차를 제외합니다. 실제 비용 기준은 <Link to="/learn/tutorial/buy" className="font-bold text-brand-700 underline">매수와 거래 비용</Link>에서 이어서 학습하세요.</p>
+    <p className="rounded-lg bg-gray-50 p-4 text-sm text-gray-600">예비 조작 연습입니다. 이 기존 과정은 수수료·세금·결제 시차를 제외합니다. 계좌 변화는 <Link to="/learn/tutorial/buy" className="font-bold text-brand-700 underline">매수와 자산 변화</Link>에서 이어서 학습하세요.</p>
     {done && <section aria-label="튜토리얼 완료" className="rounded-xl border-2 border-brand-300 bg-white p-5" aria-live="polite" aria-atomic="true">
       {done ? <><h2 className="flex items-center gap-2 text-lg font-bold text-brand-700"><CheckCircle2 size={22} /> 매수·매도 연습을 완료했어요!</h2><p className="mt-2 text-sm text-gray-600">2주 매수 → 1주 매도 완료. 남은 현금 950,000원 + 주식 평가액 50,000원 = 총자산 1,000,000원이에요.</p><p className="mt-2 text-sm text-gray-500">같은 가격에 사고팔아 손익은 0원입니다. 이 예시는 수수료·세금과 가격 변동을 제외했어요.</p><Link to="/learn?tab=guide" className="mt-4 inline-block rounded-lg bg-brand-600 px-4 py-2 text-sm font-bold text-white">기본 투자 가이드로 돌아가기</Link></> : null}
     </section>}

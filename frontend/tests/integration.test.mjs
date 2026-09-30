@@ -16,41 +16,6 @@ after(async () => { await server.close(); });
 const client = await server.ssrLoadModule('/src/api/client.js');
 const data = await server.ssrLoadModule('/src/api/data.js');
 
-test('orders support a verified legacy server without bypassing policy failures', async () => {
-  const legacySchema = { paths: { '/api/trading/orders': { post: {} } }, components: { schemas: { OrderRequest: { properties: { quantity: { type: 'integer' } } } } } };
-  let schema = legacySchema;
-  let status = 404;
-  let policyResponse;
-  const requests = [];
-  client.default.defaults.adapter = async (config) => {
-    requests.push(config.url);
-    if (config.url === '/openapi.json') {
-      assert.equal(config.baseURL, client.API_ORIGIN);
-      return { data: schema, status: 200, headers: {}, config };
-    }
-    assert.equal(config.url, '/trading/orders/cost-policy');
-    assert.equal(config.params.symbol_code, '005930');
-    if (policyResponse) return { data: policyResponse, status: 200, headers: {}, config };
-    throw Object.assign(new Error('policy unavailable'), { response: { status }, config, isAxiosError: true });
-  };
-  assert.deepEqual(await data.fetchTradingPolicy('005930'), { legacy: true });
-  assert.deepEqual(requests, ['/trading/orders/cost-policy', '/openapi.json']);
-  schema = { ...legacySchema, paths: { ...legacySchema.paths, '/api/trading/orders/cost-policy': { get: {} } } };
-  await assert.rejects(data.fetchTradingPolicy('005930'));
-  schema = { ...legacySchema, components: { schemas: { OrderRequest: { properties: { cost_policy_version: {} } } } } };
-  await assert.rejects(data.fetchTradingPolicy('005930'));
-  schema = {};
-  await assert.rejects(data.fetchTradingPolicy('005930'));
-  schema = legacySchema;
-  for (status of [401, 422, 500, 503]) {
-    requests.length = 0;
-    await assert.rejects(data.fetchTradingPolicy('005930'));
-    assert.deepEqual(requests, ['/trading/orders/cost-policy']);
-  }
-  policyResponse = { version: 'server-policy', tax_market: 'KOSPI' };
-  assert.deepEqual(await data.fetchTradingPolicy('005930'), policyResponse);
-});
-
 test('API adapters send auth and query parameters; portfolio quotes degrade independently', async () => {
   client.setToken('local-test-token');
   const requests = [];

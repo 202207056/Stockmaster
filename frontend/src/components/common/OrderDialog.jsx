@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import { won } from '../../utils/format';
 import TutorialTarget from '../learn/TutorialTarget';
 import { InlineError } from './ErrorState';
-import TradingCostBreakdown, { CostRules } from './TradingCostBreakdown';
 
 export default function OrderDialog({ order, result, busy, uncertain, error, message, onClose, onConfirm, tutorial = false, instruction }) {
   const dialog = useRef(null);
@@ -30,8 +29,6 @@ export default function OrderDialog({ order, result, busy, uncertain, error, mes
   return <dialog ref={dialog} aria-labelledby={titleId} onCancel={(event) => { event.preventDefault(); if (!busy) onClose(); }} className={`${tutorial ? 'tutorial-order-dialog' : ''} m-auto max-h-[90dvh] w-[calc(100%-2rem)] max-w-lg overflow-y-auto rounded-2xl bg-white p-6 shadow-xl ${tutorial ? 'backdrop:bg-transparent' : 'backdrop:bg-slate-900/50'}`}>
     <header className="mb-5 flex items-start justify-between gap-4"><div><p className="mb-1 text-xs font-bold text-brand-600">{tutorial ? '학습 전용 · 예시 주문' : '모의투자'}</p><h2 id={titleId} className="text-xl font-extrabold">{completed ? '주문 완료!' : uncertain ? '주문 결과 확인 필요' : `${order.kind} 주문확인`}</h2></div><button type="button" disabled={busy} onClick={onClose} aria-label="주문 창 닫기" className="rounded px-2 py-1 text-gray-500 disabled:opacity-40">✕</button></header>
     <dl className="divide-y divide-gray-100">{rows.map(([label, value]) => <div key={label} className="flex justify-between gap-4 py-3 text-sm"><dt className="shrink-0 text-gray-500">{label}</dt><dd className="break-words text-right font-semibold">{value || '—'}</dd></div>)}</dl>
-    {(order.costs || result?.cost_policy_version) && <><TradingCostBreakdown costs={completed ? result : order.costs} side={order.kind} confirmed={completed} /><CostRules /></>}
-    {!tutorial && !order.costs && !result?.cost_policy_version && <p className="my-3 text-xs text-gray-500">현재 모의투자 서버는 수수료·세금 상세 내역을 제공하지 않습니다.</p>}
     {!completed && <p className="my-4 text-xs leading-relaxed text-gray-500">{tutorial ? `이 튜토리얼은 1주 ${won(order.price)}에 체결되는 예시입니다. 실제 계좌에는 주문이 생성되지 않습니다.` : '주문가격과 거래금액은 확인 시점의 예상값입니다. 실제 체결가는 주문 처리 시 조회한 현재가로 결정됩니다.'}</p>}
     <InlineError error={error} />
     {message && !tutorial && <p role="status" className="my-3 text-sm leading-relaxed">{message}</p>}

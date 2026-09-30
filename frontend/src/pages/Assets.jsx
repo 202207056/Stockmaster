@@ -8,7 +8,7 @@ import useSiteResource from '../hooks/useSiteResource';
 import { useSitePractice } from '../contexts/site-practice';
 import { PracticeTarget } from '../components/learn/SitePractice';
 import { fetchValuedPortfolio } from '../api/data';
-import { numberOrNull, portfolioTotals, quotePrice, holdingCost } from '../api/normalize';
+import { numberOrNull, portfolioTotals, quotePrice } from '../api/normalize';
 import AccountPicker from '../components/common/AccountPicker';
 import RemoteState from '../components/common/RemoteState';
 import { LearningCard } from '../components/learn/LearningUI';
@@ -102,7 +102,7 @@ export default function Assets() {
             value={totals?.cost != null ? won(totals.cost) : pending}
             label={
               <>
-                매입원가 (매수 비용 포함)
+                매입금액
                 <HelpIcon termId="buy_amount" />
               </>
             }
@@ -129,8 +129,8 @@ export default function Assets() {
 
         {/* 왜 "총 수익"이 없는지 사용자에게도 설명해 둡니다. */}
         <p className="mt-3 text-xs leading-relaxed text-gray-400">
-          매입원가는 부과된 매수 수수료를 포함하며 평가손익은 미래 매도 비용을 제외합니다. 과거 비용 미적용 거래에는 비용을 소급하지 않습니다.
-          실현손익은 트레이딩 주문내역에서 확인하세요. 모의계좌는 실제 T+2 결제와 달리 체결 즉시 현금을 반영합니다.
+          매입금액과 평가손익은 평균 매입단가와 보유수량 기준이며 수수료·세금을 제외합니다.
+          모의계좌는 실제 T+2 결제와 달리 체결 즉시 현금을 반영합니다.
         </p>
       </section></PracticeTarget>
 
@@ -144,7 +144,7 @@ export default function Assets() {
         {/* TODO(F-14): GET /api/trading/portfolio?account_id= + 종목별 /stocks/{code}/price */}
         <RemoteState resource={resource} authenticated={isAuthenticated}>
         {resource.data?.holdings.length ? <div className="mt-4 overflow-x-auto"><table className="w-full min-w-[600px] text-right text-sm"><thead className="bg-gray-50"><tr>{['종목', '보유수량', '평균단가', '현재가', '평가손익'].map((label) => <th key={label} className="p-3">{label}</th>)}</tr></thead><tbody>{resource.data.holdings.map((holding) => {
-          const price = quotePrice(holding.quote); const average = numberOrNull(holding.avg_price); const quantity = numberOrNull(holding.hold_quantity); const basis = holdingCost(holding); const pnl = price !== null && basis !== null && quantity !== null ? price * quantity - basis : null;
+          const price = quotePrice(holding.quote); const average = numberOrNull(holding.avg_price); const quantity = numberOrNull(holding.hold_quantity); const pnl = price !== null && average !== null && quantity !== null ? (price - average) * quantity : null;
           return <tr key={holding.portfolio_id ?? holding.symbol_code} className="border-b border-gray-100"><th className="p-3"><PracticeTarget id="trading-link"><Link to={practice ? practice.href('/trading', holding.symbol_code) : `/trading?code=${encodeURIComponent(holding.symbol_code)}`} onClick={() => practice?.event('trading')} className="text-brand-700">{holding.security_name || holding.symbol_code}</Link></PracticeTarget></th><td className="p-3">{quantity ?? '—'}</td><td className="p-3">{average === null ? '—' : won(average)}</td><td className="p-3">{price === null ? '시세 이용 불가' : won(price)}</td><td className={`p-3 ${signTextClass(pnl)}`}>{pnl === null ? '—' : wonSigned(pnl)}</td></tr>;
         })}</tbody></table></div> : <div className="mt-4 rounded-lg border border-dashed border-gray-200 px-4 py-12 text-center">
           <p className="text-sm text-gray-400">{accountId ? '보유한 종목이 없어요.' : '계좌를 선택해 주세요.'}</p>

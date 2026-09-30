@@ -4,9 +4,7 @@ import useAuth from '../hooks/useAuth';
 import useSiteResource from '../hooks/useSiteResource';
 import { useSitePractice } from '../contexts/site-practice';
 import { PracticeTarget } from '../components/learn/SitePractice';
-import { fetchStocks, fetchStock, fetchPrice, fetchOrders, submitOrder, fetchTradingPolicy } from '../api/data';
-import { calculateCosts, tryCosts, TRADING_POLICY } from '../utils/tradingCosts';
-import TradingCostBreakdown, { CostRules } from '../components/common/TradingCostBreakdown';
+import { fetchStocks, fetchStock, fetchPrice, fetchOrders, submitOrder } from '../api/data';
 import { fetchChartHistory } from '../api/chartHistory';
 import { numberOrNull, quotePrice } from '../api/normalize';
 import { won, rateWithMark } from '../utils/format';
@@ -72,9 +70,6 @@ function StockPanel({ code, favorite, onFavoriteChange }) {
   const { isAuthenticated, accountId, account, refresh } = useAuth();
   const detail = useSiteResource('detail', useCallback((signal) => fetchStock(code, signal), [code]), !!code, { cacheKey: JSON.stringify(['stock', code]), publicCache: true });
   const quote = useSiteResource('quote', useCallback((signal) => fetchPrice(code, signal), [code]), !!code, { cacheKey: JSON.stringify(['price', code]), publicCache: true });
-  const policy = useSiteResource('policy', useCallback((signal) => fetchTradingPolicy(code, signal), [code]), !!code);
-  const supportedPolicy = policy.data?.version === TRADING_POLICY.version;
-  const legacyOrders = !practice && policy.data?.legacy === true;
   const [chartType, setChartType] = useState('line');
   const [chartPeriod, setChartPeriod] = useState('D');
   const chart = useSiteResource(`chart:${chartPeriod}`, useCallback((signal) => fetchChartHistory(code, chartPeriod, signal), [code, chartPeriod]), !!code, { cacheKey: JSON.stringify(['chart', code, chartPeriod]), publicCache: true });
@@ -93,11 +88,10 @@ function StockPanel({ code, favorite, onFavoriteChange }) {
   const qty = Number(quantity);
   const validQuantity = Number.isSafeInteger(qty) && qty > 0 && qty <= 1_000_000;
   const total = price !== null && validQuantity && Number.isSafeInteger(price * qty) ? price * qty : null;
-  const costs = supportedPolicy ? tryCosts(price, qty, kind, policy.data.tax_market, policy.data) : null;
   const prepare = async (event) => {
     event.preventDefault();
     if (practice && practice.current?.event !== 'prepare') return;
-    if (submitting.current || (!practice && !ENABLE_ORDER_SUBMISSION) || !accountId || !code || !validQuantity || uncertain || (!costs && !legacyOrders)) return;
+    if (submitting.current || (!practice && !ENABLE_ORDER_SUBMISSION) || !accountId || !code || !validQuantity || uncertain) return;
     submitting.current = true; setBusy(true); setError(null); setMessage('');
     const token = getToken();
     try {
@@ -105,11 +99,10 @@ function StockPanel({ code, favorite, onFavoriteChange }) {
       if (token !== getToken()) throw new Error('로그인 계정이 바뀌어 주문을 중단했습니다.');
       if (latest === null) throw new Error('현재 시세를 확인할 수 없어 주문하지 않았습니다.');
       if (!Number.isSafeInteger(latest * qty)) throw new Error('주문 금액이 허용 범위를 넘었습니다.');
-      const estimate = legacyOrders ? null : calculateCosts(latest, qty, kind, policy.data.tax_market, policy.data);
-      const requiredCash = estimate ? -estimate.cash_delta : latest * qty;
+      const requiredCash = latest * qty;
       if (kind === '매수' && numberOrNull(account?.withdrawable_cash) !== null && requiredCash > Number(account.withdrawable_cash)) throw new Error('매수 가능 현금이 부족합니다.');
       setOrderResult(null);
-      setPendingOrder({ accountId, accountName: account?.account_name, accountNumber: account?.account_number, code, name: detail.data?.name || code, kind, quantity: qty, price: latest, token, costs: estimate });
+      setPendingOrder({ accountId, accountName: account?.account_name, accountNumber: account?.account_number, code, name: detail.data?.name || code, kind, quantity: qty, price: latest, token });
       practice?.event('prepare');
     } catch (err) { setError(err); }
     finally { submitting.current = false; setBusy(false); }
@@ -121,9 +114,8 @@ function StockPanel({ code, favorite, onFavoriteChange }) {
     try {
       if (pendingOrder.token !== getToken() || pendingOrder.accountId !== accountId) throw new Error('계좌가 바뀌어 주문을 중단했습니다. 창을 닫고 주문 정보를 다시 확인해 주세요.');
       sent = true;
-      const result = await (practice ? practice.submit : submitOrder)({ account_id: pendingOrder.accountId, symbol_code: pendingOrder.code, order_type: pendingOrder.kind, quantity: pendingOrder.quantity, price: pendingOrder.price, ...(pendingOrder.costs ? { cost_policy_version: pendingOrder.costs.cost_policy_version } : {}) });
+      const result = await (practice ? practice.submit : submitOrder)({ account_id: pendingOrder.accountId, symbol_code: pendingOrder.code, order_type: pendingOrder.kind, quantity: pendingOrder.quantity, price: pendingOrder.price });
       if (!result?.order_id || result.status !== '체결' || !quotePrice({ current_price: result.price }) || !Number.isSafeInteger(Number(result.quantity)) || Number(result.quantity) <= 0) throw new Error('주문 응답을 확인할 수 없습니다. 주문내역을 확인해 주세요.');
-      if (pendingOrder.costs && (result.cost_policy_version !== pendingOrder.costs.cost_policy_version || ['commission', 'transaction_tax', 'rural_tax', 'cash_delta'].some(key => numberOrNull(result[key]) === null))) throw new Error('체결 비용 응답을 확인할 수 없습니다. 주문내역을 확인해 주세요.');
       setOrderResult(result);
       setMessage(`주문 #${result.order_id} · ${result.status} · ${result.quantity}주 · ${won(result.price)}`);
       if (!practice) window.dispatchEvent(new Event('orders:changed'));
@@ -157,15 +149,12 @@ function StockPanel({ code, favorite, onFavoriteChange }) {
     {isAuthenticated ? <form onSubmit={prepare} className="flex flex-col gap-3">
       <AccountPicker />
       <PracticeTarget id="order-fields"><fieldset disabled={busy || uncertain} className="flex flex-wrap gap-3"><legend className="mb-2 font-bold">모의 주문</legend><label className="text-sm">구분<select value={kind} onChange={event => setKind(event.target.value)} className="ml-2 rounded border border-gray-300 px-3 py-2"><option>매수</option><option>매도</option></select></label><label className="text-sm">수량<input type="number" min="1" max="1000000" step="1" required value={quantity} onChange={event => setQuantity(event.target.value)} className="ml-2 w-28 rounded border border-gray-300 px-3 py-2" /></label></fieldset>{practice?.current?.target === 'order-fields' && <button type="button" disabled={!validQuantity || (practice.current.event === 'buy-fields' ? kind !== '매수' : kind !== '매도' || qty > practice.account.quantity)} onClick={() => practice.event(kind === '매수' ? 'buy-fields' : 'sell-fields')} className="tutorial-action mt-3 text-sm">입력 확인</button>}</PracticeTarget>
-      {!legacyOrders && <PracticeTarget id="costs"><TradingCostBreakdown costs={costs} side={kind} /></PracticeTarget>}
-      {!legacyOrders && <PracticeTarget id="cost-rules"><CostRules onOpen={() => practice?.event('rules')} /></PracticeTarget>}
-      {policy.error && <InlineError error={policy.error} />}
-      {!supportedPolicy && !legacyOrders && !policy.loading && <p role="status" className="text-xs text-gray-500">서버의 비용 정책을 확인할 수 없어 주문할 수 없습니다. <button type="button" onClick={policy.reload} className="underline">다시 확인</button></p>}
       {!practice && !ENABLE_ORDER_SUBMISSION && <p className="text-sm text-gray-500">모의 주문은 점검 중입니다. 시세·차트와 기존 주문내역을 확인할 수 있어요.</p>}
-      <PracticeTarget id="place"><button disabled={(!practice && !ENABLE_ORDER_SUBMISSION) || !accountId || total === null || (!costs && !legacyOrders) || busy || uncertain || (!!practice && practice.current?.event !== 'prepare')} className="w-full rounded-lg bg-brand-600 px-5 py-3 font-bold text-white disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-500">{busy ? '주문 처리 중…' : `모의 ${kind}`}</button></PracticeTarget>
+      <PracticeTarget id="amount"><p className="text-sm text-gray-600">예상 거래금액: {total === null ? '—' : won(total)} · 수수료·세금 제외</p></PracticeTarget>
+      <PracticeTarget id="place"><button disabled={(!practice && !ENABLE_ORDER_SUBMISSION) || !accountId || total === null || busy || uncertain || (!!practice && practice.current?.event !== 'prepare')} className="w-full rounded-lg bg-brand-600 px-5 py-3 font-bold text-white disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-500">{busy ? '주문 처리 중…' : `모의 ${kind}`}</button></PracticeTarget>
       <InlineError error={error} />{message && <p role="status" className="text-sm text-gray-700">{message} <Link to={practice ? practice.href('/assets') : '/assets'} onClick={() => practice?.event('assets')} className="underline">내 자산 보기</Link></p>}
     </form> : <p className="text-sm text-gray-400">로그인 후 주문 정보를 확인할 수 있어요.</p>}
-    {!practice && <TradingLearning symbol={code} side={kind} quantity={qty} price={price} costs={costs} cash={account?.withdrawable_cash} busy={busy || uncertain} />}
+    {!practice && <TradingLearning symbol={code} side={kind} quantity={qty} price={price} cash={account?.withdrawable_cash} busy={busy || uncertain} />}
   </section>{pendingOrder && <OrderDialog tutorial={!!practice} instruction={practice?.current} order={pendingOrder} result={orderResult} busy={busy} uncertain={uncertain} error={error} message={message} onConfirm={place} onClose={() => { if (!busy) { setPendingOrder(null); if (practice) { if (orderResult) practice.event('closed'); else if (practice.current?.event === 'cancelled') practice.event('cancelled'); else practice.event('dismissed'); } } }} />}</>;
 }
 
@@ -178,7 +167,7 @@ function OrderHistory() {
   const review = !orders.loading && !orders.error && orders.data?.find((order) => `${accountId}:${order.order_id}` === reviewId && order.status === '체결');
   return <PracticeTarget id="history"><section className="rounded-xl border border-gray-200 p-5"><div className="mb-4 flex justify-between"><h2 className="font-bold">주문내역</h2><PracticeTarget id="history-refresh"><button disabled={orders.loading || !accountId} onClick={orders.reload} className="text-sm underline">내역 새로고침</button></PracticeTarget></div>
     {!practice && <OrderUpdates reload={orders.reload} />}
-    {!accountId ? <p className="text-sm text-gray-500">계좌를 선택해 주세요.</p> : <RemoteState resource={orders} empty={!orders.data?.length}><div className="max-h-80 overflow-auto"><table className="w-full min-w-[480px] text-right text-sm"><thead><tr>{['번호', '종목', '구분', '수량', '체결가', '수수료', '거래세', '농특세', '현금 증감', '실현손익', '상태', '복기'].map((label) => <th className="p-2" key={label}>{label}</th>)}</tr></thead><tbody>{orders.data?.map((order) => <tr key={order.order_id} className="border-t border-gray-100"><td className="p-2">{order.order_id}</td><td className="p-2">{order.symbol_code}</td><td className="p-2">{order.order_type}</td><td className="p-2">{order.quantity}</td><td className="p-2">{numberOrNull(order.price) === null ? '—' : won(order.price)}</td>{['commission', 'transaction_tax', 'rural_tax', 'cash_delta', 'realized_pnl'].map(key => <td className="p-2" key={key}>{order[key] == null ? (order.cost_policy_version ? '—' : '과거 미기록') : won(order[key])}</td>)}<td className="p-2">{order.status}</td><td className="p-2">{order.status === '체결' && !practice ? <button type="button" onClick={() => setReviewId(`${accountId}:${order.order_id}`)} className="whitespace-nowrap text-xs text-brand-700 underline">돌아보기</button> : '—'}</td></tr>)}</tbody></table></div></RemoteState>}
+    {!accountId ? <p className="text-sm text-gray-500">계좌를 선택해 주세요.</p> : <RemoteState resource={orders} empty={!orders.data?.length}><div className="max-h-80 overflow-auto"><table className="w-full min-w-[480px] text-right text-sm"><thead><tr>{['번호', '종목', '구분', '수량', '체결가', '상태', '복기'].map((label) => <th className="p-2" key={label}>{label}</th>)}</tr></thead><tbody>{orders.data?.map((order) => <tr key={order.order_id} className="border-t border-gray-100"><td className="p-2">{order.order_id}</td><td className="p-2">{order.symbol_code}</td><td className="p-2">{order.order_type}</td><td className="p-2">{order.quantity}</td><td className="p-2">{numberOrNull(order.price) === null ? '—' : won(order.price)}</td><td className="p-2">{order.status}</td><td className="p-2">{order.status === '체결' && !practice ? <button type="button" onClick={() => setReviewId(`${accountId}:${order.order_id}`)} className="whitespace-nowrap text-xs text-brand-700 underline">돌아보기</button> : '—'}</td></tr>)}</tbody></table></div></RemoteState>}
     {review && <OrderReflection key={`${scope}:${review.order_id}`} scope={scope} order={review} onClose={() => setReviewId(null)} />}
   </section></PracticeTarget>;
 }

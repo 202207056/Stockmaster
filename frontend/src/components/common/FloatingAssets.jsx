@@ -5,7 +5,7 @@ import useAuth from '../../hooks/useAuth';
 import useRemote from '../../hooks/useRemote';
 import useMiniAssetsSetting from '../../hooks/useMiniAssetsSetting';
 import { fetchValuedPortfolio } from '../../api/data';
-import { numberOrNull, holdingCost, portfolioTotals, quotePrice } from '../../api/normalize';
+import { numberOrNull, portfolioTotals, quotePrice } from '../../api/normalize';
 import { rate, signTextClass, won, wonSigned } from '../../utils/format';
 import StockLogo from './StockLogo';
 import AccountPicker from './AccountPicker';
@@ -123,11 +123,11 @@ function FloatingAssetsPanel() {
             {resource.data?.holdings.length === 0 && <div className="mini-assets-message"><p>보유한 종목이 없어요.</p><Link to="/trading">종목 둘러보기</Link></div>}
             {resource.data?.holdings.map((holding) => {
               const quantity = numberOrNull(holding.hold_quantity);
-              const basis = holdingCost(holding);
+              const average = numberOrNull(holding.avg_price);
               const price = quotePrice(holding.quote);
               const market = price != null && quantity != null ? price * quantity : null;
-              const pnl = market != null && basis != null ? market - basis : null;
-              const percent = pnl != null && basis > 0 ? rate(pnl / basis * 100, 1) : null;
+              const pnl = market != null && average != null ? market - average * quantity : null;
+              const percent = pnl != null && average > 0 && quantity > 0 ? rate(pnl / (average * quantity) * 100, 1) : null;
               const name = holding.security_name || holding.symbol_code;
               return <Link key={holding.portfolio_id ?? holding.symbol_code} to={`/trading?code=${encodeURIComponent(holding.symbol_code)}`} className="mini-assets-holding"><StockLogo code={holding.symbol_code} name={name} className="h-9 w-9" /><div className="mini-assets-stock"><b>{name}</b><span>{quantity == null ? '수량 미제공' : `${quantity.toLocaleString('ko-KR')}주`}</span></div><div className="mini-assets-value"><b>{market == null ? '시세 미제공' : won(market)}</b><span className={signTextClass(pnl)}>{pnl == null ? '손익 미제공' : wonSigned(pnl)}{percent && ` (${percent})`}</span></div></Link>;
             })}

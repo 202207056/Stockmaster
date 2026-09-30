@@ -279,7 +279,7 @@ export const GLOSSARY = {
   buy_amount: {
     term: '매입금액',
     category: 'asset',
-    desc: '거래대금 기준으로는 평균 매수가 × 보유수량입니다. 이 사이트의 매입원가는 부과된 매수 수수료도 포함하므로 표시된 평균단가와 구분합니다.',
+    desc: '보유 주식을 매수하는 데 사용한 거래금액으로 평균 매수가 × 보유수량입니다. 이 사이트는 수수료·세금을 제외합니다.',
     example: '평균단가 1만원 × 10주 = 매입금액 10만원',
     related: ['eval_amount', 'avg_price'],
   },

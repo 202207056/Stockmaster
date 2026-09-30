@@ -1,4 +1,4 @@
-import api, { API_ORIGIN, getToken, toUserMessage } from './client';
+import api, { getToken, toUserMessage } from './client';
 import { chartRows, quotePrice, requireArray, requireObject } from './normalize';
 import { abortableDelay, createSharedRequest } from './sharedRequest';
 
@@ -33,19 +33,6 @@ export const createComment = async (id, content) => (await api.post(`/community/
 export const toggleLike = async (id) => (await api.post(`/community/posts/${id}/like`)).data;
 export const fetchOrders = async (accountId, signal) => requireArray(await get('/trading/orders', { account_id: accountId }, signal));
 export const submitOrder = async (payload) => (await api.post('/trading/orders', payload)).data;
-export const fetchTradingPolicy = async (symbol, signal) => {
-  try {
-    return requireObject(await get('/trading/orders/cost-policy', { symbol_code: symbol }, signal));
-  } catch (error) {
-    if (error.response?.status !== 404) throw error;
-    // Confirm an older order contract; a missing symbol must not bypass policy.
-    const { data: schema } = await api.get('/openapi.json', { baseURL: API_ORIGIN, signal });
-    if (schema?.paths?.['/api/trading/orders']?.post && !schema.paths['/api/trading/orders/cost-policy']
-      && schema.components?.schemas?.OrderRequest?.properties
-      && !schema.components.schemas.OrderRequest.properties.cost_policy_version) return { legacy: true };
-    throw error;
-  }
-};
 export const fetchPortfolio = async (accountId, signal) => {
   const data = requireObject(await get('/trading/portfolio', { account_id: accountId }, signal));
   return { ...data, holdings: requireArray(data.holdings) };

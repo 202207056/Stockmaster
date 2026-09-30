@@ -86,12 +86,12 @@ for (const course of TRADING_TUTORIALS) test(`site tour ${course.id}: existing p
     assert(container.querySelector('[aria-label="학습 완료"]'));
     assert.equal(apiCalls, 0, 'practice never invokes account/quote/order API');
     if (course.id === 'buy') {
-      assert(container.textContent.includes('849,980원'), 'valid quantity other than the suggested ten is accepted');
-      assert(container.textContent.includes('150,020원'));
+      assert(container.textContent.includes('850,000원'), 'valid quantity other than the suggested ten is accepted');
+      assert(container.textContent.includes('150,000원'));
     }
     if (course.id === 'review') {
-      assert(container.textContent.includes('749,400원'));
-      assert(container.textContent.includes('250,035원'));
+      assert(container.textContent.includes('750,000원'));
+      assert(container.textContent.includes('250,000원'));
     }
     await click(button('처음부터'));
     assert(container.querySelector('dialog[open]'));

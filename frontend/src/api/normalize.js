@@ -47,7 +47,7 @@ export function portfolioTotals(portfolio) {
     const average = numberOrNull(holding.avg_price);
     const price = quotePrice(holding.quote);
     if (quantity === null || quantity < 0 || average === null || average < 0) costComplete = false;
-    else cost += numberOrNull(holding.acquisition_cost) ?? quantity * average;
+    else cost += quantity * average;
     if (price === null || quantity === null || quantity < 0) priceComplete = false;
     else market += quantity * price;
   }
@@ -56,14 +56,6 @@ export function portfolioTotals(portfolio) {
     unrealized: costComplete && priceComplete ? market - cost : null,
     total: cash !== null && priceComplete ? cash + market : null,
   };
-}
-
-export function holdingCost(holding) {
-  const explicit = numberOrNull(holding.acquisition_cost);
-  if (explicit !== null) return explicit;
-  const quantity = numberOrNull(holding.hold_quantity);
-  const average = numberOrNull(holding.avg_price);
-  return quantity !== null && average !== null ? quantity * average : null;
 }
 
 export function safeExternalUrl(value) {
