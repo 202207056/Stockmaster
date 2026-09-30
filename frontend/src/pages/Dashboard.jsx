@@ -18,11 +18,11 @@ import { numberOrNull, safeExternalUrl } from '../api/normalize';
 export default function Dashboard() {
   const { user, isAuthenticated } = useAuth();
   const [favorites, setFavorites] = useState(getFavorites);
-  const news = useRemote(useCallback((signal) => fetchNews(signal), []));
-  const posts = useRemote(useCallback((signal) => fetchPosts(1, signal, 4), []), isAuthenticated);
-  const amount = useRemote(useCallback((signal) => fetchRanking('amount', signal), []));
-  const change = useRemote(useCallback((signal) => fetchRanking('change', signal), []));
-  const volume = useRemote(useCallback((signal) => fetchRanking('volume', signal), []));
+  const news = useRemote(useCallback((signal) => fetchNews(signal), []), true, { cacheKey: 'news', publicCache: true });
+  const posts = useRemote(useCallback((signal) => fetchPosts(1, signal, 4), []), isAuthenticated, { cacheKey: 'posts:1:4', cachePreview: true });
+  const amount = useRemote(useCallback((signal) => fetchRanking('amount', signal), []), true, { cacheKey: 'ranking:amount', publicCache: true });
+  const change = useRemote(useCallback((signal) => fetchRanking('change', signal), []), true, { cacheKey: 'ranking:change', publicCache: true });
+  const volume = useRemote(useCallback((signal) => fetchRanking('volume', signal), []), true, { cacheKey: 'ranking:volume', publicCache: true });
   const rankings = [
     { key: 'amount', title: '거래대금 상위', hint: '오늘 돈이 가장 많이 몰린 종목', resource: amount },
     { key: 'change', title: '급상승', hint: '어제보다 많이 오른 종목', resource: change },

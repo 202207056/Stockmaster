@@ -7,7 +7,7 @@ import StockCoachContent from './StockCoachContent';
 
 export default function StockCoach({ code }) {
   const { isAuthenticated } = useAuth();
-  const resource = useRemote(useCallback((signal) => fetchCoach(code, signal), [code]), isAuthenticated && !!code);
+  const resource = useRemote(useCallback((signal) => fetchCoach(code, signal), [code]), isAuthenticated && !!code, { cacheKey: JSON.stringify(['coach', code]), cachePreview: !!code });
   return <section className="rounded-xl border border-gray-200 p-4 lg:col-span-4">
     <h2 className="mb-3 text-sm font-bold text-gray-700">AI 모의투자 코칭</h2>
     <RemoteState resource={resource} authenticated={isAuthenticated}>

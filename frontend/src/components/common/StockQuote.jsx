@@ -12,13 +12,13 @@ export default function StockQuote({ code }) {
     const quote = await fetchPrice(code, signal);
     return { stock, quote };
   }, [code]);
-  const resource = useRemote(loader, !!code);
+  const resource = useRemote(loader, !!code, { cacheKey: JSON.stringify(['stock-quote', code]), publicCache: true });
   const price = quotePrice(resource.data?.quote);
   return <div className="flex min-w-0 items-center gap-2">
     <StockLogo code={code} name={resource.data?.stock.name} />
     <div className="min-w-0">
     <Link className="font-bold text-brand-700 hover:underline" to={`/trading?code=${encodeURIComponent(code)}`}>{resource.data?.stock.name || code}</Link>
-    <p className="text-xs text-gray-500">{resource.loading ? '시세 조회 중…' : resource.error ? <button onClick={resource.reload} className="underline">조회 실패 · 재시도</button> : price === null ? '시세 이용 불가' : won(price)}</p>
+    <p className="text-xs text-gray-500">{resource.loading && resource.data == null ? '시세 조회 중…' : resource.error && resource.data == null ? <button onClick={resource.reload} className="underline">조회 실패 · 재시도</button> : price === null ? '시세 이용 불가' : won(price)}</p>
     </div>
   </div>;
 }

@@ -10,7 +10,7 @@ import { marketChartPoints } from '../../utils/marketChart';
 const STEP_MS = 2500;
 
 export default function MarketStrip() {
-  const resource = useRemote(useCallback((signal) => fetchMarketIndices(signal), []), true, { keepPreviousData: true });
+  const resource = useRemote(useCallback((signal) => fetchMarketIndices(signal), []), true, { keepPreviousData: true, cacheKey: 'indices', publicCache: true });
   const items = resource.data ?? [];
   const { reload } = resource;
 
@@ -124,7 +124,7 @@ export default function MarketStrip() {
         주요 시세
       </h2>
 
-      <RemoteState resource={{ ...resource, loading: resource.loading && !items.length, error: items.length ? null : resource.error }} requiresAuth={false} empty={!items.length}>
+      <RemoteState resource={resource} requiresAuth={false} empty={!items.length}>
       <div
         ref={stripRef}
         className="card-strip -mx-1 px-1 py-1"

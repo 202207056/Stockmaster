@@ -6,7 +6,7 @@ import RemoteState from './RemoteState';
 
 export default function StockNewsSummary({ code }) {
   const { isAuthenticated } = useAuth();
-  const resource = useRemote(useCallback((signal) => fetchNewsSummary(code, signal), [code]), isAuthenticated && !!code);
+  const resource = useRemote(useCallback((signal) => fetchNewsSummary(code, signal), [code]), isAuthenticated && !!code, { cacheKey: JSON.stringify(['news-summary', code]), cachePreview: !!code });
   const data = resource.data;
   const summary = Array.isArray(data?.summary) ? data.summary.filter((line) => typeof line === 'string' && line.trim()).slice(0, 3) : [];
   const tags = Array.isArray(data?.tags) ? data.tags.filter((tag) => typeof tag === 'string' && tag.trim()).slice(0, 3) : [];

@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { GripVertical, RefreshCw, Wallet, X } from 'lucide-react';
 import useAuth from '../../hooks/useAuth';
 import useRemote from '../../hooks/useRemote';
 import useMiniAssetsSetting from '../../hooks/useMiniAssetsSetting';
 import { fetchValuedPortfolio } from '../../api/data';
-import { numberOrNull, portfolioTotals, quotePrice } from '../../api/normalize';
+import { numberOrNull, holdingCost, portfolioTotals, quotePrice } from '../../api/normalize';
 import { rate, signTextClass, won, wonSigned } from '../../utils/format';
 import StockLogo from './StockLogo';
 import AccountPicker from './AccountPicker';
@@ -22,7 +22,8 @@ function initialPosition() {
 
 export default function FloatingAssets() {
   const [enabled] = useMiniAssetsSetting();
-  return enabled ? <FloatingAssetsPanel /> : null;
+  const [params] = useSearchParams();
+  return enabled && !params.has('practice') ? <FloatingAssetsPanel /> : null;
 }
 
 function FloatingAssetsPanel() {
@@ -32,8 +33,8 @@ function FloatingAssetsPanel() {
   const trigger = useRef(null);
   const gesture = useRef(null);
   const suppressClick = useRef(false);
-  const { isAuthenticated, accountId, account } = useAuth();
-  const resource = useRemote(useCallback((signal) => fetchValuedPortfolio(accountId, signal), [accountId]), open && isAuthenticated && !!accountId, { keepPreviousData: true });
+  const { isAuthenticated, hasCachedSession, accountId, account } = useAuth();
+  const resource = useRemote(useCallback((signal) => fetchValuedPortfolio(accountId, signal), [accountId]), open && isAuthenticated && !!accountId, { keepPreviousData: true, cacheKey: JSON.stringify(['portfolio', accountId]), cachePreview: true });
   const { reload } = resource;
   const totals = portfolioTotals(resource.data);
 
@@ -110,7 +111,7 @@ function FloatingAssetsPanel() {
       {open && <button type="button" className="mini-assets-close" aria-label="내 자산 접기" onClick={close}><X size={18} /></button>}
     </div>
     {open && <section id="mini-assets-panel" className="mini-assets-panel" tabIndex={0} aria-label="내 자산 정보 스크롤 영역">
-      {!isAuthenticated ? <div className="mini-assets-message"><Wallet size={28} /><p>로그인하고 내 자산을 확인하세요.</p><Link to="/login">로그인하기</Link></div> : <>
+      {!isAuthenticated && !hasCachedSession ? <div className="mini-assets-message"><Wallet size={28} /><p>로그인하고 내 자산을 확인하세요.</p><Link to="/login">로그인하기</Link></div> : <>
         <div className="mini-assets-account"><AccountPicker /></div>
         {!accountId ? <p className="mini-assets-message">계좌를 선택해 주세요.</p> : <>
           <div className="mini-assets-summary" aria-busy={resource.loading}>
@@ -122,11 +123,11 @@ function FloatingAssetsPanel() {
             {resource.data?.holdings.length === 0 && <div className="mini-assets-message"><p>보유한 종목이 없어요.</p><Link to="/trading">종목 둘러보기</Link></div>}
             {resource.data?.holdings.map((holding) => {
               const quantity = numberOrNull(holding.hold_quantity);
-              const average = numberOrNull(holding.avg_price);
+              const basis = holdingCost(holding);
               const price = quotePrice(holding.quote);
               const market = price != null && quantity != null ? price * quantity : null;
-              const pnl = market != null && average != null ? market - average * quantity : null;
-              const percent = pnl != null && average > 0 && quantity > 0 ? rate(pnl / (average * quantity) * 100, 1) : null;
+              const pnl = market != null && basis != null ? market - basis : null;
+              const percent = pnl != null && basis > 0 ? rate(pnl / basis * 100, 1) : null;
               const name = holding.security_name || holding.symbol_code;
               return <Link key={holding.portfolio_id ?? holding.symbol_code} to={`/trading?code=${encodeURIComponent(holding.symbol_code)}`} className="mini-assets-holding"><StockLogo code={holding.symbol_code} name={name} className="h-9 w-9" /><div className="mini-assets-stock"><b>{name}</b><span>{quantity == null ? '수량 미제공' : `${quantity.toLocaleString('ko-KR')}주`}</span></div><div className="mini-assets-value"><b>{market == null ? '시세 미제공' : won(market)}</b><span className={signTextClass(pnl)}>{pnl == null ? '손익 미제공' : wonSigned(pnl)}{percent && ` (${percent})`}</span></div></Link>;
             })}

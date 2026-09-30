@@ -4,17 +4,20 @@ import useAuth from '../hooks/useAuth';
 import { won, wonSigned, signTextClass } from '../utils/format';
 import HelpIcon from '../components/learn/HelpIcon';
 import LoginNotice from '../components/common/LoginNotice';
-import useRemote from '../hooks/useRemote';
+import useSiteResource from '../hooks/useSiteResource';
+import { useSitePractice } from '../contexts/site-practice';
+import { PracticeTarget } from '../components/learn/SitePractice';
 import { fetchValuedPortfolio } from '../api/data';
-import { numberOrNull, portfolioTotals, quotePrice } from '../api/normalize';
+import { numberOrNull, portfolioTotals, quotePrice, holdingCost } from '../api/normalize';
 import AccountPicker from '../components/common/AccountPicker';
 import RemoteState from '../components/common/RemoteState';
 import { LearningCard } from '../components/learn/LearningUI';
 
 /** 기존 총자산·개인 지표·내 투자·보유종목 배치에 실제 조회 결과를 표시합니다. */
 export default function Assets() {
-  const { account, accountId, isAuthenticated } = useAuth();
-  const resource = useRemote(useCallback((signal) => fetchValuedPortfolio(accountId, signal), [accountId]), isAuthenticated && !!accountId, { keepPreviousData: true });
+  const practice = useSitePractice();
+  const { account, accountId, isAuthenticated, hasCachedSession } = useAuth();
+  const resource = useSiteResource('portfolio', useCallback((signal) => fetchValuedPortfolio(accountId, signal), [accountId]), isAuthenticated && !!accountId, { keepPreviousData: true, cacheKey: JSON.stringify(['portfolio', accountId]), cachePreview: true });
   const totals = portfolioTotals(resource.data);
 
   const pending = !isAuthenticated ? '로그인하면 표시돼요' : resource.loading ? '불러오는 중이에요' : '조회 불가';
@@ -24,15 +27,14 @@ export default function Assets() {
       <div className="border-b border-gray-200 pb-4">
         <h1 className="text-xl font-extrabold text-gray-900">내 자산</h1>
         {account && <p className="mt-1 text-sm text-gray-500">{account.account_name}</p>}
-        {isAuthenticated && <div className="mt-3"><AccountPicker /></div>}
+        {(isAuthenticated || hasCachedSession) && <div className="mt-3"><AccountPicker /></div>}
       </div>
 
-      {!isAuthenticated && <LoginNotice message="로그인하면 내 계좌의 실제 금액이 표시돼요" />}
-      {resource.stale && <p role="status" className="text-sm text-gray-500">이전 조회 금액을 표시합니다. {resource.loading ? '최신 정보를 확인 중이에요.' : '갱신에 실패했어요. 다시 조회해 주세요.'}</p>}
+      {!isAuthenticated && !hasCachedSession && <LoginNotice message="로그인하면 내 계좌의 실제 금액이 표시돼요" />}
       {resource.data?.holdings.some((holding) => holding.quoteError) && <div role="status" className="text-sm text-gray-600"><p>일부 종목의 시세 조회가 실패해 총자산·평가금액을 계산할 수 없어요.</p><ul>{resource.data.holdings.filter((holding) => holding.quoteError).map((holding) => <li key={holding.portfolio_id ?? holding.symbol_code}>{holding.security_name || holding.symbol_code}: {holding.quoteError}</li>)}</ul><button disabled={resource.loading} onClick={resource.reload} className="mt-2 underline">시세 다시 조회</button></div>}
 
       {/* ── 총자산 ──────────────────────────────────────────────── */}
-      <section>
+      <PracticeTarget id="asset-total"><section>
         <h2 className="flex items-center text-sm font-bold text-gray-500">
           총자산
           <HelpIcon termId="total_asset" />
@@ -86,10 +88,10 @@ export default function Assets() {
               고쳐지기 전까지 숫자를 띄우면 오히려 신뢰를 잃으므로 비워 둡니다. (Doc/13 §6) */}
           <StatCard label="내 랭킹" pending="랭킹 계산식 수정 대기" />
         </div>
-      </section>
+      </section></PracticeTarget>
 
       {/* ── 내 투자 ─────────────────────────────────────────────── */}
-      <section>
+      <PracticeTarget id="asset-investment"><section>
         <h2 className="flex items-center text-lg font-bold text-gray-700">
           내 투자
           <HelpIcon termId="portfolio" />
@@ -100,7 +102,7 @@ export default function Assets() {
             value={totals?.cost != null ? won(totals.cost) : pending}
             label={
               <>
-                매입금액
+                매입원가 (매수 비용 포함)
                 <HelpIcon termId="buy_amount" />
               </>
             }
@@ -127,14 +129,14 @@ export default function Assets() {
 
         {/* 왜 "총 수익"이 없는지 사용자에게도 설명해 둡니다. */}
         <p className="mt-3 text-xs leading-relaxed text-gray-400">
-          지금은 아직 팔지 않은 종목의 평가손익만 보여 드려요. 실제로 팔아서 확정된
-          <HelpIcon termId="realized_pnl" label="실현손익 설명 보기" />는 준비 중입니다.
+          매입원가는 부과된 매수 수수료를 포함하며 평가손익은 미래 매도 비용을 제외합니다. 과거 비용 미적용 거래에는 비용을 소급하지 않습니다.
+          실현손익은 트레이딩 주문내역에서 확인하세요. 모의계좌는 실제 T+2 결제와 달리 체결 즉시 현금을 반영합니다.
         </p>
-      </section>
+      </section></PracticeTarget>
 
 
       {/* ── 보유종목 ────────────────────────────────────────────── */}
-      <section className="pb-8">
+      <PracticeTarget id="asset-holdings"><section className="pb-8">
         <h2 className="flex items-center text-lg font-bold text-gray-700">
           보유종목
           <HelpIcon termId="hold_quantity" />
@@ -142,20 +144,20 @@ export default function Assets() {
         {/* TODO(F-14): GET /api/trading/portfolio?account_id= + 종목별 /stocks/{code}/price */}
         <RemoteState resource={resource} authenticated={isAuthenticated}>
         {resource.data?.holdings.length ? <div className="mt-4 overflow-x-auto"><table className="w-full min-w-[600px] text-right text-sm"><thead className="bg-gray-50"><tr>{['종목', '보유수량', '평균단가', '현재가', '평가손익'].map((label) => <th key={label} className="p-3">{label}</th>)}</tr></thead><tbody>{resource.data.holdings.map((holding) => {
-          const price = quotePrice(holding.quote); const average = numberOrNull(holding.avg_price); const quantity = numberOrNull(holding.hold_quantity); const pnl = price !== null && average !== null && quantity !== null ? (price - average) * quantity : null;
-          return <tr key={holding.portfolio_id ?? holding.symbol_code} className="border-b border-gray-100"><th className="p-3"><Link to={`/trading?code=${encodeURIComponent(holding.symbol_code)}`} className="text-brand-700">{holding.security_name || holding.symbol_code}</Link></th><td className="p-3">{quantity ?? '—'}</td><td className="p-3">{average === null ? '—' : won(average)}</td><td className="p-3">{price === null ? '시세 이용 불가' : won(price)}</td><td className={`p-3 ${signTextClass(pnl)}`}>{pnl === null ? '—' : wonSigned(pnl)}</td></tr>;
+          const price = quotePrice(holding.quote); const average = numberOrNull(holding.avg_price); const quantity = numberOrNull(holding.hold_quantity); const basis = holdingCost(holding); const pnl = price !== null && basis !== null && quantity !== null ? price * quantity - basis : null;
+          return <tr key={holding.portfolio_id ?? holding.symbol_code} className="border-b border-gray-100"><th className="p-3"><PracticeTarget id="trading-link"><Link to={practice ? practice.href('/trading', holding.symbol_code) : `/trading?code=${encodeURIComponent(holding.symbol_code)}`} onClick={() => practice?.event('trading')} className="text-brand-700">{holding.security_name || holding.symbol_code}</Link></PracticeTarget></th><td className="p-3">{quantity ?? '—'}</td><td className="p-3">{average === null ? '—' : won(average)}</td><td className="p-3">{price === null ? '시세 이용 불가' : won(price)}</td><td className={`p-3 ${signTextClass(pnl)}`}>{pnl === null ? '—' : wonSigned(pnl)}</td></tr>;
         })}</tbody></table></div> : <div className="mt-4 rounded-lg border border-dashed border-gray-200 px-4 py-12 text-center">
           <p className="text-sm text-gray-400">{accountId ? '보유한 종목이 없어요.' : '계좌를 선택해 주세요.'}</p>
-          <Link
-            to="/trading"
+          <PracticeTarget id="trading-link"><Link
+            to={practice ? practice.href('/trading', '990001') : '/trading'} onClick={() => practice?.event('trading')}
             className="mt-3 inline-block rounded-md border border-gray-300 px-4 py-1.5 text-sm font-bold text-gray-700 transition hover:bg-gray-50"
           >
             트레이딩으로 가기
-          </Link>
+          </Link></PracticeTarget>
         </div>}
         </RemoteState>
         {resource.data && <div className="mt-3 text-xs leading-relaxed text-gray-400"><p>조회 완료: {new Date(resource.data.fetchedAt).toLocaleString('ko-KR')} · 종목별 조회 시세와 평균단가 기준 참고 평가액입니다. 시세 누락 시 합계를 표시하지 않습니다.</p><button onClick={resource.reload} className="mt-2 underline">새로고침</button></div>}
-      </section>
+      </section></PracticeTarget>
       <LearningCard title="손실/이익 발생 시 관련 개념 학습 (현재 미구현)"><p className="text-sm text-gray-500">보유 종목의 손익과 연결된 개념을 살펴보는 기능을 준비하고 있습니다.</p></LearningCard>
     </div>
   );

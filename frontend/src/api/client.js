@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { clearPrivateResources } from './resourceCache';
 
 /**
  * API 클라이언트 (F-6)
@@ -16,6 +17,10 @@ export const API_BASE_URL =
 export const API_ORIGIN = API_BASE_URL.replace(/\/api$/, '');
 
 export const TOKEN_KEY = 'access_token';
+const SESSION_KEY = 'stockmaster:cache-session';
+export const getSessionId = () => {
+  try { return localStorage.getItem(SESSION_KEY); } catch { return null; }
+};
 
 export const getToken = () => {
   try {
@@ -27,6 +32,11 @@ export const getToken = () => {
 
 export const setToken = (token) => {
   try {
+    if (token !== getToken() || (token && !getSessionId())) {
+      clearPrivateResources();
+      if (token) localStorage.setItem(SESSION_KEY, crypto.randomUUID());
+      else localStorage.removeItem(SESSION_KEY);
+    }
     if (token) localStorage.setItem(TOKEN_KEY, token);
     else localStorage.removeItem(TOKEN_KEY);
   } catch {

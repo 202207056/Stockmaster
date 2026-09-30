@@ -31,7 +31,7 @@ export const LESSONS = [
   {
     "id": "A1",
     "course": "A",
-    "title": "현금이 줄면 손해일까?",
+    "title": "매수와 자산 구성",
     "initial": true,
     "situation": "100만원 중 30만원을 주식으로 바꿉니다.",
     "action": "가상 매수 후 주가를 10% 내리거나 올려 현금·주식 평가액·총자산을 비교합니다.",
@@ -66,7 +66,7 @@ export const LESSONS = [
   {
     "id": "A2",
     "course": "A",
-    "title": "주문했는데 왜 안 사졌을까?",
+    "title": "주문 접수와 체결",
     "initial": true,
     "situation": "매도 가능한 최저 가격 10,000원, 내 지정 매수가 9,900원입니다.",
     "action": "지정 가격을 바꾸며 교육용 주문의 대기·체결 조건을 살펴봅니다.",
@@ -101,7 +101,7 @@ export const LESSONS = [
   {
     "id": "A3",
     "course": "A",
-    "title": "시장가로 사면 표시 가격과 같을까?",
+    "title": "시장가와 체결가격",
     "initial": false,
     "situation": "매도호가 10,000원에 10주, 10,100원에 20주가 있습니다.",
     "action": "가상으로 20주를 사서 총 201,000원·평균 10,050원 체결을 확인합니다.",
@@ -136,7 +136,7 @@ export const LESSONS = [
   {
     "id": "B1",
     "course": "B",
-    "title": "안 팔았는데 손실이 보이는 이유",
+    "title": "평가손익과 실현손익",
     "initial": true,
     "situation": "10,000원에 산 30주가 9,000원이 됐습니다.",
     "action": "10주만 가상 매도하여 실현손익 −10,000원과 잔여 20주의 평가손익 −20,000원을 함께 봅니다.",
@@ -171,7 +171,7 @@ export const LESSONS = [
   {
     "id": "B2",
     "course": "B",
-    "title": "20% 하락 뒤 20% 오르면 원금일까?",
+    "title": "수익률과 원금 회복",
     "initial": false,
     "situation": "기준금액 100이 20% 하락합니다.",
     "action": "가격 경로 100 → 80 → 96을 조작하고, 80에서 100으로 돌아갈 상승률을 계산합니다.",
@@ -206,7 +206,7 @@ export const LESSONS = [
   {
     "id": "B3",
     "course": "B",
-    "title": "평균 매입가가 낮아지면 위험도 줄까?",
+    "title": "평균 매입가와 추가 매수",
     "initial": false,
     "situation": "10,000원에 10주를 보유한 상태에서 8,000원에 10주를 추가 매수합니다.",
     "action": "평균 매입가 9,000원, 총매입금액 180,000원, 현재 평가액 160,000원을 비교합니다.",
@@ -241,7 +241,7 @@ export const LESSONS = [
   {
     "id": "C1",
     "course": "C",
-    "title": "한 종목이 계좌 대부분을 차지한다면?",
+    "title": "투자 비중과 집중 위험",
     "initial": true,
     "situation": "총자산 100만원 중 동일 종목 비중이 80%인 계좌와 20%인 계좌입니다.",
     "action": "같은 10% 하락에서 총자산 손실이 8만원과 2만원으로 달라짐을 비교합니다.",
@@ -276,7 +276,7 @@ export const LESSONS = [
   {
     "id": "C2",
     "course": "C",
-    "title": "전량 매도와 일부 매도는 무엇이 다를까?",
+    "title": "전량 매도와 부분 매도",
     "initial": false,
     "situation": "현재가 9,000원인 주식 30주를 갖고 있습니다.",
     "action": "0주·10주·30주 매도에서 현금과 잔여 수량, 다음 가격 변화의 영향을 비교합니다.",
@@ -311,7 +311,7 @@ export const LESSONS = [
   {
     "id": "C3",
     "course": "C",
-    "title": "여러 종목이면 언제나 분산일까?",
+    "title": "분산투자와 상관관계",
     "initial": false,
     "situation": "같은 업종의 가상 기업 3개와 서로 다른 조건의 가상 기업 3개를 비교합니다.",
     "action": "미리 정한 두 충격 시나리오에서 자산 변화가 어떻게 겹치는지 봅니다.",
@@ -346,7 +346,7 @@ export const LESSONS = [
   {
     "id": "D1",
     "course": "D",
-    "title": "좋은 뉴스면 가격도 오를까?",
+    "title": "뉴스와 가격 반응",
     "initial": true,
     "situation": "가상 기사: X기업 매출은 전년보다 20% 늘고 영업이익은 10% 줄었습니다.",
     "action": "문장을 사실·해석·미래 추측으로 나누고 추가 확인할 자료를 고릅니다.",
@@ -381,7 +381,7 @@ export const LESSONS = [
   {
     "id": "D2",
     "course": "D",
-    "title": "같은 실적, 왜 다른 반응일까?",
+    "title": "실적과 시장 기대",
     "initial": false,
     "situation": "가상 기업 두 곳의 이익 증가율은 같지만 사전 기대와 발표 시점이 다릅니다.",
     "action": "공개된 자료를 시간순으로 펼치고 실제로 당시 알 수 있던 정보를 구분합니다.",
@@ -416,7 +416,7 @@ export const LESSONS = [
   {
     "id": "D3",
     "course": "D",
-    "title": "PER 숫자 하나로 고를 수 있을까?",
+    "title": "PER과 기업 비교",
     "initial": false,
     "situation": "가상 기업 두 곳의 PER, 업종, 일회성 이익 설명을 제시합니다.",
     "action": "숫자 하나로 결론을 내리기 전에 필요한 자료를 선택합니다.",
@@ -451,7 +451,7 @@ export const LESSONS = [
   {
     "id": "E1",
     "course": "E",
-    "title": "나는 어떤 근거로 선택했을까?",
+    "title": "투자 판단 근거",
     "initial": true,
     "situation": "뉴스를 보고 가상 매수를 고민합니다.",
     "action": "매수 이유·확인한 정보·생각을 바꿀 조건을 적고, 새 정보가 나온 뒤 계획 유지·수정·판단 보류를 선택합니다.",
@@ -486,7 +486,7 @@ export const LESSONS = [
   {
     "id": "E2",
     "course": "E",
-    "title": "팔기 전에 무엇이 달라졌는지 보자",
+    "title": "매도 전 판단 점검",
     "initial": false,
     "situation": "가격 하락 후 매도를 고민하지만 원래 계획도 남아 있습니다.",
     "action": "계획 달성·새 정보·비중 조절·현금 필요·기타 중 매도 이유를 선택하고 수량 변화와 비교합니다.",
@@ -521,7 +521,7 @@ export const LESSONS = [
   {
     "id": "E3",
     "course": "E",
-    "title": "수익이 났으면 좋은 판단일까?",
+    "title": "투자 결과와 판단 복기",
     "initial": false,
     "situation": "비슷한 근거에서 서로 다른 결과가 나온 가상 거래 두 개를 보여 줍니다.",
     "action": "당시 알았던 정보와 나중에 알게 된 정보를 구분하고 다음 확인 사항 하나를 적습니다.",

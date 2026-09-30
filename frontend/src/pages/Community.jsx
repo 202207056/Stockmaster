@@ -13,7 +13,7 @@ export default function Community() {
   const parsedPage = Number(params.get('page') || 1);
   const page = Number.isSafeInteger(parsedPage) && parsedPage > 0 ? parsedPage : 1;
   const postId = Number(params.get('post')) || null;
-  const resource = useRemote(useCallback((signal) => fetchPosts(page, signal), [page]), isAuthenticated);
+  const resource = useRemote(useCallback((signal) => fetchPosts(page, signal), [page]), isAuthenticated, { cacheKey: JSON.stringify(['posts', page, 20]), cachePreview: true });
   const [writing, setWriting] = useState(false);
   return <div className="flex flex-col gap-6">
     <div className="flex items-end justify-between border-b border-gray-200 pb-4">
@@ -44,7 +44,7 @@ function PostComposer({ onSaved }) {
 }
 
 function PostDetail({ id, onChanged, onClose }) {
-  const resource = useRemote(useCallback((signal) => fetchPost(id, signal), [id]));
+  const resource = useRemote(useCallback((signal) => fetchPost(id, signal), [id]), true, { cacheKey: JSON.stringify(['post', id]) });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
   const mutate = async (action) => {

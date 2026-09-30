@@ -13,7 +13,7 @@ const steps = [
   ['search', '종목 검색', '검색창에 예시를 입력하고 검색을 눌러 보세요. 종목명이나 종목 코드로 검색할 수 있습니다. 표시된 이름과 코드는 모두 연습용입니다.'],
   ['stock', '종목 선택', '여러 예시 종목 중 예시전자 (990001)를 선택하세요. 종목을 선택하면 해당 종목의 차트가 표시됩니다.'],
   ['favorite', '관심종목 추가·해제', '빈 별을 눌러 예시전자를 관심종목에 추가하세요. 채워진 별을 다시 누르면 해제됩니다. 이 목록은 튜토리얼 안에서만 유지됩니다.'],
-  ['chart-type', '그래프 모양 변경', '그래프 종류에서 꺾은선을 선택하세요. 캔들은 시가·고가·저가·종가를, 꺾은선은 종가의 흐름을 보여 줍니다.'],
+  ['chart-type', '그래프 모양 변경', '그래프 종류에서 캔들을 선택하세요. 캔들은 시가·고가·저가·종가를, 꺾은선은 종가의 흐름을 보여 줍니다.'],
   ['chart-period', '그래프 기간 변경', '3개월을 눌러 더 긴 기간의 흐름을 확인하세요. 1일·1주·3개월·1년 버튼으로 표시 기간을 바꿀 수 있습니다.'],
   ['chart-check', '차트 살펴보기', '종류와 기간을 자유롭게 바꿔 보세요. 차트 위에 마우스를 올리거나 가격 표를 열면 가격을 확인할 수 있습니다. 확인을 누르면 계속 진행합니다.'],
   ['account', '주문 계좌 변경', '계좌 선택을 열어 기본 예시 계좌에서 매매 연습 계좌로 바꿔 주세요. 주문은 선택한 계좌에만 반영됩니다.'],
@@ -74,6 +74,7 @@ function TradingExperience() {
       <div><Link to="/learn?tab=guide" className="mb-3 inline-flex items-center gap-1 text-sm text-gray-600"><ArrowLeft size={16} /> 기본 투자 가이드</Link><h1 className="text-xl font-extrabold">트레이딩 매수·매도 튜토리얼</h1></div>
       <button onClick={restart} className="flex items-center gap-2 rounded-lg border border-gray-200 px-4 py-2 text-sm font-bold"><RotateCcw size={16} /> 처음부터</button>
     </header>
+    <p className="rounded-lg bg-gray-50 p-4 text-sm text-gray-600">예비 조작 연습입니다. 이 기존 과정은 수수료·세금·결제 시차를 제외합니다. 실제 비용 기준은 <Link to="/learn/tutorial/buy" className="font-bold text-brand-700 underline">매수와 거래 비용</Link>에서 이어서 학습하세요.</p>
     {done && <section aria-label="튜토리얼 완료" className="rounded-xl border-2 border-brand-300 bg-white p-5" aria-live="polite" aria-atomic="true">
       {done ? <><h2 className="flex items-center gap-2 text-lg font-bold text-brand-700"><CheckCircle2 size={22} /> 매수·매도 연습을 완료했어요!</h2><p className="mt-2 text-sm text-gray-600">2주 매수 → 1주 매도 완료. 남은 현금 950,000원 + 주식 평가액 50,000원 = 총자산 1,000,000원이에요.</p><p className="mt-2 text-sm text-gray-500">같은 가격에 사고팔아 손익은 0원입니다. 이 예시는 수수료·세금과 가격 변동을 제외했어요.</p><Link to="/learn?tab=guide" className="mt-4 inline-block rounded-lg bg-brand-600 px-4 py-2 text-sm font-bold text-white">기본 투자 가이드로 돌아가기</Link></> : null}
     </section>}

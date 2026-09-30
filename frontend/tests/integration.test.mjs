@@ -16,6 +16,41 @@ after(async () => { await server.close(); });
 const client = await server.ssrLoadModule('/src/api/client.js');
 const data = await server.ssrLoadModule('/src/api/data.js');
 
+test('orders support a verified legacy server without bypassing policy failures', async () => {
+  const legacySchema = { paths: { '/api/trading/orders': { post: {} } }, components: { schemas: { OrderRequest: { properties: { quantity: { type: 'integer' } } } } } };
+  let schema = legacySchema;
+  let status = 404;
+  let policyResponse;
+  const requests = [];
+  client.default.defaults.adapter = async (config) => {
+    requests.push(config.url);
+    if (config.url === '/openapi.json') {
+      assert.equal(config.baseURL, client.API_ORIGIN);
+      return { data: schema, status: 200, headers: {}, config };
+    }
+    assert.equal(config.url, '/trading/orders/cost-policy');
+    assert.equal(config.params.symbol_code, '005930');
+    if (policyResponse) return { data: policyResponse, status: 200, headers: {}, config };
+    throw Object.assign(new Error('policy unavailable'), { response: { status }, config, isAxiosError: true });
+  };
+  assert.deepEqual(await data.fetchTradingPolicy('005930'), { legacy: true });
+  assert.deepEqual(requests, ['/trading/orders/cost-policy', '/openapi.json']);
+  schema = { ...legacySchema, paths: { ...legacySchema.paths, '/api/trading/orders/cost-policy': { get: {} } } };
+  await assert.rejects(data.fetchTradingPolicy('005930'));
+  schema = { ...legacySchema, components: { schemas: { OrderRequest: { properties: { cost_policy_version: {} } } } } };
+  await assert.rejects(data.fetchTradingPolicy('005930'));
+  schema = {};
+  await assert.rejects(data.fetchTradingPolicy('005930'));
+  schema = legacySchema;
+  for (status of [401, 422, 500, 503]) {
+    requests.length = 0;
+    await assert.rejects(data.fetchTradingPolicy('005930'));
+    assert.deepEqual(requests, ['/trading/orders/cost-policy']);
+  }
+  policyResponse = { version: 'server-policy', tax_market: 'KOSPI' };
+  assert.deepEqual(await data.fetchTradingPolicy('005930'), policyResponse);
+});
+
 test('API adapters send auth and query parameters; portfolio quotes degrade independently', async () => {
   client.setToken('local-test-token');
   const requests = [];
@@ -198,14 +233,19 @@ test('learning home prioritizes curriculum with a secondary quiz and optional gl
   const { AuthContext } = await server.ssrLoadModule('/src/contexts/auth-context.js');
   const { default: Learn } = await server.ssrLoadModule('/src/pages/Learn.jsx');
   const render = (url) => renderToString(React.createElement(AuthContext.Provider, { value: { user: null, isAuthenticated: false } }, React.createElement(MemoryRouter, { initialEntries: [url] }, React.createElement(Learn))));
-  const home = render('/learn');
+  const home = render('/learn?tab=courses');
+  const landing = render('/learn');
+  assert(landing.includes('거래·계좌 실습 튜토리얼'));
+  assert(landing.includes('/trading?practice=buy') && landing.includes('/assets?practice=account'));
+  assert(!landing.includes('/learn/tutorial/futures'));
+  assert(landing.includes('예비 연습 · 기존 튜토리얼') && landing.includes('/learn/trading-tutorial'));
   assert(!home.includes('보유 비중 비교하기') && home.includes('문장 속 개념 찾기'));
   assert(home.indexOf('투자 기초 과정') < home.indexOf('문장 속 개념 찾기'));
   assert(home.includes('권장 순서:'));
   assert(!home.includes('용어 카드'));
   assert(render('/learn?tab=glossary').includes('투자 용어사전'));
   assert(render('/learn?tab=courses&lesson=unknown').includes('수업을 찾을 수 없어요'));
-  assert(home.includes('기본 투자 가이드') && home.includes('내 주식은 왜 올랐을까/내렸을까?'));
+  assert(home.includes('기본 투자 가이드') && home.includes('주가 변화와 정보 해석'));
   assert(render('/learn?tab=allocation').includes('두 계좌의 총자산 각각 100만원'));
   assert(render('/learn?tab=price').includes('자동 분석하는 기능은 아직 제공하지 않습니다'));
 });
@@ -262,7 +302,7 @@ test('order dialog distinguishes estimates, confirmed fills and uncertain respon
   const order = { accountId: 7, accountName: '연습 계좌', code: '005930', name: '삼성전자', kind: '매수', quantity: 2, price: 10000 };
   const render = (props = {}) => renderToString(React.createElement(MemoryRouter, null, React.createElement(Dialog, { order, ...props })));
   const confirm = render();
-  for (const label of ['매수 주문확인', '계좌번호', '모의 계좌 ID 7', '매매구분', '미구현', '삼성전자', '2주', '10,000', '20,000', '매수주문']) assert(confirm.includes(label), label);
+  for (const label of ['매수 주문확인', '계좌번호', '모의 계좌 ID 7', '매매구분', '현금 · 즉시 체결 모의거래', '삼성전자', '2주', '10,000', '20,000', '매수주문']) assert(confirm.includes(label), label);
   assert(!confirm.includes('주문 완료!'));
   const completed = render({ result: { order_id: 1, status: '체결', quantity: 2, price: 11000 } });
   for (const label of ['주문 완료!', '11,000', '22,000', '이 주식 관련 뉴스 보기', '관련 개념 살펴보기', 'lesson=A1']) assert(completed.includes(label), label);

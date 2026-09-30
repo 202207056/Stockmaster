@@ -1,6 +1,7 @@
 import { Outlet } from 'react-router-dom';
 import Header from './Header';
 import Footer from './Footer';
+import SitePractice from '../learn/SitePractice';
 
 /**
  * 공통 레이아웃 (F-5)
@@ -22,7 +23,7 @@ export default function Layout() {
       <Header />
 
       <main id="main" className="mx-auto w-full max-w-page flex-1 px-8 py-8">
-        <Outlet />
+        <SitePractice><Outlet /></SitePractice>
       </main>
 
       <Footer />

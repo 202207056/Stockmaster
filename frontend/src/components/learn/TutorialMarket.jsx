@@ -29,7 +29,7 @@ export default function TutorialMarket({ active, advance }) {
   const [selected, setSelected] = useState(false);
   const [favorite, setFavorite] = useState(false);
   const [managing, setManaging] = useState(false);
-  const [type, setType] = useState('candle');
+  const [type, setType] = useState('line');
   const [period, setPeriod] = useState('D');
   const [notice, setNotice] = useState('');
   const filtered = stocks.filter(stock => stock.name.includes(query) || stock.code.includes(query));
@@ -56,7 +56,7 @@ export default function TutorialMarket({ active, advance }) {
       {selected && <><div className="mb-5 flex flex-wrap justify-between gap-3"><h3 className="text-lg font-bold">예시전자 <span className="text-sm font-normal text-gray-500">990001</span></h3><Target active={active('favorite')}><FavoriteButton selected={favorite} onClick={() => { setFavorite(value => !value); if (active('favorite') && !favorite) advance(); }} /></Target></div>
         <div className="mb-4 flex flex-wrap items-center gap-3"><p className="text-2xl font-extrabold">50,000원</p><span className="text-sm">+1.01%</span><button className="text-xs text-gray-500 underline" onClick={() => setNotice('예시 시세를 확인했어요. 튜토리얼의 주문 가격은 50,000원으로 고정됩니다.')}>시세 새로고침</button></div>
         <div className="mb-4 flex flex-wrap items-center gap-3">
-          <Target active={active('chart-type')}><label className="text-sm text-gray-600">그래프 종류<select value={type} onChange={event => { setType(event.target.value); if (active('chart-type') && event.target.value === 'line') advance(); }} className="ml-2 rounded-lg border border-gray-300 bg-white px-3 py-2"><option value="candle">캔들</option><option value="line">꺾은선</option></select></label></Target>
+          <Target active={active('chart-type')}><label className="text-sm text-gray-600">그래프 종류<select value={type} onChange={event => { setType(event.target.value); if (active('chart-type') && event.target.value === 'candle') advance(); }} className="ml-2 rounded-lg border border-gray-300 bg-white px-3 py-2"><option value="candle">캔들</option><option value="line">꺾은선</option></select></label></Target>
           <div role="group" aria-label="차트 표시 기간" className="flex gap-1">{Object.entries(periods).map(([value, label]) => <Target key={value} active={active('chart-period') && value === 'M'}><button type="button" aria-pressed={period === value} onClick={() => { setPeriod(value); if (active('chart-period') && value === 'M') advance(); }} className={`rounded-lg px-3 py-2 text-sm font-bold ${period === value ? 'bg-brand-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>{label}</button></Target>)}</div>
         </div></>}
       {selected ? <CandleChart key={`${period}:${type}`} rows={chartData[period]} type={type} periodLabel={periods[period]} /> : <div className="flex h-[420px] items-center justify-center rounded-lg border border-dashed border-gray-200"><p className="text-center text-sm leading-relaxed text-gray-400">조회할 종목을 선택해 주세요.</p></div>}

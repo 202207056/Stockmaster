@@ -6,7 +6,7 @@ const label = (row) => row.label || row.date;
 const rowKey = (row) => row.key || row.date;
 
 // Read-only price chart using supplied OHLC data.
-export default function CandleChart({ rows, type = 'candle', periodLabel = '일' }) {
+export default function CandleChart({ rows, type = 'line', periodLabel = '일' }) {
   const [hoverIndex, setHoverIndex] = useState(null);
   if (!rows?.length) return null;
   const min = Math.min(...rows.map((row) => type === 'line' ? row.close : row.low));

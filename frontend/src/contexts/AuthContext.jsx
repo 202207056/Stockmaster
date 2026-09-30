@@ -1,10 +1,17 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AuthContext } from './auth-context';
-import { clearToken, getToken, setToken, EVT_UNAUTHORIZED, TOKEN_KEY } from '../api/client';
+import { API_BASE_URL, clearToken, getSessionId, getToken, setToken, EVT_UNAUTHORIZED, TOKEN_KEY } from '../api/client';
+import { canRetainResource, clearPrivateResources, readResource, resourceKey, writeResource } from '../api/resourceCache';
 import * as authApi from '../api/auth';
 import { setFavoritesOwner } from '../utils/favorites';
 
 const ACCOUNT_KEY = 'gp_account_id';
+const sessionCacheKey = () => getToken() && getSessionId() ? resourceKey(API_BASE_URL, getSessionId(), 'session') : null;
+const readSession = () => {
+  const snapshot = readResource(sessionCacheKey())?.data;
+  return snapshot?.user?.user_id != null && Array.isArray(snapshot.accounts)
+    && snapshot.accounts.every(account => account?.account_id != null) ? snapshot : null;
+};
 
 const readStoredAccountId = () => {
   try {
@@ -35,10 +42,14 @@ const storeAccountId = (id) => {
  * 이때 user 와 account 는 null 이고, 각 화면은 "로그인하면 표시돼요" 안내를 대신 보여 줍니다.
  */
 export function AuthProvider({ children }) {
+  const [initialSnapshot] = useState(readSession);
   const [status, setStatus] = useState(() => (getToken() ? 'loading' : 'unauthenticated'));
-  const [user, setUser] = useState(null);
-  const [accounts, setAccounts] = useState([]);
-  const [accountId, setAccountId] = useState(readStoredAccountId);
+  const [user, setUser] = useState(initialSnapshot?.user ?? null);
+  const [accounts, setAccounts] = useState(initialSnapshot?.accounts ?? []);
+  const [accountId, setAccountId] = useState(() => {
+    const saved = readStoredAccountId();
+    return initialSnapshot ? (initialSnapshot.accounts.find(account => account.account_id === saved)?.account_id ?? initialSnapshot.accounts[0]?.account_id ?? null) : saved;
+  });
 
   const session = useRef(0);
   const [accountError, setAccountError] = useState(null);
@@ -56,6 +67,7 @@ export function AuthProvider({ children }) {
 
   const clearSession = useCallback(() => {
     session.current += 1;
+    clearPrivateResources();
     setFavoritesOwner(null);
     clearToken();
     storeAccountId(null);
@@ -78,8 +90,17 @@ export function AuthProvider({ children }) {
   const refresh = useCallback(async () => {
     const generation = session.current;
     const token = getToken();
-    const me = await authApi.fetchMe();
+    const me = await authApi.fetchMe().catch(error => {
+      if (!canRetainResource(error) && generation === session.current && token === getToken()) clearSession();
+      throw error;
+    });
     if (generation !== session.current || token !== getToken()) return;
+    setToken(token);
+    const previousSession = readSession();
+    if (previousSession && previousSession.user.user_id !== me.user_id) {
+      clearPrivateResources();
+      applyAccounts([]);
+    }
     setFavoritesOwner(me.user_id);
     setUser(me);
     setStatus('authenticated');
@@ -90,13 +111,16 @@ export function AuthProvider({ children }) {
       const list = await authApi.fetchAccounts();
       if (generation !== session.current || token !== getToken()) return;
       applyAccounts(list);
+      writeResource(sessionCacheKey(), { user: me, accounts: list }, true);
       setAccountError(null);
     } catch (error) {
       if (generation !== session.current || token !== getToken()) return;
-      applyAccounts([]);
+      if (!canRetainResource(error)) clearPrivateResources();
+      const previous = readSession();
+      applyAccounts(previous?.user.user_id === me.user_id ? previous.accounts : []);
       setAccountError(error);
     }
-  }, [applyAccounts]);
+  }, [applyAccounts, clearSession]);
 
   /* 앱 시작 시 저장된 토큰으로 세션 복구 */
   useEffect(() => {
@@ -192,6 +216,8 @@ export function AuthProvider({ children }) {
     () => ({
       status,
       isAuthenticated: status === 'authenticated',
+      // Display-only restoration never grants authentication to mutation controls.
+      hasCachedSession: status !== 'authenticated' && status !== 'unauthenticated' && user != null && !!getToken(),
       isLoading: status === 'loading',
       user,
       accounts,
