@@ -2,6 +2,7 @@ from app.models.user import User
 from app.models.account import Account
 from app.models.security import ItemMaster
 from app.models.order import Order
+from app.models.order_automation import OrderAutomation
 from app.models.portfolio import Portfolio
 from app.models.price_history import PriceHistory
 from app.models.community import Post, Comment, PostLike
@@ -14,6 +15,7 @@ __all__ = [
     "Account",
     "ItemMaster",
     "Order",
+    "OrderAutomation",
     "Portfolio",
     "PriceHistory",
     "Post",

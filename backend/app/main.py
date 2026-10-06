@@ -17,7 +17,16 @@ API 경로 구조 (팀장 요청 반영):
 """
 
 from fastapi import FastAPI
+import asyncio
+from contextlib import suppress
+import logging
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import text
+
+from app.database import engine
+from app.config import settings
+from app.routers import order_automations
+from app.services.order_automation_service import monitor
 
 # 각 기능별로 분리된 라우터 파일들을 가져옴
 from app.routers import (
@@ -100,6 +109,7 @@ app.include_router(securities.router, prefix="/api/stocks", tags=["주식 시세
 # 거래 - 주문: 매수/매도 주문, 주문내역 조회
 # /api/trading/orders
 app.include_router(orders.router, prefix="/api/trading/orders", tags=["거래"])
+app.include_router(order_automations.router, prefix="/api/trading/automations", tags=["예약·조건 주문"])
 
 # 거래 - 계좌: 계좌 목록, 잔고 조회, 계좌 개설
 # /api/trading/accounts
@@ -123,8 +133,41 @@ app.include_router(ranking.router, prefix="/api/ranking", tags=["랭킹"])
 app.include_router(market.router, prefix="/api/market", tags=["시장 시세"])
 
 
-# 서버 상태 확인용 기본 API
-# http://localhost:8000/ 접속시 응답
+@app.on_event("startup")
+def ensure_order_columns():
+    """Render는 alembic을 자동 실행하지 않는다. 주문 칸이 없으면 서버 시작 때 추가한다."""
+    statements = (
+        "ALTER TABLE orders ADD COLUMN IF NOT EXISTS price_type VARCHAR(10) NOT NULL DEFAULT '시장가'",
+        "ALTER TABLE orders ADD COLUMN IF NOT EXISTS commission NUMERIC(20, 2) NOT NULL DEFAULT 0",
+        "ALTER TABLE orders ADD COLUMN IF NOT EXISTS tax NUMERIC(20, 2) NOT NULL DEFAULT 0",
+    )
+    with engine.begin() as conn:
+        for statement in statements:
+            conn.execute(text(statement))
+
+
+# DB에 저장된 예약·조건 모의 주문 감시
+@app.on_event('startup')
+async def start_order_monitor():
+    if not settings.ENABLE_ORDER_AUTOMATIONS:
+        return
+    from sqlalchemy import inspect
+    if not inspect(engine).has_table('order_automations'):
+        logging.getLogger(__name__).warning('Order automations unavailable: run alembic upgrade head first')
+        return
+    app.state.order_monitor = asyncio.create_task(monitor())
+
+
+@app.on_event('shutdown')
+async def stop_order_monitor():
+    task = getattr(app.state, 'order_monitor', None)
+    if task:
+        task.cancel()
+        with suppress(asyncio.CancelledError):
+            await task
+
+
+# 서버 상태 확인용 기본 API: http://localhost:8000/
 @app.get("/", tags=["상태확인"])
 def root():
     """서버가 정상 실행 중인지 확인하는 API."""

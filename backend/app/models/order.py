@@ -2,7 +2,7 @@
 models/order.py - 주문(Orders) 테이블 모델
 
 매수/매도 주문 내역을 저장합니다.
-모의투자에서는 주문 즉시 체결되는 방식을 사용합니다.
+시장가는 주문 즉시 체결하고, 지정가는 대기 상태로 남긴다.
 
 주문 흐름:
     1. 사용자가 "삼성전자 10주 매수" 요청
@@ -40,18 +40,24 @@ class Order(Base):
     # 예: "005930" (삼성전자)
     symbol_code = Column(String(20), ForeignKey("item_master.symbol_code"), nullable=False)
 
-    # 주문 종류: "매수" (사기), "매도" (팔기), "정정" (수정), "취소"
+    # 주문 종류: "매수" (사기), "매도" (팔기)
     order_type = Column(String(10), nullable=False)
 
-    # 주문 단가 (1주당 가격)
-    # 총 금액 = price * quantity
+    # 가격 종류: "시장가"는 현재가로 바로 체결, "지정가"는 대기
+    price_type = Column(String(10), nullable=False, default="시장가", server_default="시장가")
+
+    # 주문 단가 (1주당 가격). 시장가는 체결가, 지정가는 사용자가 지정한 가격.
     price = Column(Numeric(20, 2), nullable=False)
+
+    # 이 주문에 계산한 수수료·세금. 지정가 대기는 예상 금액이고 잔고에는 반영하지 않는다.
+    commission = Column(Numeric(20, 2), nullable=False, default=0, server_default="0")
+    tax = Column(Numeric(20, 2), nullable=False, default=0, server_default="0")
 
     # 주문 수량 (몇 주 주문했는지)
     quantity = Column(Integer, nullable=False)
 
     # 주문 상태: "대기" → "체결" (또는 "취소", "거부")
-    # 모의투자에서는 즉시 "체결"로 바뀜
+    # 시장가는 "체결", 지정가는 "대기"
     status = Column(String(10), nullable=False, default="대기")
 
     # 주문 시간 (자동으로 현재 시간 저장)

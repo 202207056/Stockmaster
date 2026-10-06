@@ -55,6 +55,9 @@ class Settings(BaseSettings):
     # 예전 별도 AI 서버 주소. 설문은 백엔드에서 Gemini를 직접 호출하므로 사용하지 않음.
     AI_SERVER_URL: str = "http://localhost:8001"
 
+    # Persistent mock-order monitor. It never sends brokerage orders.
+    ENABLE_ORDER_AUTOMATIONS: bool = True
+
     class Config:
         # 설정값을 읽어올 파일 이름 (.env 파일)
         env_file = ".env"

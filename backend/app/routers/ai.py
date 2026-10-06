@@ -6,14 +6,14 @@ routers/ai.py - AI 및 투자성향 설문 API 엔드포인트
     POST /api/ai/survey             → 설문 저장 후 Gemini 투자성향 분석
     GET  /api/ai/propensity         → 내 투자성향 분석 결과 조회
     GET  /api/ai/coach              → 시세 요약 기반 모의투자 조언
+    GET  /api/ai/news-summary/{code}→ 오늘 등락과 종목 뉴스를 연결한 짧은 설명
 
     [AI 서버 연동 - AI팀 서버가 필요]
     GET  /api/ai/recommend          → AI 종목 추천
     GET  /api/ai/pattern            → 매매 패턴 분석
-    GET  /api/ai/news-summary/{code}→ 종목 뉴스 AI 요약
 """
 
-from datetime import datetime
+from datetime import datetime, timedelta
 import asyncio
 import json
 
@@ -30,8 +30,9 @@ from app.models.portfolio import Portfolio
 from app.models.security import ItemMaster
 from app.models.user import User
 from app.models.user_survey_response import UserSurveyResponse
-from app.services.ai_service import analyze_survey_answers, generate_coach_advice
+from app.services.ai_service import analyze_survey_answers, generate_coach_advice, generate_news_brief
 from app.services.kis_service import get_current_price
+from app.services.news_service import get_news_by_symbol
 from app.utils.deps import get_current_user
 
 # prefix는 main.py에서 /api/ai 로 지정
@@ -378,21 +379,77 @@ async def ai_pattern(current_user: User = Depends(get_current_user)):
     return await _call_ai("/pattern", {"user_id": current_user.user_id})
 
 
-@router.get("/news-summary/{symbol_code}", summary="종목 뉴스 AI 요약 (AI팀 서버 필요)")
+_summary_cache: dict = {}
+_SUMMARY_CACHE_SECONDS = 180
+
+
+@router.get("/news-summary/{symbol_code}", summary="종목 뉴스 AI 요약 (Gemini)")
 async def ai_news_summary(
     symbol_code: str,
     _: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
 ):
     """
-    특정 종목의 최신 뉴스를 AI가 요약해서 반환합니다.
+    종목 뉴스와 오늘 등락률을 Gemini에 보내, 등락과 같이 보이는 이슈를 짧게 정리합니다.
+    기사에 없다고 해서 그 이슈를 등락 원인으로 단정하지 않습니다. 매수·매도 지시는 하지 않습니다.
 
     사용 예시:
-        GET /api/ai/news-summary/005930  → 삼성전자 뉴스 AI 요약
+        GET /api/ai/news-summary/005930  → 삼성전자 뉴스 요약
 
     응답 예시:
         {
-            "summary": "삼성전자는 3분기 반도체 수요 증가로...",
-            "sentiment": "긍정"
+            "symbol_code": "005930",
+            "name": "삼성전자",
+            "headline": "메모리 업황 기대가 이어집니다.",
+            "change_rate": 1.2,
+            "summary": ["증권가가 실적 추정치를 올렸습니다."],
+            "tags": ["반도체", "실적"],
+            "disclaimer": "모의투자 연습용 설명이며 투자 권유가 아닙니다."
         }
     """
-    return await _call_ai(f"/news-summary/{symbol_code}")
+    code = (symbol_code or "").strip()
+    if not code:
+        raise HTTPException(status_code=400, detail="종목 코드를 입력해 주세요.")
+
+    now = datetime.utcnow()
+    cached = _summary_cache.get(code)
+    if cached and cached.get("expires_at") and now < cached["expires_at"]:
+        return cached["data"]
+
+    articles = await get_news_by_symbol(code, 5)
+    item = db.query(ItemMaster).filter(ItemMaster.symbol_code == code).first()
+    name = item.name if item else code
+
+    change_rate = None
+    try:
+        quote = await get_current_price(code)
+        change_rate = quote.get("change_rate")
+    except Exception as e:
+        print(f"[news-summary] 현재가 조회 실패: {e}")
+
+    if not any(str(article.get("title") or "").strip() for article in articles):
+        result = {
+            "symbol_code": code,
+            "name": name,
+            "headline": "표시할 뉴스가 없습니다.",
+            "change_rate": change_rate,
+            "summary": [],
+            "tags": [],
+            "disclaimer": "모의투자 연습용 설명이며 투자 권유가 아닙니다.",
+        }
+    else:
+        brief = await asyncio.to_thread(
+            generate_news_brief, code, name, articles, change_rate
+        )
+        result = {
+            "symbol_code": code,
+            "name": name,
+            "change_rate": change_rate,
+            **brief,
+        }
+
+    _summary_cache[code] = {
+        "data": result,
+        "expires_at": now + timedelta(seconds=_SUMMARY_CACHE_SECONDS),
+    }
+    return result

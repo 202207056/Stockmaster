@@ -17,114 +17,170 @@ async/await 사용 이유:
     async/await로 처리하면 요청을 기다리는 동안 다른 요청도 처리 가능합니다.
 """
 
+from urllib.parse import urljoin, urlsplit
+
 import httpx
 from bs4 import BeautifulSoup
 
 
+class NewsUnavailable(Exception):
+    """The upstream market news source could not be retrieved."""
+
+
+MARKET_NEWS_URL = "https://news.naver.com/breakingnews/section/101/258"
+
+
+def parse_market_news(html: str) -> list[dict]:
+    """Extract each article and its own thumbnail without fetching article pages."""
+    soup = BeautifulSoup(html, "html.parser")
+    articles = []
+    for item in soup.select("div.sa_text"):
+        title_tag = item.select_one("a.sa_text_title")
+        if title_tag is None or not title_tag.get_text(strip=True):
+            continue
+        card = item.find_parent(class_="sa_item_flex")
+        image = card.select_one(".sa_thumb img") if card else None
+        image_url = ""
+        if image:
+            for attribute in ("data-src", "src"):
+                candidate = str(image.get(attribute) or "").strip()
+                if not candidate:
+                    continue
+                candidate = urljoin(MARKET_NEWS_URL, candidate)
+                parsed = urlsplit(candidate)
+                if parsed.scheme in ("https", "http") and parsed.hostname:
+                    image_url = candidate
+                    break
+        def text(selector):
+            tag = item.select_one(selector)
+            return tag.get_text(strip=True) if tag else ""
+        articles.append({
+            "title": title_tag.get_text(strip=True),
+            "url": _news_url(title_tag.get("href", "")),
+            "summary": text("div.sa_text_lede"),
+            "source": text("div.sa_text_press"),
+            "date": text("div.sa_text_datetime"),
+            "image_url": image_url,
+        })
+    return articles
+
+
+def _news_time(value: str) -> str:
+    """202609271319 형태를 2026.09.27 13:19 로 바꾼다. 형식이 다르면 원문을 둔다."""
+    text = (value or "").strip()
+    if len(text) == 12 and text.isdigit():
+        return f"{text[0:4]}.{text[4:6]}.{text[6:8]} {text[8:10]}:{text[10:12]}"
+    return text
+
+
 async def get_news_by_symbol(symbol_code: str, limit: int = 10) -> list[dict]:
     """
-    특정 종목의 뉴스를 네이버 금융에서 크롤링합니다.
-    
+    특정 종목의 뉴스를 네이버 시세 뉴스 API에서 가져옵니다.
+
+    예전 네이버 금융 종목 뉴스 페이지는 404라서 빈 배열이 됐습니다.
+    이 API는 제목, 요약, 언론사, 시간, 링크를 JSON으로 줍니다.
+
     Args:
         symbol_code: 종목 코드 (예: "005930" = 삼성전자)
         limit: 가져올 뉴스 개수 (기본 10개)
-    
-    Returns:
-        뉴스 목록:
-        [
-            {
-                "title": "삼성전자, 3분기 실적 발표...",
-                "url": "https://finance.naver.com/...",
-                "date": "2024.01.15 09:30",
-                "source": "연합뉴스"
-            },
-            ...
-        ]
-        
-        크롤링 실패 시 빈 리스트 반환 (오류가 나도 서버가 죽지 않도록)
-    """
-    # 네이버 금융 종목 뉴스 URL
-    url = f"https://finance.naver.com/item/news_news.naver?code={symbol_code}"
 
-    # User-Agent: 브라우저인 척 헤더를 보냄 (없으면 봇으로 인식해 차단 가능)
-    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
+    Returns:
+        뉴스 목록. 실패하면 빈 리스트.
+    """
+    code = (symbol_code or "").strip()
+    size = min(max(limit, 1), 20)
+    url = f"https://m.stock.naver.com/api/news/stock/{code}"
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+        "Accept": "application/json",
+    }
 
     try:
-        async with httpx.AsyncClient() as client:
-            resp = await client.get(url, headers=headers, timeout=10)
+        async with httpx.AsyncClient(follow_redirects=True) as client:
+            resp = await client.get(url, headers=headers, params={"pageSize": size, "page": 1}, timeout=10)
+        if resp.status_code >= 400:
+            print(f"[뉴스] 종목 뉴스 조회 실패 code={code} status={resp.status_code}")
+            return []
 
-            # 네이버 금융은 euc-kr 인코딩을 사용함 (한글 깨짐 방지)
-            resp.encoding = "euc-kr"
-
-            # BeautifulSoup으로 HTML 파싱
-            soup = BeautifulSoup(resp.text, "html.parser")
-
+        payload = resp.json()
+        groups = payload if isinstance(payload, list) else [payload]
         news_list = []
-
-        # CSS 선택자로 뉴스 행(row) 추출
-        # "table.type5 tbody tr" → class가 type5인 table의 tbody 안의 tr들
-        rows = soup.select("table.type5 tbody tr")
-
-        for row in rows[:limit]:
-            # 제목과 링크 추출
-            title_tag = row.select_one("td.title a")
-            date_tag = row.select_one("td.date")
-            source_tag = row.select_one("td.info")  # 언론사
-
-            if title_tag:
+        seen = set()
+        for group in groups:
+            items = group.get("items") if isinstance(group, dict) else None
+            if not isinstance(items, list):
+                continue
+            for item in items:
+                if not isinstance(item, dict):
+                    continue
+                title = (item.get("titleFull") or item.get("title") or "").strip()
+                link = (item.get("mobileNewsUrl") or "").strip()
+                if not title or not link or link in seen:
+                    continue
+                seen.add(link)
                 news_list.append({
-                    "title": title_tag.get_text(strip=True),    # 뉴스 제목
-                    "url": "https://finance.naver.com" + title_tag.get("href", ""),
-                    "date": date_tag.get_text(strip=True) if date_tag else "",
-                    "source": source_tag.get_text(strip=True) if source_tag else "",
+                    "title": title,
+                    "url": link,
+                    "summary": (item.get("body") or "").strip(),
+                    "source": (item.get("officeName") or "").strip(),
+                    "date": _news_time(str(item.get("datetime") or "")),
                 })
+                if len(news_list) >= size:
+                    break
+            if len(news_list) >= size:
+                break
 
+        print(f"[뉴스] 종목 뉴스 code={code} status={resp.status_code} count={len(news_list)}")
         return news_list
 
-    except Exception:
-        # 크롤링 실패(네트워크 오류, HTML 구조 변경 등) 시 빈 리스트 반환
-        # 뉴스 크롤링 실패가 전체 서버를 멈추면 안 됨
+    except Exception as e:
+        print(f"[뉴스] 종목 뉴스 조회 실패 code={code} error={e}")
         return []
+
+
+def _news_url(href: str) -> str:
+    """이미 절대주소면 그대로 두고, 상대경로만 네이버 뉴스 도메인을 붙인다."""
+    href = (href or "").strip()
+    if href.startswith("https://") or href.startswith("http://"):
+        return href
+    if href.startswith("//"):
+        return "https:" + href
+    if href.startswith("/"):
+        return "https://news.naver.com" + href
+    return href
 
 
 async def get_market_news(limit: int = 20) -> list[dict]:
     """
-    전체 주식 시장 뉴스를 네이버 금융에서 크롤링합니다.
-    
-    특정 종목이 아닌 증권 전반의 뉴스를 가져옵니다.
-    
+    증권 시장 뉴스를 네이버 뉴스 경제 면에서 가져옵니다.
+
+    예전 네이버 금융 뉴스 목록은 기사 HTML이 없어 빈 배열이 됐습니다.
+    이 페이지는 제목, 요약, 언론사, 시간이 본문에 있습니다.
+
     Args:
         limit: 가져올 뉴스 개수 (기본 20개)
-    
+
     Returns:
-        시장 뉴스 목록
+        시장 뉴스 목록. 조회 실패 시 NewsUnavailable 예외.
     """
-    url = "https://finance.naver.com/news/news_list.naver?mode=LSS2D&section_id=101&section_id2=258"
-    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
+    # 101=경제, 258=증권
+    url = MARKET_NEWS_URL
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+    }
 
     try:
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(follow_redirects=True) as client:
             resp = await client.get(url, headers=headers, timeout=10)
-            resp.encoding = "euc-kr"
-            soup = BeautifulSoup(resp.text, "html.parser")
+        if resp.status_code >= 400:
+            print(f"[뉴스] 시장 뉴스 조회 실패 status={resp.status_code}")
+            raise NewsUnavailable("뉴스를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.")
 
-        news_list = []
+        news_list = parse_market_news(resp.text)[:limit]
 
-        # 뉴스 목록 항목 추출
-        items = soup.select("ul.newsList li")
-
-        for item in items[:limit]:
-            title_tag = item.select_one("a.articleSubject")
-            date_tag = item.select_one("span.wdate")
-
-            if title_tag:
-                news_list.append({
-                    "title": title_tag.get_text(strip=True),
-                    "url": "https://finance.naver.com" + title_tag.get("href", ""),
-                    "date": date_tag.get_text(strip=True) if date_tag else "",
-                })
-
+        print(f"[뉴스] 시장 뉴스 status={resp.status_code} count={len(news_list)}")
         return news_list
 
-    except Exception:
-        return []
+    except Exception as e:
+        print(f"[뉴스] 시장 뉴스 조회 실패: {e}")
+        raise NewsUnavailable("뉴스를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.") from e

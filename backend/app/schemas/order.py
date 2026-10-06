@@ -1,5 +1,6 @@
 from datetime import datetime
 from decimal import Decimal
+from typing import Literal
 
 from pydantic import BaseModel, Field
 
@@ -20,9 +21,10 @@ class OrderRequest(BaseModel):
     account_id: int = Field(..., description="주문을 넣을 계좌 ID")
     symbol_code: str = Field(..., description="종목 코드 (예: 005930)", max_length=20)
     order_type: str = Field(..., description="주문 타입 (매수, 매도)")
-    # price 는 프론트가 보내는 화면 표시용 값이다. 체결가는 서버가 현재가로 정한다.
-    price: Decimal = Field(..., gt=0, description="화면 표시용 희망가 (체결가는 서버가 현재가로 결정)")
-    quantity: int = Field(..., gt=0, description="주문 수량 (1주 이상)")
+    price_type: Literal["지정가", "시장가", "중간가", "최유리지정가", "최우선지정가"] = "시장가"
+    # 시장가에서는 화면 표시용이고, 지정가에서는 이 가격으로 대기 주문을 만든다.
+    price: Decimal = Field(..., gt=0, le=1000000000, allow_inf_nan=False, description="지정가만 고객 입력값 사용. 나머지는 서버 시세/호가로 결정")
+    quantity: int = Field(..., gt=0, le=1000000, description="주문 수량 (1주 이상)")
 
 
 class OrderResponse(BaseModel):
@@ -46,9 +48,12 @@ class OrderResponse(BaseModel):
     account_id: int = Field(..., description="주문한 계좌 ID")
     symbol_code: str = Field(..., description="종목 코드")
     order_type: str = Field(..., description="주문 타입")
+    price_type: str = Field("시장가", description="시장가 또는 지정가")
     price: Decimal = Field(..., description="주문 단가")
     quantity: int = Field(..., description="주문 수량")
-    status: str = Field(..., description="현재 주문 상태 (대기, 체결, 거부)")
+    commission: Decimal = Field(0, description="수수료. 매수·매도 모두")
+    tax: Decimal = Field(0, description="거래세. 매도에만 있고 매수는 0")
+    status: str = Field(..., description="현재 주문 상태 (대기, 체결, 취소)")
     message: str | None = Field(None, description="프론트 화면에 띄울 알림 메시지")
     created_at: datetime = Field(..., description="주문 접수 시간")
 

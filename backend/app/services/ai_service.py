@@ -175,3 +175,109 @@ def generate_coach_advice(facts: dict, cache_key: str | None = None) -> dict:
             "expires_at": now + timedelta(seconds=_COACH_CACHE_SECONDS),
         }
     return result
+
+
+_news_cache: dict = {}
+_NEWS_CACHE_SECONDS = 180
+_NEWS_DISCLAIMER = "모의투자 연습용 설명이며 투자 권유가 아닙니다."
+
+
+def _text_list(value, limit: int) -> list[str]:
+    if isinstance(value, str):
+        value = [value]
+    if not isinstance(value, list):
+        return []
+    lines = []
+    for item in value:
+        text = str(item).strip()
+        if text:
+            lines.append(text)
+        if len(lines) >= limit:
+            break
+    return lines
+
+
+def _price_move(change_rate) -> tuple[str, str]:
+    """등락률을 상승·하락·보합·미확인으로 나누고, headline에 그대로 쓸 시작 문장을 만든다."""
+    try:
+        rate = float(change_rate)
+    except (TypeError, ValueError):
+        return "unknown", "등락률은 확인되지 않았습니다. headline에 퍼센트를 넣지 마세요."
+    if rate > 0:
+        return "up", f'headline은 반드시 "오늘은 +{rate:g}% 올랐고,"로 시작한다. 이 퍼센트 외의 등락률은 쓰지 않는다.'
+    if rate < 0:
+        return "down", f'headline은 반드시 "오늘은 {rate:g}% 내렸고,"로 시작한다. 이 퍼센트 외의 등락률은 쓰지 않는다.'
+    return "flat", 'headline은 "오늘은 0%로 보합이고,"로 시작한다.'
+
+
+def generate_news_brief(
+    symbol_code: str,
+    name: str,
+    articles: list[dict],
+    change_rate=None,
+) -> dict:
+    """
+    종목 뉴스와 오늘 등락률을 Gemini에 보내, 등락과 같이 보이는 이슈를 짧게 정리한다.
+    같은 종목·같은 방향은 3분 동안 다시 부르지 않는다.
+    """
+    direction, move_text = _price_move(change_rate)
+    cache_key = f"{symbol_code}:{direction}:{change_rate}"
+    now = datetime.utcnow()
+    cached = _news_cache.get(cache_key)
+    if cached and cached.get("expires_at") and now < cached["expires_at"]:
+        return cached["data"]
+
+    lines = []
+    titles = []
+    for article in articles[:5]:
+        title = str(article.get("title") or "").strip()
+        summary = str(article.get("summary") or "").strip()
+        if not title:
+            continue
+        titles.append(title)
+        lines.append(f"- {title}" + (f" ({summary})" if summary else ""))
+
+    prompt = f"""
+당신은 대학생 모의투자 앱의 뉴스 요약입니다.
+오늘 등락을 말하고, 같은 기사에서 같이 보이는 이슈를 짧게 정리하세요.
+그 이슈가 등락의 원인이라고 단정하지 마세요.
+
+[종목]
+{name} ({symbol_code})
+
+[오늘 등락]
+{move_text}
+
+[기사]
+{chr(10).join(lines)}
+
+[정리]
+- headline은 위에 적힌 시작 문장을 그대로 쓰고, 이어서 "기사에서 같이 보이는 이슈는 ..."를 붙인다.
+- 등락률이 없으면 퍼센트 없이 기사에서 보이는 이슈만 한 줄로 쓴다.
+- summary는 그 이슈의 기사 내용 2~3문장이다. 마지막 문장에 이 이슈가 오늘 등락의 원인인지는 기사만으로 확인되지 않는다고 쓴다.
+- 기사가 가격 변동의 이유라고 직접 말한 경우에만, 그 문장 대신 기사에 그렇게 나와 있다고 쓴다.
+
+[금지]
+- 사라, 팔아라, 목표가, 수익률 보장
+- 기사와 위에 적힌 등락률 외에 숫자, 이유, 사건을 만들지 말 것
+- headline만 "원인을 확인하기 어렵다"로 끝내지 말 것
+
+[출력 JSON]
+- headline: 오늘 등락과 기사 이슈를 함께 적은 한 줄
+- summary: 기사 내용 2~3문장. 문자열 배열
+- tags: 기사에 나온 주제 단어 1~3개. 문자열 배열
+- disclaimer: 모의투자 연습용이며 투자 권유가 아니라는 한 문장
+"""
+    data = _call_gemini_json(prompt) or {}
+    summary = _text_list(data.get("summary"), 3) or titles[:3]
+    result = {
+        "headline": str(data.get("headline") or "").strip() or "뉴스 요약을 잠시 사용할 수 없습니다.",
+        "summary": summary,
+        "tags": _text_list(data.get("tags"), 3),
+        "disclaimer": str(data.get("disclaimer") or "").strip() or _NEWS_DISCLAIMER,
+    }
+    _news_cache[cache_key] = {
+        "data": result,
+        "expires_at": now + timedelta(seconds=_NEWS_CACHE_SECONDS),
+    }
+    return result
