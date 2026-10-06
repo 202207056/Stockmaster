@@ -30,11 +30,7 @@ const read = () => {
 };
 
 const write = (list) => {
-  try {
-    localStorage.setItem(storageKey(), JSON.stringify(list));
-  } catch {
-    /* 사파리 프라이빗 모드 등에서 저장 실패 — 무시하고 메모리 값만 반환 */
-  }
+  localStorage.setItem(storageKey(), JSON.stringify(list));
   window.dispatchEvent(new CustomEvent(FAVORITES_EVENT, { detail: list }));
   return list;
 };
@@ -48,11 +44,64 @@ export const addFavorite = (code) => {
   return list.includes(code) ? list : write([...list, code]);
 };
 
-export const removeFavorite = (code) => write(read().filter((c) => c !== code));
+export const removeFavorite = (code) => {
+  writeExtra('groups', getFavoriteGroups().map(group => ({ ...group, codes: group.codes.filter(item => item !== code) })));
+  return write(read().filter((c) => c !== code));
+};
 
 export const toggleFavorite = (code) => {
   const list = read();
-  return write(list.includes(code) ? list.filter((c) => c !== code) : [...list, code]);
+  return list.includes(code) ? removeFavorite(code) : addFavorite(code);
 };
 
-export const clearFavorites = () => write([]);
+export const clearFavorites = () => {
+  writeExtra('groups', getFavoriteGroups().map(group => ({ ...group, codes: [] })));
+  return write([]);
+};
+
+const readExtra = (type) => {
+  try {
+    const value = JSON.parse(localStorage.getItem(`${storageKey()}:${type}`) || '[]');
+    return Array.isArray(value) ? value : [];
+  } catch { return []; }
+};
+const writeExtra = (type, value) => {
+  localStorage.setItem(`${storageKey()}:${type}`, JSON.stringify(value));
+  window.dispatchEvent(new CustomEvent(FAVORITES_EVENT));
+};
+
+export const getFavoriteGroups = () => readExtra('groups')
+  .filter(group => group && typeof group.id === 'string' && typeof group.name === 'string' && Array.isArray(group.codes))
+  .map(group => ({ ...group, codes: [...new Set(group.codes.filter(code => typeof code === 'string'))] }));
+
+export const createFavoriteGroup = (value) => {
+  const name = validateGroupName(value);
+  const group = { id: crypto.randomUUID(), name, codes: [] };
+  writeExtra('groups', [...getFavoriteGroups(), group]);
+  return group;
+};
+function validateGroupName(value, id) {
+  const name = value.trim();
+  if (!name || name.length > 30) throw new Error('그룹 이름은 1~30자로 입력해 주세요.');
+  if (getFavoriteGroups().some(group => group.id !== id && group.name === name)) throw new Error('이미 있는 그룹 이름입니다.');
+  return name;
+}
+export const renameFavoriteGroup = (id, value) => {
+  const name = validateGroupName(value, id);
+  writeExtra('groups', getFavoriteGroups().map(group => group.id === id ? { ...group, name } : group));
+};
+export const deleteFavoriteGroup = (id) => writeExtra('groups', getFavoriteGroups().filter(group => group.id !== id));
+export const saveFavoriteGroups = (code, ids) => {
+  writeExtra('groups', getFavoriteGroups().map(group => ({
+    ...group, codes: ids.includes(group.id) ? [...new Set([...group.codes, code])] : group.codes.filter(item => item !== code),
+  })));
+  return addFavorite(code);
+};
+
+export const getRecentStocks = () => [...new Set(readExtra('recent').filter(code => typeof code === 'string'))].slice(0, 10);
+export const recordRecentStock = (code) => {
+  if (!code) return;
+  try { writeExtra('recent', [code, ...getRecentStocks().filter(item => item !== code)].slice(0, 10)); }
+  catch { /* Browsing remains available when storage is full or blocked. */ }
+};
+export const clearRecentStocks = () => writeExtra('recent', []);

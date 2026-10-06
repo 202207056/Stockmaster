@@ -1,0 +1,26 @@
+.trading-workspace { display: grid; gap: 16px; min-width: 0; align-items: stretch; }
+.trading-chart-panel, .trading-order-panel, .trading-market-panel { min-width: 0; }
+.trading-market-panel > .market-details { margin-top: 0; }
+.trading-market-panel .market-details table { font-size: 13px; }
+.trading-market-panel .market-details th, .trading-market-panel .market-details td { padding: 10px 16px; }
+.trading-workspace .trading-order-body { min-height: 0; padding: 0 12px 12px; gap: 8px; }
+.trading-workspace .trading-order-tabs button { padding: 10px 16px; }
+.trading-workspace .trading-order-execution { padding-top: 10px; }
+.trading-workspace .trading-order-toolbar { padding: 10px 0; gap: 12px; font-size: 13px; }
+.trading-workspace .trading-order-type-help { margin: 6px 0; font-size: 11px; line-height: 1.5; }
+.trading-workspace .trading-order-account { padding-top: 8px; }
+.trading-workspace .trading-order-balance { padding: 12px 0; }
+.trading-workspace .trading-order-row { margin-bottom: 8px; }
+.trading-workspace .trading-order-stepper { height: 36px; }
+.trading-workspace .trading-order-percent { margin-bottom: 10px; }
+.trading-workspace .trading-order-percent button { padding: 7px 0; }
+.trading-workspace .trading-order-amount > div { min-height: 36px; }
+.trading-workspace .trading-order-actions { padding-top: 4px; }
+.trading-workspace .trading-order-submit { padding: 11px 8px; font-size: 15px; }
+@media (min-width: 1024px) {
+  .trading-workspace { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 639px) {
+  .trading-market-panel .market-details table { font-size: 11px; }
+  .trading-market-panel .market-details th, .trading-market-panel .market-details td { padding: 9px 6px; }
+}

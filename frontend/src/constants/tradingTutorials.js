@@ -18,7 +18,7 @@ const holdings = read('asset-holdings', '보유종목 확인', '보유수량·�
 const back = action('trading-link', '트레이딩 이동', '보유종목의 종목명 또는 트레이딩으로 가기를 눌러 돌아가세요. 같은 연습 계좌와 보유수량이 유지됩니다.', 'trading');
 
 export const TRADING_TUTORIALS = [
-  { id: 'buy', title: '매수와 자산 변화', description: '종목을 찾아 매수하고 내 자산에서 현금과 주식을 확인합니다.', group: '거래', steps: [search, stock, account, buy, amount, prepare, confirm, close, history, assets, total, investment, holdings] },
+  { id: 'buy', title: '첫 매수 · 주문유형과 수수료', description: '현재 매수 화면에서 계좌 선택, 다섯 주문유형, 수수료를 확인하고 가상 매수를 다시 체험합니다.', group: '거래', steps: [search, stock, account, buy, amount, prepare, confirm, close, history, assets, total, investment, holdings] },
   { id: 'sell', title: '매도와 보유수량', description: '보유 주식 일부를 매도하고 매도금액·잔여 수량을 확인합니다.', group: '거래', seeded: true, steps: [stock, account, sell, amount, prepare, confirm, close, history, assets, investment, holdings] },
   { id: 'orders', title: '주문 확인과 체결내역', description: '주문 확인 창에서 취소한 뒤 다시 주문하고 체결내역을 조회합니다.', group: '거래', steps: [stock, account, buy, prepare, action('dialog', '전송 전 취소', '취소를 눌러 확인 창을 닫으세요. 아직 전송하지 않아 현금이나 보유수량 변화가 없습니다. 체결된 주문을 취소하는 기능과는 다릅니다.', 'cancelled'), read('history', '취소 후 내역 확인', '체결내역이 생기지 않았는지 확인하세요. 이 사이트는 즉시 체결 방식으로 미체결 주문 정정·취소 기능은 제공하지 않습니다.'), prepare, confirm, close, action('history-refresh', '체결내역 새로고침', '내역 새로고침을 눌러 조회하세요. 응답이 불확실할 때는 같은 주문을 다시 보내기 전에 내역을 확인합니다.', 'history-refresh'), history] },
   { id: 'account', title: '계좌 선택과 자산 조회', description: '두 계좌를 전환하며 계좌별 현금과 보유종목을 살펴봅니다.', group: '계좌', seeded: true, start: '/assets', steps: [account, total, investment, holdings, back, read('account', '거래 계좌 확인', '자산 화면에서 선택한 매매 연습 계좌가 주문 영역에도 유지됩니다. 주문 확인 창의 계좌명과 계좌번호도 함께 확인하세요.')] },

@@ -38,6 +38,8 @@ export function chartRows(value) {
 export function portfolioTotals(portfolio) {
   if (!portfolio) return null;
   const cash = numberOrNull(portfolio.withdrawable_cash);
+  const debt = numberOrNull(portfolio.misu_debt ?? 0);
+  const pendingProceeds = numberOrNull(portfolio.pending_proceeds ?? 0);
   let cost = 0;
   let market = 0;
   let costComplete = true;
@@ -54,7 +56,8 @@ export function portfolioTotals(portfolio) {
   return {
     cash, cost: costComplete ? cost : null, market: priceComplete ? market : null,
     unrealized: costComplete && priceComplete ? market - cost : null,
-    total: cash !== null && priceComplete ? cash + market : null,
+    total: cash !== null && debt !== null && pendingProceeds !== null && priceComplete ? cash + market + pendingProceeds - debt : null,
+    debt, pendingProceeds,
   };
 }
 

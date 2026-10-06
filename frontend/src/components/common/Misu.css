@@ -1,0 +1,28 @@
+.misu-toggle { border:1px solid #cbd5e1; border-radius:8px; padding:5px 9px; background:white; font-size:12px; cursor:pointer }
+.misu-toggle[aria-pressed=true] { border-color:#b45309; color:#92400e; background:#fffbeb }
+.misu-summary { margin:12px 0; padding:13px; border:1px solid #f5c98b; border-radius:10px; background:#fffcf6; font-size:12px; line-height:1.75 }
+.misu-summary p { margin:8px 0 }
+.misu-summary dl { margin:12px 0; display:grid; gap:9px }
+.misu-summary dl > div { display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap }
+.misu-summary dd { font-weight:800; margin:0 }
+.misu-summary small { display:block; color:#64748b; font-size:11px }
+.misu-danger { color:#b42318 }
+.misu-ledger { margin-top:16px; border-top:1px solid #e2e8f0; padding-top:12px; font-size:12px; line-height:1.8 }
+.misu-ledger form { display:flex; flex-wrap:wrap; gap:8px; margin:8px 0 }
+.misu-ledger input { width:130px; max-width:100%; border:1px solid #cbd5e1; padding:6px; border-radius:6px }
+.misu-ledger button { border:1px solid #cbd5e1; padding:6px 10px; border-radius:6px; background:white }
+.misu-ledger button:disabled { opacity:.5 }
+.misu-risk-picture { margin:12px 0; padding:12px; background:#fff7ed; border-radius:10px }
+.misu-risk-picture dl { display:grid; gap:8px }
+.misu-risk-picture dl div { display:flex; justify-content:space-between; gap:10px }
+.misu-risk-picture dd { margin:0; font-weight:bold }
+.misu-tutorial-note { line-height:1.75; font-size:13px }
+.misu-tutorial-note h3 { font-size:17px; font-weight:800; margin:6px 0 10px }
+.misu-tutorial-note button:not(.buy-tutorial-close) { border:1px solid #cbd5e1; border-radius:7px; padding:7px 10px; margin:8px 8px 0 0 }
+.misu-tutorial-note .misu-next { background:#6d28d9; color:white; border-color:#6d28d9 }
+
+.buy-tutorial-note.misu-tutorial-note strong { display:inline; padding:0; font-size:inherit; color:inherit }
+
+.misu-tutorial-note h3, .misu-summary { word-break:keep-all; overflow-wrap:anywhere }
+
+.misu-note-actions { position:sticky; bottom:-18px; padding:6px 0 12px; background:white; border-top:1px solid #ede9fe; z-index:1 }

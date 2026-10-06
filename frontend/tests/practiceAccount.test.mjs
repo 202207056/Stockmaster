@@ -37,5 +37,5 @@ test('practice uses gross amounts only and preserves account isolation', () => {
 
 test('portfolio totals use average fill price without fee-inclusive basis', () => {
   const holding = { hold_quantity: 5, avg_price: 50000, acquisition_cost: 250035, quote: { current_price: 50000 } };
-  assert.deepEqual(portfolioTotals({ withdrawable_cash: 750000, holdings: [holding] }), { cash: 750000, cost: 250000, market: 250000, unrealized: 0, total: 1000000 });
+  assert.deepEqual(portfolioTotals({ withdrawable_cash: 750000, holdings: [holding] }), { cash: 750000, cost: 250000, market: 250000, unrealized: 0, total: 1000000, debt: 0, pendingProceeds: 0 });
 });

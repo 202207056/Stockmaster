@@ -9,10 +9,10 @@ import TutorialTarget from './TutorialTarget';
 import { TutorialRunning } from './tutorial-context';
 import '../../pages/TradingTutorial.css';
 
-export default function SitePractice({ children }) {
+export default function SitePractice({ children, inlineBuy = false }) {
   const [params] = useSearchParams();
   const { pathname } = useLocation();
-  const course = ['/trading', '/assets'].includes(pathname) && TRADING_TUTORIALS.find(item => item.id === params.get('practice'));
+  const course = !(inlineBuy && params.get('practice') === 'buy') && ['/trading', '/assets'].includes(pathname) && TRADING_TUTORIALS.find(item => item.id === params.get('practice'));
   return course ? <Session key={course.id} course={course}>{children}</Session> : children;
 }
 

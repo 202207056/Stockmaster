@@ -19,3 +19,6 @@ Doc/자료/
 # 백엔드는 별도 저장소에서 관리 — https://github.com/202207048/gp-mock-inv
 # 이 폴더 안에 클론하면 프론트 저장소로 딸려 들어가므로 무시 처리
 gp-mock-inv/
+
+# Office temporary lock files
+~$*

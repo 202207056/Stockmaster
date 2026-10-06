@@ -1,0 +1,37 @@
+.trading-order { --order-color: var(--color-brand-600); overflow: hidden; border: 1px solid var(--color-gray-200); border-radius: 10px; background: white; color: var(--color-gray-800); }
+.trading-order-tabs { display: flex; align-items: center; background: #f5f6f8; }
+.trading-order-tabs button { padding: 14px 18px; color: #777; font-size: 16px; }
+.trading-order-tabs button[aria-pressed="true"] { color: var(--color-brand-700); background: var(--color-brand-50); font-weight: 700; }
+.trading-order-tabs > span { margin-left: auto; padding-right: 14px; font-size: 11px; color: #85858e; }
+.trading-order-body { display: flex; flex-direction: column; min-height: 520px; padding: 0 16px 14px; gap: 16px; }
+.trading-order-fields { min-width: 0; border: 0; padding: 0; }
+.trading-order-toolbar { display: flex; align-items: center; gap: 22px; padding: 20px 0 16px; border-bottom: 1px solid #eee; color: #777; font-size: 15px; }
+.trading-order-toolbar select { background: transparent; max-width: 95px; cursor: pointer; }
+.trading-order-account { padding-top: 14px; }
+.trading-order-account label { flex-wrap: wrap; }
+.trading-order-account select { min-width: 0; flex: 1; }
+.trading-order-balance { display: flex; justify-content: space-between; gap: 8px; padding: 22px 0; font-size: 14px; }
+.trading-order-balance > span { display: flex; gap: 5px; align-items: center; }
+.trading-order-balance svg { color: #85858e; }
+.trading-order-balance strong { font-weight: 500; }
+.trading-order-row { display: grid; grid-template-columns: 42px minmax(0, 1fr); align-items: center; gap: 12px; margin-bottom: 12px; color: #838383; font-size: 14px; }
+.trading-order-stepper { display: flex; align-items: center; min-width: 0; height: 42px; border: 1px solid #dedee1; border-radius: 6px; background: #fafbfc; }
+.trading-order-stepper button { flex: 0 0 32px; display: grid; place-items: center; height: 100%; color: #666875; }
+.trading-order-stepper input { width: 100%; min-width: 0; text-align: center; background: transparent; color: #333; outline-offset: 2px; }
+.trading-order input::-webkit-inner-spin-button, .trading-order input::-webkit-outer-spin-button { appearance: none; margin: 0; }
+.trading-order input[type="number"] { -moz-appearance: textfield; }
+.trading-order-price { display: flex; align-items: center; justify-content: center; flex: 1; min-width: 0; color: var(--order-color); }
+.trading-order-price input { color: inherit; }
+.trading-order-maximum { margin: -4px 0 8px; text-align: right; font-size: 11px; color: #94949b; }
+.trading-order-percent { display: flex; gap: 4px; margin-bottom: 14px; }
+.trading-order-percent button { flex: 1; border-radius: 5px; padding: 10px 0; background: #f4f4f4; font-size: 13px; color: #666; }
+.trading-order-amount > div { display: flex; align-items: center; justify-content: flex-end; gap: 12px; min-height: 42px; border: 1px solid #dedee1; border-radius: 6px; background: #fafbfc; padding: 0 10px; }
+.trading-order-amount button { color: #666875; padding: 4px; }
+.trading-order-notice { font-size: 11px; line-height: 1.7; color: #94949b; }
+.trading-order-costs { background: #f8f9fb; padding: 10px; border-radius: 6px; font-size: 12px; line-height: 1.9; }
+.trading-order-actions { display: flex; gap: 6px; margin-top: auto; padding-top: 20px; }
+.trading-order-calculator { display: grid; place-items: center; flex: 0 0 48px; border-radius: 6px; background: var(--color-brand-50); color: var(--color-brand-700); }
+.trading-order-submit { flex: 1; border-radius: 12px; background: var(--order-color); padding: 15px 8px; color: white; font-size: 17px; font-weight: 700; }
+.trading-order button { cursor: pointer; }
+.trading-order button:disabled { opacity: .4; cursor: not-allowed; }
+.trading-order button:focus-visible, .trading-order select:focus-visible { outline: 2px solid var(--order-color); outline-offset: 2px; }

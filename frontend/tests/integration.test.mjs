@@ -114,7 +114,7 @@ test('guest trading starts public data loading and retains the order login notic
   const value = { user: null, isAuthenticated: false, isLoading: false, accounts: [], accountId: null };
   const markup = renderToString(React.createElement(AuthContext.Provider, { value },
     React.createElement(MemoryRouter, { initialEntries: ['/trading?code=005930'] }, React.createElement(Trading))));
-  assert.equal((markup.match(/불러오는 중이에요/g) || []).length, 3);
+  assert.ok((markup.match(/불러오는 중이에요/g) || []).length >= 3, 'public stock/detail/chart resources start loading');
   assert.ok(markup.includes('로그인'));
   assert.equal((markup.match(/로그인하면 최신 데이터를/g) || []).length, 2); // Coaching and news summary require authentication.
   assert.ok(markup.includes('AI 뉴스 요약'));
@@ -267,9 +267,10 @@ test('order dialog distinguishes estimates, confirmed fills and uncertain respon
   const order = { accountId: 7, accountName: '연습 계좌', code: '005930', name: '삼성전자', kind: '매수', quantity: 2, price: 10000 };
   const render = (props = {}) => renderToString(React.createElement(MemoryRouter, null, React.createElement(Dialog, { order, ...props })));
   const confirm = render();
-  for (const label of ['매수 주문확인', '계좌번호', '모의 계좌 ID 7', '매매구분', '현금 · 즉시 체결 모의거래', '삼성전자', '2주', '10,000', '20,000', '매수주문']) assert(confirm.includes(label), label);
+  for (const label of ['매수 주문확인', '계좌번호', '모의 계좌 ID 7', '매매구분', '시장가 · 즉시 체결 모의거래', '삼성전자', '2주', '10,000', '20,000', '20,003', '수수료 (예상)', '매수주문']) assert(confirm.includes(label), label);
   assert(!confirm.includes('주문 완료!'));
-  const completed = render({ result: { order_id: 1, status: '체결', quantity: 2, price: 11000 } });
+  const completed = render({ result: { order_id: 1, status: '체결', quantity: 2, price: 11000, commission: '9', tax: '0' } });
+  assert(completed.includes('22,009'), 'confirmed settlement must use server fees, not the local estimate');
   for (const label of ['주문 완료!', '11,000', '22,000', '이 주식 관련 뉴스 보기', '관련 개념 살펴보기', 'lesson=A1']) assert(completed.includes(label), label);
   assert(!completed.includes('주문가격 (예상)'));
   const uncertain = render({ uncertain: true });

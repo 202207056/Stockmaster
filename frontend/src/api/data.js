@@ -33,6 +33,11 @@ export const createComment = async (id, content) => (await api.post(`/community/
 export const toggleLike = async (id) => (await api.post(`/community/posts/${id}/like`)).data;
 export const fetchOrders = async (accountId, signal) => requireArray(await get('/trading/orders', { account_id: accountId }, signal));
 export const submitOrder = async (payload) => (await api.post('/trading/orders', payload)).data;
+export const cancelOrder = async (orderId) => (await api.put(`/trading/orders/${encodeURIComponent(orderId)}/cancel`)).data;
+export const fetchAutomationCapabilities = async (signal) => requireObject(await get('/trading/automations/capabilities', undefined, signal));
+export const fetchAutomations = async (accountId, signal) => requireArray(await get('/trading/automations', { account_id: accountId }, signal));
+export const createAutomation = async (payload) => requireObject((await api.post('/trading/automations', payload)).data);
+export const cancelAutomation = async (id) => requireObject((await api.put(`/trading/automations/${encodeURIComponent(id)}/cancel`)).data);
 export const fetchPortfolio = async (accountId, signal) => {
   const data = requireObject(await get('/trading/portfolio', { account_id: accountId }, signal));
   return { ...data, holdings: requireArray(data.holdings) };
@@ -80,3 +85,10 @@ export function fetchValuedPortfolio(accountId, signal) {
   // No completed data is cached; neither sessions nor accounts share private data.
   return sharedPortfolio(JSON.stringify([getToken(), accountId]), signal, accountId);
 }
+
+export const fetchOrderBook = async (code, signal) => requireObject(await get(`/trading/orders/book/${encodeURIComponent(code)}`, undefined, signal));
+export const checkPendingOrder = async id => requireObject((await api.post(`/trading/orders/${encodeURIComponent(id)}/check`)).data);
+
+export const fetchMisu = async (accountId, signal) => requireObject(await get(`/trading/misu/${encodeURIComponent(accountId)}`, undefined, signal));
+export const repayMisu = async (accountId, payload) => requireObject((await api.post(`/trading/misu/${encodeURIComponent(accountId)}/repay`, payload)).data);
+export const settleMisu = async accountId => requireObject((await api.post(`/trading/misu/${encodeURIComponent(accountId)}/settle`)).data);

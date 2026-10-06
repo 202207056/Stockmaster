@@ -21,7 +21,7 @@ test('a missing holding quote hides aggregate market value and profit', () => {
     { hold_quantity: 2, avg_price: 50, quote: { current_price: 60 } },
     { hold_quantity: 1, avg_price: 100, quote: null },
   ] });
-  assert.deepEqual(result, { cash: 100, cost: 200, market: null, unrealized: null, total: null });
+  assert.deepEqual(result, { cash: 100, cost: 200, market: null, unrealized: null, total: null, debt: 0, pendingProceeds: 0 });
 });
 
 test('invalid cash does not turn into a complete total', () => {

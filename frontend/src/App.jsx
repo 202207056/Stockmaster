@@ -10,6 +10,8 @@ import Landing from './pages/Landing';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import Learn from './pages/Learn';
+import { lazy, Suspense } from 'react';
+const ChartLearning = lazy(() => import('./pages/ChartLearning'));
 import TradingTutorial from './pages/TradingTutorial';
 import TradingLesson from './pages/TradingLesson';
 import GuideTutorial from './pages/GuideTutorial';
@@ -45,9 +47,16 @@ import NotFound from './pages/NotFound';
  *  보호가 필요해지면 features.js 의 값 하나만 true 로 바꾸면 됩니다.
  */
 export default function App() {
+  return <BrowserRouter><AppSurface /></BrowserRouter>;
+}
+
+export function AppSurface() {
+  return <AuthenticatedApp />;
+}
+
+function AuthenticatedApp() {
   return (
     <AuthProvider>
-      <BrowserRouter>
         <Routes>
           {/* 공통 레이아웃 없는 화면 */}
           <Route path="/" element={<Landing />} />
@@ -66,6 +75,7 @@ export default function App() {
             <Route path="/signup" element={<Signup />} />
             <Route path="/register" element={<Navigate to="/signup" replace />} />
             <Route path="/learn" element={<Learn />} />
+            <Route path="/learn/charts" element={<Suspense fallback={<p role="status">차트 학습을 불러오는 중이에요…</p>}><ChartLearning /></Suspense>} />
             <Route path="/learn/trading-tutorial" element={<TradingTutorial />} />
             <Route path="/learn/tutorial/:tutorialId" element={<TradingLesson />} />
             <Route path="/learn/guide/:guideId" element={<GuideTutorial />} />
@@ -84,7 +94,7 @@ export default function App() {
           </Route>
         </Routes>
         <FloatingAssets />
-      </BrowserRouter>
+
 
       {/* 콜드스타트 안내는 라우트와 무관하게 항상 떠 있어야 합니다. */}
       <ApiStatusBanner />

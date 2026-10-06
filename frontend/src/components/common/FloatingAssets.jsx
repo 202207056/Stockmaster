@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useLocation, useSearchParams } from 'react-router-dom';
 import { GripVertical, RefreshCw, Wallet, X } from 'lucide-react';
 import useAuth from '../../hooks/useAuth';
 import useRemote from '../../hooks/useRemote';
@@ -22,8 +22,10 @@ function initialPosition() {
 
 export default function FloatingAssets() {
   const [enabled] = useMiniAssetsSetting();
+  const { isAuthenticated } = useAuth();
+  const { pathname } = useLocation();
   const [params] = useSearchParams();
-  return enabled && !params.has('practice') ? <FloatingAssetsPanel /> : null;
+  return enabled && isAuthenticated && pathname !== '/' && !params.has('practice') ? <FloatingAssetsPanel /> : null;
 }
 
 function FloatingAssetsPanel() {

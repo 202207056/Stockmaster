@@ -1,0 +1,36 @@
+.chart-lesson-label { fill:#6d28d9; font-size:14px; font-weight:700; }
+.chart-lesson-leader { stroke:#8b5cf6; stroke-width:1.5; stroke-dasharray:3 3; }
+.chart-illustrated-plot { position:relative; }
+.chart-lesson-marks { position:absolute; inset:0; pointer-events:none; }
+.chart-lesson-marks > svg { position:absolute; inset:0; width:100%; height:100%; }
+.chart-lesson-mark { position:absolute; transform:translateX(-50%); pointer-events:auto; border:1px solid #c4b5fd; border-radius:7px; background:#ffffffed; color:#6d28d9; padding:6px 9px; font-size:12px; font-weight:700; max-width:44%; line-height:1.5; box-shadow:0 2px 5px #0f172a0a; }
+.chart-lesson-mark-0 { left:21%; top:2%; }.chart-lesson-mark-1 { left:62%; top:79%; }
+.candle-walkthrough-marks { position:absolute; inset:0; pointer-events:none; }
+.candle-walkthrough-marks > svg { position:absolute; inset:0; width:100%; height:100%; }
+.candle-live-prices { position:absolute; right:2%; top:3%; display:flex; flex-wrap:wrap; justify-content:flex-end; gap:4px 10px; max-width:47%; padding:6px 9px; border-radius:7px; background:#fff; border:1px solid #ddd6fe; font-size:12px; color:#64748b; }
+.candle-live-prices b { color:#6d28d9; }
+.chart-tour-note .chart-tour-purpose { font-weight:700; color:#6d28d9; }
+.chart-tour-note .chart-tour-caution { font-size:12px; color:#64748b; }
+.chart-tour-note .chart-tour-actions { display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; }
+.chart-tour-note .chart-tour-actions button { font-size:12px; padding:7px 10px; }
+.chart-concept-dialog.chart-guide { border:0; border-radius:18px; padding:0; width:min(820px,calc(100vw - 24px)); max-width:none; max-height:calc(100dvh - 32px); margin:auto; color:#334155; box-shadow:0 20px 80px #0f172a44; }
+.chart-concept-dialog::backdrop { background:transparent; }
+.chart-concept-dialog > header { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; position:sticky; top:0; z-index:1; background:white; padding:20px 24px; border-bottom:1px solid #e2e8f0; }
+.chart-concept-dialog > header small { color:#7c3aed; font-size:12px; }
+.chart-concept-dialog > header h2 { margin-top:6px; font-size:22px; }
+.chart-concept-dialog > header button { padding:4px 12px; font-size:24px; border-radius:8px; background:#f1f5f9; }
+.chart-concept-body { padding:20px 24px; }
+.chart-concept-body > p { font-size:14px; line-height:1.8; }
+.chart-concept-body > h3 { margin-top:28px; }
+.chart-concept-anatomy { display:grid; grid-template-columns:1fr 1fr; align-items:center; gap:16px; padding:16px; background:#f8fafc; border-radius:12px; }
+.chart-concept-anatomy svg { width:100%; }
+.chart-concept-anatomy p { font-size:13px; margin:6px 0 16px; line-height:1.8; }
+.chart-candle-lengths { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; margin:22px 0; }
+.chart-candle-lengths figure { display:grid; grid-template-columns:70px minmax(0,1fr); align-items:center; gap:12px; padding:14px; background:#f8fafc; border-radius:10px; }
+.chart-candle-lengths svg { width:70px; height:100px; }
+.chart-candle-lengths strong { color:#6d28d9; font-size:14px; }
+.chart-candle-lengths p { margin:6px 0; font-size:14px; font-weight:700; line-height:1.7; }
+.chart-candle-lengths small { color:#64748b; font-size:12px; line-height:1.7; display:block; }
+.chart-concept-dialog > footer { position:sticky; bottom:0; background:white; padding:14px 24px; border-top:1px solid #e2e8f0; text-align:right; }
+.chart-concept-dialog > footer button { background:#6d28d9; color:white; padding:10px 18px; border-radius:8px; font-size:14px; font-weight:700; }
+@media(max-width:600px) { .chart-concept-anatomy,.chart-candle-lengths { grid-template-columns:minmax(0,1fr); } .chart-concept-anatomy svg { max-height:175px; } .chart-concept-dialog > header,.chart-concept-body { padding:16px; } .chart-concept-dialog > header h2 { font-size:19px; } }

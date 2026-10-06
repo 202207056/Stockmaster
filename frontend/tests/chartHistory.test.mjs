@@ -17,6 +17,24 @@ const { default: api } = await server.ssrLoadModule('/src/api/client.js');
 const { fetchChartHistory } = await server.ssrLoadModule('/src/api/chartHistory.js');
 const base = { date: '20260916', open: 100, high: 120, low: 90, close: 110, volume: 1 };
 
+test('empty intraday data falls back to real daily prices with an explicit daily label', async () => {
+  const requests = [];
+  const controller = new AbortController();
+  api.defaults.adapter = async config => {
+    requests.push(config.params);
+    assert.equal(config.signal, controller.signal);
+    return { status: 200, headers: {}, config, data: config.params.range
+      ? { range: 'D', resolution: '1m', rows: [] }
+      : [base, { ...base, date: '20260915' }] };
+  };
+  const result = await fetchChartHistory('005930', 'D', controller.signal);
+  assert.deepEqual(requests, [{ range: 'D', period: 'D' }, { period: 'D' }]);
+  assert.equal(result.rows.length, 2);
+  assert.equal(result.resolution, '1d');
+  assert.equal(result.displayLabel, '최근 2거래일');
+  assert.match(result.notice, /당일 분봉이 없어/);
+});
+
 test('intraday adapter keeps distinct minutes on one day and forwards range and cancellation', async () => {
   const controller = new AbortController();
   api.defaults.adapter = async (config) => {

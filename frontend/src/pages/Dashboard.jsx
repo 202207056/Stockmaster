@@ -144,11 +144,8 @@ export default function Dashboard() {
             ) : (
               <ul className="divide-y divide-gray-100 border-t border-gray-300">
                 {favorites.slice(0, 5).map((code) => (
-                  <li key={code} className="flex items-center justify-between py-3">
-                    <span className="tabular rounded bg-gray-100 px-2 py-1 text-xs font-bold text-gray-600">
-                      {code}
-                    </span>
-                    <StockQuote code={code} />
+                  <li key={code} className="py-3">
+                    <StockQuote code={code} variant="favorites" />
                   </li>
                 ))}
               </ul>

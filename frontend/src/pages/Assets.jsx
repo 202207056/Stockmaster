@@ -51,6 +51,7 @@ export default function Assets() {
         </p>
 
         {/* 홈에서 옮겨 온 개인 지표 4종 */}
+        {(totals?.debt > 0 || totals?.pendingProceeds > 0) && <p className="mt-3 text-sm text-amber-800">미수 부족금 {won(totals.debt)} 차감 · 결제 대기 매도대금 {won(totals.pendingProceeds)} 포함. <Link to="/trading" className="underline">트레이딩에서 결제 내역 확인</Link></p>}
         <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <StatCard
             label={
@@ -130,7 +131,7 @@ export default function Assets() {
         {/* 왜 "총 수익"이 없는지 사용자에게도 설명해 둡니다. */}
         <p className="mt-3 text-xs leading-relaxed text-gray-400">
           매입금액과 평가손익은 평균 매입단가와 보유수량 기준이며 수수료·세금을 제외합니다.
-          모의계좌는 실제 T+2 결제와 달리 체결 즉시 현금을 반영합니다.
+          현금 주문은 체결 즉시 현금을 반영합니다. 미수 부족금이 있는 계좌의 매도대금은 T+2 거래일에 결제하며 총자산에서 부족금을 차감합니다.
         </p>
       </section></PracticeTarget>
 
