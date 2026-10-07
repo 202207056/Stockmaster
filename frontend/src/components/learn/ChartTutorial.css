@@ -10,7 +10,6 @@
 .candle-live-prices { position:absolute; right:2%; top:3%; display:flex; flex-wrap:wrap; justify-content:flex-end; gap:4px 10px; max-width:47%; padding:6px 9px; border-radius:7px; background:#fff; border:1px solid #ddd6fe; font-size:12px; color:#64748b; }
 .candle-live-prices b { color:#6d28d9; }
 .chart-tour-note .chart-tour-purpose { font-weight:700; color:#6d28d9; }
-.chart-tour-note .chart-tour-caution { font-size:12px; color:#64748b; }
 .chart-tour-note .chart-tour-actions { display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; }
 .chart-tour-note .chart-tour-actions button { font-size:12px; padding:7px 10px; }
 .chart-concept-dialog.chart-guide { border:0; border-radius:18px; padding:0; width:min(820px,calc(100vw - 24px)); max-width:none; max-height:calc(100dvh - 32px); margin:auto; color:#334155; box-shadow:0 20px 80px #0f172a44; }
@@ -34,3 +33,14 @@
 .chart-concept-dialog > footer { position:sticky; bottom:0; background:white; padding:14px 24px; border-top:1px solid #e2e8f0; text-align:right; }
 .chart-concept-dialog > footer button { background:#6d28d9; color:white; padding:10px 18px; border-radius:8px; font-size:14px; font-weight:700; }
 @media(max-width:600px) { .chart-concept-anatomy,.chart-candle-lengths { grid-template-columns:minmax(0,1fr); } .chart-concept-anatomy svg { max-height:175px; } .chart-concept-dialog > header,.chart-concept-body { padding:16px; } .chart-concept-dialog > header h2 { font-size:19px; } }
+
+/* Reuse the overview illustrations inside the moving candle callout. */
+.chart-tour-note .candle-inline-lesson .chart-concept-anatomy { display:block; padding:8px; margin-top:8px; }
+.chart-tour-note .candle-inline-lesson .chart-anatomy { width:100%; height:auto; max-height:170px; }
+.chart-tour-note .candle-inline-lesson h3 { font-size:13px; margin:8px 0 3px; }
+.chart-tour-note .candle-inline-lesson p { font-size:13px; line-height:1.65; margin:4px 0; }
+.chart-tour-note .candle-inline-lesson .chart-candle-lengths,
+.chart-tour-note .candle-inline-lesson .chart-candle-shapes { display:grid; grid-template-columns:1fr; gap:8px; margin:10px 0; }
+.chart-tour-note .candle-inline-lesson figure { display:grid; grid-template-columns:64px minmax(0,1fr); gap:10px; align-items:center; margin:0; padding:8px; background:#f8fafc; border-radius:8px; }
+.chart-tour-note .candle-inline-lesson figure svg { width:64px; height:90px; margin:0; }
+.chart-tour-note .candle-inline-lesson .chart-guide-callout { padding:10px; }

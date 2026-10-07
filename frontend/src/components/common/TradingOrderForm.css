@@ -35,3 +35,5 @@
 .trading-order button { cursor: pointer; }
 .trading-order button:disabled { opacity: .4; cursor: not-allowed; }
 .trading-order button:focus-visible, .trading-order select:focus-visible { outline: 2px solid var(--order-color); outline-offset: 2px; }
+
+.trading-order-toolbar select{max-width:160px}.trading-order-type-help{font-size:12px;line-height:1.7;color:#59677b;margin:10px 0}.trading-order-execution{display:flex;align-items:center;justify-content:space-between;font-size:13px;padding-top:16px}.trading-order-execution select{border:1px solid #dce1e8;padding:6px;border-radius:6px}

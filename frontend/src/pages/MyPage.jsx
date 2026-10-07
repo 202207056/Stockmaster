@@ -1,3 +1,4 @@
+import useTutorialSetting from '../hooks/useTutorialSetting';
 import { Link } from 'react-router-dom';
 import useAuth from '../hooks/useAuth';
 import { num, won } from '../utils/format';
@@ -18,6 +19,7 @@ import useMiniAssetsSetting from '../hooks/useMiniAssetsSetting';
  */
 export default function MyPage() {
   const { user, account, isAuthenticated } = useAuth();
+  const [tutorialsEnabled, setTutorialsEnabled] = useTutorialSetting();
   const [miniAssetsEnabled, setMiniAssetsEnabled] = useMiniAssetsSetting();
 
   return (
@@ -40,6 +42,16 @@ export default function MyPage() {
             <span aria-hidden="true" className={`relative h-5 w-9 rounded-full ${miniAssetsEnabled ? 'bg-brand-400' : 'bg-gray-400'}`}>
               <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white transition-transform ${miniAssetsEnabled ? 'translate-x-4' : 'translate-x-0.5'} left-0`} />
             </span>
+          </button>
+        </div>
+        <div className="flex items-center justify-between gap-4 rounded-xl border border-gray-200 px-4 py-4">
+          <div><p id="tutorial-setting-label" className="text-sm font-bold text-gray-900">튜토리얼 자동 안내</p>
+            <p id="tutorial-setting-description" className="mt-1 text-xs text-gray-500">매수·차트·내 자산·미수거래의 자동 튜토리얼을 켜거나 끕니다. 학습 탭과 ? 설명은 계속 이용할 수 있습니다. 설정은 이 브라우저에 저장됩니다.</p></div>
+          <button type="button" role="switch" aria-checked={tutorialsEnabled} aria-labelledby="tutorial-setting-label" aria-describedby="tutorial-setting-description"
+            onClick={()=>setTutorialsEnabled(!tutorialsEnabled)}
+            className={`flex shrink-0 items-center gap-2 rounded-full px-3 py-2 text-xs font-bold transition-colors ${tutorialsEnabled ? 'bg-brand-600 text-white' : 'bg-gray-200 text-gray-600'}`}>
+            {tutorialsEnabled ? 'ON' : 'OFF'}
+            <span aria-hidden="true" className={`relative h-5 w-9 rounded-full ${tutorialsEnabled ? 'bg-brand-400' : 'bg-gray-400'}`}><span className={`absolute left-0 top-0.5 h-4 w-4 rounded-full bg-white transition-transform ${tutorialsEnabled ? 'translate-x-4' : 'translate-x-0.5'}`}/></span>
           </button>
         </div>
       </section>

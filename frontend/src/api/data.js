@@ -6,7 +6,7 @@ const get = async (path, params, signal) => (await api.get(path, { params, signa
 export const fetchStocks = async (search, signal) => requireArray(await get('/stocks', { search: search || undefined }, signal));
 export const fetchStock = async (code, signal) => requireObject(await get(`/stocks/${encodeURIComponent(code)}`, undefined, signal));
 export const fetchStockLogo = async (code, signal) => requireObject(await get(`/stocks/${encodeURIComponent(code)}/logo`, undefined, signal));
-export const fetchPrice = async (code, signal) => requireObject(await get(`/stocks/${encodeURIComponent(code)}/price`, undefined, signal));
+export const fetchPrice = async (code, signal, options = {}) => requireObject((await api.get(`/stocks/${encodeURIComponent(code)}/price`, { signal, ...options })).data);
 export const fetchChart = async (code, signal, period = 'D') => chartRows(await get(`/stocks/${encodeURIComponent(code)}/chart`, { period }, signal));
 export const fetchRanking = async (type, signal) => requireArray(await get(`/stocks/ranking/${type}`, { limit: 10 }, signal));
 export const fetchNews = async (signal) => {
@@ -69,7 +69,7 @@ async function loadValuedPortfolio(signal, accountId) {
 async function fetchPortfolioPrice(code, signal) {
   for (let attempt = 0; attempt < 2; attempt += 1) {
     try {
-      const quote = await fetchPrice(code, signal);
+      const quote = await fetchPrice(code, signal, attempt > 0 ? { cache: false } : {});
       if (quotePrice(quote) === null) throw new Error(quote.message || '유효한 현재가를 받지 못했습니다.');
       return quote;
     } catch (error) {
@@ -86,7 +86,7 @@ export function fetchValuedPortfolio(accountId, signal) {
   return sharedPortfolio(JSON.stringify([getToken(), accountId]), signal, accountId);
 }
 
-export const fetchOrderBook = async (code, signal) => requireObject(await get(`/trading/orders/book/${encodeURIComponent(code)}`, undefined, signal));
+export const fetchOrderBook = async (code, signal) => requireObject((await api.get(`/trading/orders/book/${encodeURIComponent(code)}`, { signal, cache: false })).data);
 export const checkPendingOrder = async id => requireObject((await api.post(`/trading/orders/${encodeURIComponent(id)}/check`)).data);
 
 export const fetchMisu = async (accountId, signal) => requireObject(await get(`/trading/misu/${encodeURIComponent(accountId)}`, undefined, signal));

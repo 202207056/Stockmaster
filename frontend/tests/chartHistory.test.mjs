@@ -14,6 +14,8 @@ const server = await createServer({
 });
 after(() => server.close());
 const { default: api } = await server.ssrLoadModule('/src/api/client.js');
+// These tests exercise response normalization with a different server fixture each time.
+api.defaults.cache = false;
 const { fetchChartHistory } = await server.ssrLoadModule('/src/api/chartHistory.js');
 const base = { date: '20260916', open: 100, high: 120, low: 90, close: 110, volume: 1 };
 

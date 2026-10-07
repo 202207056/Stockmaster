@@ -12,6 +12,7 @@ Object.assign(globalThis, { window: dom.window, document: dom.window.document, l
 window.scrollTo = () => {};
 dom.window.HTMLDialogElement.prototype.showModal = function () { this.open = true; };
 dom.window.HTMLDialogElement.prototype.close = function () { this.open = false; };
+dom.window.HTMLElement.prototype.scrollIntoView = () => assert.fail('Tutorial transitions must not scroll the page');
 const React = await import('react');
 const { createRoot } = await import('react-dom/client');
 const { renderToString } = await import('react-dom/server');
@@ -108,17 +109,14 @@ test('chart guide shows comparisons together without quizzes, steps, or progress
   } finally { await React.act(async()=>root.unmount()); }
 });
 
-test('completed introduction stays dismissed, explicit replay restores selection, another user starts fresh', async () => {
+test('completed introduction stays dismissed without a replay button, another user starts fresh', async () => {
   const root = createRoot(container);
   const render = userId => React.createElement(MemoryRouter,{},React.createElement(Workspace,{key:userId,rows:CHART_EXAMPLE,userId,repeatTutorial:false}));
   try {
     await React.act(async()=>root.render(render('chart-test-a')));
     await select('그래프 종류','bar');
     assert(!container.querySelector('[role=dialog]'));
-    await React.act(async()=>[...container.querySelectorAll('button')].find(n=>n.textContent==='유형 소개 다시 보기').click());
-    assert(container.querySelector('[role=dialog]'));
-    await React.act(async()=>container.querySelector('[data-chart-selector]').dispatchEvent(new dom.window.KeyboardEvent('keydown',{key:'Escape',bubbles:true})));
-    assert(!container.querySelector('[role=dialog]'));
+    assert(![...container.querySelectorAll('button')].some(n=>n.textContent==='유형 소개 다시 보기'));
     assert.equal(container.querySelector('[data-chart-selector]').value,'bar');
     await React.act(async()=>root.render(render('chart-test-other')));
     await select('그래프 종류','bar');
@@ -152,10 +150,18 @@ test('tutorial shares guide copy, annotates example geometry and opens compariso
       if (id!=='line') await select('그래프 종류',id);
       if (id==='candle') {
         assert(!container.querySelector('dialog'));
-        const titles = ['네 가격','몸통이 길면','몸통이 짧으면','윗꼬리','아랫꼬리','음봉','시가와 종가','전일보다'];
+        const titles = ['몸통 = 시작과 끝의 차이','몸통이 길면','몸통이 짧으면','윗꼬리','아랫꼬리','음봉','시가와 종가','전일 대비'];
         for (let i=0;i<titles.length;i++) {
           assert(container.querySelector('.chart-tour-note').textContent.includes(titles[i]));
           assert(container.querySelector('[data-candle-target]'));
+          assert(container.querySelector('.chart-tour-note svg[role="img"]'));
+          const back = [...container.querySelectorAll('.chart-tour-note button')].find(button => button.textContent === '뒤로가기');
+          assert.equal(Boolean(back), i > 0);
+          if (i === 2) {
+            await React.act(async()=>back.click());
+            assert(container.querySelector('.chart-tour-note').textContent.includes('몸통이 길면'));
+            await React.act(async()=>container.querySelector('.chart-tour-note svg').dispatchEvent(new Event('click', { bubbles:true })));
+          }
           assert(!container.querySelector('.candle-next-target'));
           assert.equal([...container.querySelectorAll('button')].some(button => button.textContent === '전체 구조 크게 보기'), i === titles.length - 1);
           if (i<titles.length-1) await React.act(async()=>container.querySelector(i % 2 ? '.chart-tour-note p' : '.chart-illustrated-plot').click());

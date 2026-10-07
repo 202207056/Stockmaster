@@ -1,17 +1,18 @@
-import test, { after } from 'node:test';
+import test, { after, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { JSDOM } from 'jsdom';
 import { createServer } from 'vite';
 
 const dom = new JSDOM('<div id="root"></div>', { url: 'http://localhost/' });
-Object.assign(globalThis, { window: dom.window, document: dom.window.document, localStorage: dom.window.localStorage, HTMLElement: dom.window.HTMLElement, Event: dom.window.Event, IS_REACT_ACT_ENVIRONMENT: true });
+Object.assign(globalThis, { window: dom.window, document: dom.window.document, localStorage: dom.window.localStorage, ResizeObserver: class { observe() {} disconnect() {} }, HTMLElement: dom.window.HTMLElement, Event: dom.window.Event, IS_REACT_ACT_ENVIRONMENT: true });
 const React = await import('react');
 const { createRoot } = await import('react-dom/client');
 const server = await createServer({ server: { middlewareMode: true, hmr: false }, appType: 'custom' });
 after(async () => { await server.close(); dom.window.close(); });
 const { default: MarketDetails } = await server.ssrLoadModule('/src/components/common/MarketDetails.jsx');
 const { AuthContext } = await server.ssrLoadModule('/src/contexts/auth-context.js');
-const { default: api } = await server.ssrLoadModule('/src/api/client.js');
+const { default: api, clearRequestCache } = await server.ssrLoadModule('/src/api/client.js');
+beforeEach(() => { localStorage.clear(); clearRequestCache(); });
 const container = document.getElementById('root');
 
 test('market tabs fetch only selected data, refresh, and clear data on symbol change', async () => {
@@ -55,4 +56,24 @@ test('unavailable market data shows a retry without fabricated rows', async () =
     assert.equal(container.querySelectorAll('tbody tr').length, 0);
     assert.match(container.textContent, /다시 시도/);
   } finally { await React.act(async () => root.unmount()); }
+});
+
+
+
+test('each market tab has a definition without starting a tutorial or requesting example data', async () => {
+  const root=createRoot(container);
+  try {
+    await React.act(async()=>root.render(React.createElement(MarketDetails,{code:''})));
+    for(const label of ['호가','체결','일별']) {
+      await React.act(async()=>[...container.querySelectorAll('[role="tab"]')].find(node=>node.textContent===label).click());
+      assert(!container.querySelector('.market-tour'));
+      assert(!container.querySelector('[role="note"]'));
+      const button=container.querySelector('[aria-label="'+label+' 정의"]');
+      await React.act(async()=>button.click());
+      assert(container.querySelector('[role="note"]').textContent.includes('입니다'));
+      assert.equal(container.querySelectorAll('tbody tr').length,0);
+      await React.act(async()=>button.click());
+      assert(!container.querySelector('[role="note"]'));
+    }
+  } finally { await React.act(async()=>root.unmount()); }
 });

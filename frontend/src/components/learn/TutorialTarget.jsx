@@ -1,4 +1,4 @@
-import { MousePointer2 } from 'lucide-react';
+import TutorialPointer from './TutorialPointer';
 import { useContext, useId, useLayoutEffect, useRef } from 'react';
 import { TutorialInstruction, TutorialRunning } from './tutorial-context';
 
@@ -58,7 +58,7 @@ export default function TutorialTarget({ active: requested = true, children, ins
   return <div className="tutorial-anchor" role={active && note ? 'group' : undefined} aria-describedby={active && note ? noteId : undefined}>
     <div ref={targetRef} tabIndex={active ? -1 : undefined} className={`tutorial-target ${active ? 'tutorial-target-active' : ''}`}>
     {children}
-    {active && <span className="tutorial-pointer" aria-hidden="true"><MousePointer2 size={24} fill="white" /><span>여기를 클릭</span></span>}
+    {active && <TutorialPointer/>}
     </div>
     {active && note && <div ref={noteRef} id={noteId} className="tutorial-local-note" role="status" aria-live="polite" aria-atomic="true"><strong className="block text-sm text-brand-700">{note.title}</strong><p className="mt-1 text-sm leading-relaxed text-gray-600">{note.text}</p></div>}
   </div>;

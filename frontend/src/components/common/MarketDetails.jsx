@@ -1,4 +1,5 @@
-import { useCallback, useId, useState } from 'react';
+import HelpIconButton from '../learn/HelpIconButton';
+import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { RefreshCw } from 'lucide-react';
 import api from '../../api/client';
 import { fetchChart } from '../../api/data';
@@ -13,11 +14,12 @@ const number = value => value == null ? '—' : Number(value).toLocaleString('ko
 export default function MarketDetails({ code }) {
   const [tab, setTab] = useState('orderbook');
   const id = useId();
+  const selectTab = value => setTab(value);
   return <section className="market-details" aria-label="종목 시장 정보">
-    <div className="market-details-tabs" role="tablist" aria-label="시장 정보 구분">{tabs.map(([value, label], index) => <button key={value} id={`${id}-${value}`} type="button" role="tab" aria-selected={tab === value} aria-controls={`${id}-panel`} tabIndex={tab === value ? 0 : -1} onClick={() => setTab(value)} onKeyDown={event => {
+    <div className="market-details-heading"><div className="market-details-tabs" role="tablist" aria-label="시장 정보 구분">{tabs.map(([value, label], index) => <div key={value} className="market-details-tab" role="presentation"><button id={`${id}-${value}`} type="button" role="tab" aria-selected={tab === value} aria-controls={`${id}-panel`} tabIndex={tab === value ? 0 : -1} onClick={() => selectTab(value)} onKeyDown={event => {
       const next = event.key === 'ArrowRight' ? (index + 1) % tabs.length : event.key === 'ArrowLeft' ? (index + tabs.length - 1) % tabs.length : event.key === 'Home' ? 0 : event.key === 'End' ? tabs.length - 1 : null;
-      if (next !== null) { event.preventDefault(); setTab(tabs[next][0]); document.getElementById(`${id}-${tabs[next][0]}`)?.focus(); }
-    }}>{label}</button>)}</div>
+      if (next !== null) { event.preventDefault(); selectTab(tabs[next][0]); document.getElementById(`${id}-${tabs[next][0]}`)?.focus(); }
+    }}>{label}</button><MarketDefinition kind={value} label={label}/></div>)}</div></div>
     <div id={`${id}-panel`} role="tabpanel" aria-labelledby={`${id}-${tab}`} tabIndex={0}>
       {code ? <MarketContent key={`${code}:${tab}`} code={code} tab={tab} /> : <p className="market-details-empty">종목을 선택하면 시장 정보를 확인할 수 있어요.</p>}
     </div>
@@ -33,17 +35,36 @@ async function loadDetails(code, tab, signal) {
 }
 
 function MarketContent({ code, tab }) {
-  const resource = useRemote(useCallback(signal => loadDetails(code, tab, signal), [code, tab]));
+  const resource = useRemote(useCallback(signal => loadDetails(code, tab, signal), [code, tab]), true, { cacheKey: JSON.stringify(['market-details', code, tab]), publicCache: true });
   const data = resource.data;
   const empty = tab === 'orderbook' ? !data?.asks.length && !data?.bids.length : !data?.rows.length;
   return <>
-    <div className="market-details-meta"><span>{tab === 'daily' ? '일별 가격 · 원 / 주' : 'KRX · 원 / 주'}</span><button type="button" aria-label={`${tabs.find(([value]) => value === tab)[1]} 새로고침`} disabled={resource.loading} onClick={resource.reload}><RefreshCw size={12} />{resource.loading ? '조회 중' : '새로고침'}</button></div>
+    <div className="market-details-meta"><span>{tab === 'daily' ? '일별 가격 · 원 / 주' : 'KRX · 원 / 주'}</span><button type="button" aria-label={`${tabs.find(([value]) => value === tab)[1]} 새로고침`} disabled={resource.loading} onClick={resource.reload}><RefreshCw size={16} aria-hidden="true" className={resource.loading ? 'animate-spin' : undefined} /></button></div>
     <RemoteState resource={resource} requiresAuth={false}>
       {data && empty && <div role="status" className="market-details-empty"><p className="font-semibold">{tab === 'orderbook' ? '현재 제공되는 매수·매도 호가가 없습니다.' : tab === 'trades' ? '현재 제공되는 시장 체결 내역이 없습니다.' : '현재 제공되는 일별 가격이 없습니다.'}</p><p className="mt-2">{tab === 'daily' ? '잠시 후 다시 조회해 주세요.' : '조회는 완료됐지만 시세 제공처가 빈 데이터를 반환했습니다. 장 시작 전·휴장 또는 시세 제공 지연일 수 있습니다. 장중에도 계속 비어 있으면 시세 연결을 확인해야 합니다.'}</p><button type="button" onClick={resource.reload} className="mt-3 text-brand-700 underline">다시 조회</button></div>}
-      {data && !empty && <div className="market-details-scroll">{tab === 'orderbook' ? <DepthTable data={data} /> : <table><thead><tr>{(tab === 'trades' ? ['체결시간', '체결가', '체결량'] : ['날짜', '종가', '등락률', '거래량']).map(label => <th scope="col" key={label}>{label}</th>)}</tr></thead><tbody>{data.rows.map((row, index) => tab === 'trades' ? <tr key={`${row.time}-${index}`}><td>{row.time}</td><td className="font-semibold">{number(row.price)}</td><td>{number(row.quantity)}</td></tr> : <tr key={row.date}><td title={row.date}>{row.date.slice(2).replaceAll('-', '.')}</td><td className="font-semibold">{number(row.close)}</td><td>{row.change == null ? '—' : `${row.change > 0 ? '+' : ''}${row.change.toFixed(2)}%`}</td><td>{number(row.volume)}</td></tr>)}</tbody></table>}</div>}
+      {data && !empty && <MarketTableViewport tab={tab} data={data} />}
     </RemoteState>
     <p className="market-details-footnote">{tab === 'daily' ? '최근 거래일 기준 · 당일 값은 장중 변동될 수 있습니다.' : `${data?.market_time ? `호가 접수 ${data.market_time} · ` : ''}조회 시점 데이터 · 자동 갱신되지 않습니다.`}{data?.observed_at && Number.isFinite(Date.parse(data.observed_at)) && <span className="block">조회: {new Date(data.observed_at).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' })} (한국시간)</span>}</p>
   </>;
+}
+
+function MarketTableViewport({ tab, data }) {
+  const viewport = useRef(null);
+  const interacted = useRef(false);
+  useLayoutEffect(() => {
+    if (tab !== 'orderbook' || interacted.current) return;
+    const element = viewport.current;
+    const bid = element.querySelector('.market-depth-bid');
+    const ask = element.querySelector('.market-depth-ask');
+    if (!bid || !ask) return;
+    const headerHeight = element.querySelector('thead').getBoundingClientRect().height;
+    const boundary = bid.getBoundingClientRect().top - element.getBoundingClientRect().top + element.scrollTop;
+    element.scrollTop = Math.max(0, boundary - (element.clientHeight + headerHeight) / 2);
+  }, [tab, data]);
+  const markInteraction = () => { interacted.current = true; };
+  return <div ref={viewport} className="market-details-scroll" onWheel={markInteraction} onTouchStart={markInteraction} onPointerDown={markInteraction} onKeyDown={markInteraction}>
+    <MarketTable tab={tab} data={data} />
+  </div>;
 }
 
 function DepthTable({ data }) {
@@ -51,4 +72,32 @@ function DepthTable({ data }) {
   const bids = [...data.bids].sort((a, b) => b.price - a.price);
   const max = Math.max(1, ...asks.map(row => row.quantity), ...bids.map(row => row.quantity));
   return <table className="market-depth"><thead><tr><th scope="col">매도잔량</th><th scope="col">호가</th><th scope="col">매수잔량</th></tr></thead><tbody>{[['ask', asks], ['bid', bids]].flatMap(([side, rows]) => rows.map(row => <tr key={`${side}-${row.level}`} className={`market-depth-${side}`}><td>{side === 'ask' && <><span className="market-depth-bar" style={{ width: `${row.quantity / max * 100}%` }} /><span className="relative">{number(row.quantity)}</span></>}</td><td className="market-depth-price">{number(row.price)}</td><td>{side === 'bid' && <><span className="market-depth-bar" style={{ width: `${row.quantity / max * 100}%` }} /><span className="relative">{number(row.quantity)}</span></>}</td></tr>))}</tbody><tfoot><tr><td>{number(asks.reduce((sum, row) => sum + row.quantity, 0))}</td><th scope="row">표시 잔량</th><td>{number(bids.reduce((sum, row) => sum + row.quantity, 0))}</td></tr></tfoot></table>;
+}
+
+function MarketTable({ tab, data }) {
+  return tab === 'orderbook' ? <DepthTable data={data} /> : <table><thead><tr>{(tab === 'trades' ? ['체결시간', '체결가', '체결량'] : ['날짜', '종가', '등락률', '거래량']).map(label => <th scope="col" key={label}>{label}</th>)}</tr></thead><tbody>{data.rows.map((row, index) => tab === 'trades' ? <tr key={`${row.time}-${index}`}><td>{row.time}</td><td className="font-semibold">{number(row.price)}</td><td>{number(row.quantity)}</td></tr> : <tr key={row.date}><td title={row.date}>{row.date.slice(2).replaceAll('-', '.')}</td><td className="font-semibold">{number(row.close)}</td><td>{row.change == null ? '—' : `${row.change > 0 ? '+' : ''}${row.change.toFixed(2)}%`}</td><td>{number(row.volume)}</td></tr>)}</tbody></table>;
+}
+
+
+const DEFINITIONS = {
+  orderbook:'호가는 주식을 사거나 팔겠다고 제시한 가격입니다. 매수호가는 사려는 가격, 매도호가는 팔려는 가격이며, 잔량은 해당 가격에서 기다리는 주문 수량입니다.',
+  trades:'체결은 매수 주문과 매도 주문이 만나 실제 거래가 이루어진 것입니다. 체결시간·체결가·체결량은 각각 거래 시각·주당 가격·거래된 주식 수입니다.',
+  daily:'일별은 거래 정보를 하루 단위로 모은 내역입니다. 종가는 그날 마지막 거래가격, 등락률은 전 거래일 종가 대비 변화율, 거래량은 그날 거래된 주식 수입니다. 장중의 당일 값은 변할 수 있습니다.',
+};
+function MarketDefinition({kind,label}) {
+  const [open,setOpen] = useState(false);
+  const root = useRef(null);
+  const id = useId();
+  useEffect(()=>{
+    if(!open) return;
+    const dismiss = event => { if(!root.current.contains(event.target)) setOpen(false); };
+    document.addEventListener('pointerdown',dismiss);
+    return ()=>document.removeEventListener('pointerdown',dismiss);
+  },[open]);
+  return <span ref={root} className="market-definition" onKeyDown={event=>{
+    if(event.key==='Escape') { event.stopPropagation(); setOpen(false); root.current.querySelector('button').focus(); }
+  }}>
+    <HelpIconButton open={open} aria-label={label+' 정의'} aria-controls={open ? id : undefined} onClick={()=>setOpen(!open)}/>
+    {open && <span id={id} role="note" className="market-definition-popover">{DEFINITIONS[kind]}</span>}
+  </span>;
 }

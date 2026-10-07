@@ -1,3 +1,4 @@
+import { RefreshCw } from 'lucide-react';
 import { useCallback } from 'react';
 import useAuth from '../../hooks/useAuth';
 import useRemote from '../../hooks/useRemote';
@@ -14,7 +15,7 @@ export default function StockNewsSummary({ code }) {
   return <section className="rounded-xl border border-gray-200 p-4 lg:col-span-4" aria-label="선택 종목 AI 뉴스 요약">
     <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
       <h2 className="text-sm font-bold text-gray-700">AI 뉴스 요약 <span className="font-normal text-gray-500">· {data?.name || code}</span></h2>
-      {isAuthenticated && <button type="button" onClick={resource.reload} disabled={resource.loading} className="text-xs text-gray-500 underline disabled:opacity-50">요약 새로고침</button>}
+      {isAuthenticated && <button type="button" onClick={resource.reload} disabled={resource.loading} className="text-xs text-gray-500 underline disabled:opacity-50" aria-label="요약 새로고침" title="요약 새로고침"><RefreshCw size={16} aria-hidden="true" /></button>}
     </div>
     <RemoteState resource={resource} authenticated={isAuthenticated}>
       {data && <div className="space-y-3">

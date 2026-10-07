@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { clearPrivateResources } from './resourceCache';
+import { installRequestCache } from './requestCache';
 
 /**
  * API 클라이언트 (F-6)
@@ -11,7 +12,7 @@ import { clearPrivateResources } from './resourceCache';
  */
 
 export const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL?.replace(/\/+$/, '') || 'http://localhost:8000/api';
+  import.meta.env.VITE_API_BASE_URL?.replace(/\/+$/, '') || 'https://gp-mock-inv.onrender.com/api';
 
 /** baseURL 에서 /api 를 뗀 서버 루트 (헬스체크·워밍업용) */
 export const API_ORIGIN = API_BASE_URL.replace(/\/api$/, '');
@@ -31,6 +32,7 @@ export const getToken = () => {
 };
 
 export const setToken = (token) => {
+  clearRequestCache();
   try {
     if (token !== getToken() || (token && !getSessionId())) {
       clearPrivateResources();
@@ -66,6 +68,8 @@ const api = axios.create({
   timeout: 60_000,
   headers: { 'Content-Type': 'application/json' },
 });
+export const clearRequestCache = installRequestCache(api, getToken);
+if (typeof window !== 'undefined') window.addEventListener('orders:changed', clearRequestCache);
 
 /* ---------------------------------------------------------------------------
  * 콜드스타트 안내

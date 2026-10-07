@@ -12,7 +12,7 @@ import '../../pages/TradingTutorial.css';
 export default function SitePractice({ children, inlineBuy = false }) {
   const [params] = useSearchParams();
   const { pathname } = useLocation();
-  const course = !(inlineBuy && params.get('practice') === 'buy') && ['/trading', '/assets'].includes(pathname) && TRADING_TUTORIALS.find(item => item.id === params.get('practice'));
+  const course = params.get('practice') !== 'account' && !(inlineBuy && params.get('practice') === 'buy') && ['/trading', '/assets'].includes(pathname) && TRADING_TUTORIALS.find(item => item.id === params.get('practice'));
   return course ? <Session key={course.id} course={course}>{children}</Session> : children;
 }
 
@@ -64,7 +64,6 @@ function PracticeAccount({ course, restart, children }) {
   useEffect(() => {
     if (!running) return;
     const target = root.current?.querySelector('.tutorial-target-active');
-    target?.scrollIntoView?.({ block: 'center', behavior: 'instant' });
     (target?.querySelector('input, select, button, a, summary') || target)?.focus({ preventScroll: true });
   }, [index, running]);
   const value = { course, current, account, favorites, resource, submit, href, event, advance: () => setIndex(value => value + 1), toggleFavorite: code => setFavorites(previous => previous.includes(code) ? previous.filter(item => item !== code) : [...previous, code]) };

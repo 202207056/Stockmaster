@@ -23,7 +23,7 @@ export async function login({ login_id, passwd }) {
 
 /** GET /api/users/me (Bearer 필요) */
 export async function fetchMe() {
-  const { data } = await api.get('/users/me');
+  const { data } = await api.get('/users/me', { cache: false });
   return data;
 }
 
@@ -32,7 +32,7 @@ export async function fetchMe() {
  * ⚠️ balance / withdrawable_cash 가 문자열로 옵니다. 화면에서 num() 을 거치세요.
  */
 export async function fetchAccounts() {
-  const { data } = await api.get('/trading/accounts');
+  const { data } = await api.get('/trading/accounts', { cache: false });
   if (!Array.isArray(data)) throw new Error('계좌 목록 응답 형식을 확인해 주세요.');
   return data;
 }

@@ -1,3 +1,4 @@
+import HelpIconButton from './HelpIconButton';
 import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { ChevronLeft, X } from 'lucide-react';
 import { CATEGORIES, getTerm } from '../../constants/glossary';
@@ -69,20 +70,12 @@ export default function HelpIcon({ termId, className = '', label }) {
 
   return (
     <span ref={wrapRef} className={`relative inline-block align-middle ${className}`}>
-      <button
-        type="button"
+      <HelpIconButton
+        open={open}
         onClick={() => setOpen((v) => !v)}
         aria-label={label ?? `${root.term} 설명 보기`}
-        aria-expanded={open}
         aria-controls={open ? popoverId : undefined}
-        className={`ml-1 inline-flex h-4 w-4 items-center justify-center rounded-full border text-[10px] leading-none font-bold transition ${
-          open
-            ? 'border-brand-600 bg-brand-600 text-white'
-            : 'border-gray-300 text-gray-400 hover:border-brand-500 hover:text-brand-600'
-        }`}
-      >
-        ?
-      </button>
+      />
 
       {open && (
         <div

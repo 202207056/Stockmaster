@@ -34,7 +34,6 @@ function Experience({ id, guide }) {
     if (!running) return;
     const element = root.current?.querySelector(done ? '[data-completion]' : '.tutorial-target-active input, .tutorial-target-active textarea, .tutorial-target-active button');
     element?.focus({ preventScroll: true });
-    (element?.closest('.tutorial-anchor') || element)?.scrollIntoView({ block: 'nearest', behavior: 'instant' });
   }, [step, done, running]);
   const action = (at, text, content) => <Target active={step === at}><button disabled={step !== at} onClick={next} className="w-full rounded-xl border border-gray-200 bg-white p-5 text-left"><span className="block text-sm font-bold text-brand-700">{text}</span>{content && <span className="mt-2 block text-xl font-extrabold">{content}</span>}</button></Target>;
   return <TutorialInstruction.Provider value={done ? null : { title: guide.title, text: guide.steps[step] }}><div ref={root} className="trading-tutorial mx-auto max-w-5xl space-y-6">

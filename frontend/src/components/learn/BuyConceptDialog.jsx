@@ -2,8 +2,10 @@ import { useEffect, useId, useRef, useState } from 'react';
 import QuoteOrderPractice from './QuoteOrderPractice';
 
 // Teaching scenarios only: no account mutation or order API.
-export default function BuyConceptDialog({ kind, onContinue, onExit }) {
+export default function BuyConceptDialog({ kind, onContinue, onExit, surfaceRef }) {
   const dialog = useRef(null);
+  const bubble = kind === 'fees';
+  const Container = bubble ? 'section' : 'dialog';
   const titleId = useId();
   const [ask, setAsk] = useState(50100);
   const [answer, setAnswer] = useState(null);
@@ -12,14 +14,34 @@ export default function BuyConceptDialog({ kind, onContinue, onExit }) {
   const quoteLesson = ['midResult', 'bestResult', 'ownResult'].includes(kind);
   useEffect(() => {
     const element = dialog.current;
-    element.showModal();
-    return () => element.close();
-  }, []);
+    if (!bubble) {
+      element.showModal();
+      return () => element.close();
+    }
+    const target = surfaceRef.current.querySelector('[data-tutorial-target="costs"]');
+    const position = () => {
+      const rect = target.getBoundingClientRect();
+      const width = document.documentElement.clientWidth || window.innerWidth;
+      element.style.width = Math.min(580, width - 24) + 'px';
+      element.style.maxHeight = Math.max(120, window.innerHeight - 24) + 'px';
+      const box = element.getBoundingClientRect();
+      const left = rect.left - box.width - 12 >= 12 ? rect.left - box.width - 12 : rect.right + box.width + 12 <= width - 12 ? rect.right + 12 : 12;
+      element.style.left = left + 'px';
+      element.style.top = Math.max(12, Math.min(rect.top, window.innerHeight - box.height - 12)) + 'px';
+    };
+    position();
+    element.focus({ preventScroll:true });
+    const observer = new ResizeObserver(position);
+    observer.observe(target); observer.observe(element); observer.observe(surfaceRef.current);
+    window.addEventListener('resize',position);
+    window.addEventListener('scroll',position,true);
+    return () => { observer.disconnect(); window.removeEventListener('resize',position); window.removeEventListener('scroll',position,true); };
+  }, [bubble, surfaceRef]);
   const titles = { intro: '같은 주식, 주문 방법에 따라 결과가 달라져요', marketResult: '시장가: 최근 가격이 아닌, 지금 팔겠다는 가격', limitResult: '지정가: 가격 한도를 지키는 대신 기다려요', fees: '주식값과 계좌에서 나가는 돈은 달라요' };
   const limitFilled = ask <= 50000;
   const canContinue = quoteLesson ? quoteReady : kind === 'limitResult' ? limitFilled && answer === 'limit' : kind === 'fees' ? feeAnswer === 'short' : true;
-  return <dialog ref={dialog} className="buy-concept-dialog" aria-labelledby={titleId} onCancel={event => { event.preventDefault(); onExit?.(); }}>
-    <button type="button" className="buy-concept-close" aria-label="연습 종료" onClick={onExit}>×</button>
+  return <>{bubble && <div className="buy-fees-dismiss" aria-hidden="true" onClick={onContinue}/>}<Container ref={dialog} tabIndex={bubble ? -1 : undefined} role={bubble ? 'region' : undefined} className={`buy-concept-dialog ${bubble ? 'buy-fees-bubble' : ''}`} onKeyDown={event=>{if(bubble && event.key==='Escape'){event.preventDefault();event.stopPropagation();onContinue();}}} aria-labelledby={titleId} onCancel={event => { event.preventDefault(); onExit?.(); }}>
+    {!bubble && <button type="button" className="buy-concept-close" aria-label="연습 종료" onClick={onExit}>×</button>}
     <p className="buy-concept-eyebrow">가상 비교 체험 · 실제 계좌에 반영되지 않아요</p>
     <h2 id={titleId}>{titles[kind] || { midResult: '중간가: 두 호가 사이의 가격', bestResult: '최유리지정가: 상대편 호가로 가격 정하기', ownResult: '최우선지정가: 같은 편 호가에서 기다리기' }[kind]}</h2>
     {quoteLesson && <QuoteOrderPractice kind={kind} onReady={setQuoteReady} />}
@@ -57,5 +79,5 @@ export default function BuyConceptDialog({ kind, onContinue, onExit }) {
     </>}
     <div className="buy-concept-actions"><button type="button" disabled={!canContinue} onClick={onContinue}>{quoteLesson ? { midResult: '최유리지정가 체험하기', bestResult: '최우선지정가 체험하기', ownResult: '수량과 비용 배우기' }[kind] : kind === 'intro' ? '시장가부터 체험하기' : kind === 'marketResult' ? '같은 시세에서 지정가 체험하기' : kind === 'fees' ? '비용 확인하고 주문하기' : '다른 주문유형도 살펴보기'}</button></div>
     <a className="buy-concept-source" href="https://regulation.krx.co.kr/contents/RGL/03/03020204/RGL03020204.jsp" target="_blank" rel="noreferrer">한국거래소 주문유형 안내</a>
-  </dialog>;
+  </Container></>;
 }

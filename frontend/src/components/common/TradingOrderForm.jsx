@@ -1,5 +1,6 @@
 import { Calculator, Info, Minus, Plus, RotateCw } from 'lucide-react';
 import { useState } from 'react';
+import OrderTypeHelp from './OrderTypeHelp';
 import AccountPicker from './AccountPicker';
 import { InlineError } from './ErrorState';
 import { estimateOrderCosts } from '../../utils/orderCosts';
@@ -11,13 +12,14 @@ import MisuSummary from './MisuSummary';
 import { estimateMisu } from '../../utils/misu';
 import './TradingOrderForm.css';
 
-export default function TradingOrderForm({ kind, setKind, priceType, setPriceType, limitPrice, setLimitPrice, quantity, setQuantity, price, costs, account, disabled, canSubmit, busy, enabled, onSubmit, error, message, book, resolvedPrice, onFirstInteraction, tutorial = false, tutorialStep, onCostsOpen, code, misu = false, onMisu, onCash, misuState, heldValue }) {
+export default function TradingOrderForm({ kind, setKind, priceType, setPriceType, limitPrice, setLimitPrice, quantity, setQuantity, price, costs, account, disabled, canSubmit, busy, enabled, onSubmit, error, message, book, resolvedPrice, onFirstInteraction, tutorial = false, tutorialStep, onCostsOpen, orderHelpOpen, onOrderHelpChange, code, misu = false, onMisu, onCash, misuState, heldValue }) {
+  const [localOrderHelp, setLocalOrderHelp] = useState(false);
   const [showCosts, setShowCosts] = useState(false);
   const [execution, setExecution] = useState('immediate');
   const [automationLocked, setAutomationLocked] = useState(false);
   const Container = execution === 'immediate' ? 'form' : 'div';
   const intercept = event => {
-    if (event.target.closest?.('[data-misu-control], [data-side="매도"]')) return;
+    if (event.target.closest?.('[data-order-help], [data-misu-control], [data-side="매도"]')) return;
     if (onFirstInteraction && (kind === '매수' || event.target.closest?.('[data-side="매수"]')) && onFirstInteraction()) { event.preventDefault(); event.stopPropagation(); }
   };
   const fieldPrefix = tutorial ? 'tutorial-trading-order' : 'trading-order';
@@ -36,6 +38,7 @@ export default function TradingOrderForm({ kind, setKind, priceType, setPriceTyp
     return low;
   };
   const maximum = maximumFor(cash);
+  const priceStep = Number(limitPrice) >= 200000 ? 500 : Number(limitPrice) >= 100000 ? 100 : Number(limitPrice) >= 10000 ? 10 : 1;
   const changePriceType = (value) => { setPriceType(value); if (value === '지정가' && !limitPrice && price) setLimitPrice(String(price)); };
   return <Container onSubmit={execution === 'immediate' ? onSubmit : undefined} onClickCapture={intercept} onChangeCapture={intercept} onKeyDownCapture={event => { if (!['Tab', 'Shift', 'Escape'].includes(event.key)) intercept(event); }} className={`trading-order ${kind === '매도' ? 'trading-order-sell' : ''}`}>
     <div className="trading-order-tabs" role="group" aria-label="주문 구분">
@@ -45,16 +48,16 @@ export default function TradingOrderForm({ kind, setKind, priceType, setPriceTyp
     <div className="trading-order-body">
       <fieldset disabled={disabled || automationLocked} className="trading-order-fields">
         {<label className="trading-order-execution">실행 방식<select aria-label="실행 방식" disabled={tutorial || misu} value={execution} onChange={event => { setExecution(event.target.value); if (event.target.value !== 'immediate') setPriceType('시장가'); }}><option value="immediate">즉시 주문</option><option value="scheduled">예약 주문</option><option value="condition">조건 주문</option></select></label>}
-        <div data-tutorial-target="type" className={`trading-order-toolbar ${tutorialStep === 'types' ? 'buy-highlight' : ''}`}><label>주문유형 · <select aria-label="가격 종류" disabled={execution !== 'immediate' || misu} value={priceType} onChange={event => changePriceType(event.target.value)}>{ORDER_TYPES.map(type => <option key={type}>{type}</option>)}</select></label>{onMisu && kind === '매수' && execution === 'immediate' ? <button type="button" data-misu-control data-tutorial-target="misu" className="misu-toggle" aria-pressed={misu} onClick={misu ? onCash : onMisu}>{misu ? '미수 · 현금 전환' : '미수거래'}</button> : <span>현금</span>}</div>
+        <div data-tutorial-target="type" className={`trading-order-toolbar ${tutorialStep === 'types' ? 'buy-highlight' : ''}`}><label>주문유형 · <select aria-label="가격 종류" disabled={execution !== 'immediate' || misu} value={priceType} onChange={event => changePriceType(event.target.value)}>{ORDER_TYPES.map(type => <option key={type}>{type}</option>)}</select></label><OrderTypeHelp tutorial={tutorial} kind={kind} open={orderHelpOpen ?? localOrderHelp} onOpenChange={onOrderHelpChange ?? setLocalOrderHelp}/>{(onMisu || tutorial) && kind === '매수' && execution === 'immediate' ? <button type="button" data-misu-control data-tutorial-target="misu" aria-disabled={tutorial || undefined} className="misu-toggle" aria-pressed={misu} onClick={tutorial ? undefined : misu ? onCash : onMisu}>{misu ? '미수 · 현금 전환' : '미수거래'}</button> : <span>현금</span>}</div>
         {misu && <MisuSummary cash={cash} price={orderPrice} quantity={Number(quantity)} state={misuState} heldValue={heldValue} />}
         {ORDER_TYPE_HELP[priceType] && <p className="trading-order-type-help">{ORDER_TYPE_HELP[priceType]}</p>}
         {book && <p className="trading-order-type-help">매수 1호가 {won(book.bid)} · 매도 1호가 {won(book.ask)}{book.observed_at && <span> · 조회 {new Date(book.observed_at).toLocaleTimeString('ko-KR')}</span>}</p>}
         <div data-tutorial-target="account" className={`trading-order-account ${tutorialStep === 'account' ? 'buy-highlight' : ''}`}><AccountPicker /></div>
         <div className="trading-order-balance"><span>주문가능 <Info size={15} aria-hidden="true" /></span><strong>{cash === null ? '—' : won(cash)}</strong></div>
         <div data-tutorial-target="price" className="trading-order-row"><label htmlFor={fieldPrefix + "-price"}>가격</label><div className="trading-order-stepper">
-          <button type="button" aria-label="가격 내리기" disabled={priceType !== '지정가' || !(Number(limitPrice) > 1)} onClick={() => setLimitPrice(String(Math.max(1, Number(limitPrice) - 1)))}><Minus size={16} /></button>
+          <button type="button" aria-label="가격 내리기" disabled={priceType !== '지정가' || !(Number(limitPrice) > 1)} onClick={() => setLimitPrice(String(Math.max(1, Number(limitPrice) - priceStep)))}><Minus size={16} /></button>
           <div className="trading-order-price">{priceType === '지정가' ? <><input id={fieldPrefix + "-price"} aria-label="지정가 (원)" type="number" min="1" step="1" required value={limitPrice} onChange={event => setLimitPrice(event.target.value)} /><span>원</span></> : <output id={fieldPrefix + "-price"}>{orderPrice == null ? '가격 확인 필요' : won(orderPrice)}</output>}</div>
-          <button type="button" aria-label="가격 올리기" disabled={priceType !== '지정가'} onClick={() => setLimitPrice(String(Math.max(1, Number(limitPrice) + 1)))}><Plus size={16} /></button>
+          <button type="button" aria-label="가격 올리기" disabled={priceType !== '지정가'} onClick={() => setLimitPrice(String(Math.max(1, Number(limitPrice) + priceStep)))}><Plus size={16} /></button>
         </div></div>
         <div data-tutorial-target="quantity" className={`trading-order-row ${tutorialStep === 'quantity' ? 'buy-highlight' : ''}`}><label htmlFor={fieldPrefix + "-quantity"}>수량</label><div className="trading-order-stepper">
           <button type="button" aria-label="수량 줄이기" disabled={Number(quantity) <= 1} onClick={() => setQuantity(String(Math.max(1, Number(quantity) - 1)))}><Minus size={16} /></button>

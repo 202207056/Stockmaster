@@ -17,3 +17,7 @@
 .trading-tutorial progress::-webkit-progress-bar { background: #eef2ff; }
 .trading-tutorial progress::-webkit-progress-value { background: #6366f1; }
 .trading-tutorial progress::-moz-progress-bar { background: #6366f1; }
+
+.tutorial-definition-note { border-color:#a5b4fc; border-radius:12px; padding:16px; box-shadow:0 8px 28px #312e8126; }
+.tutorial-definition-note dt { color:var(--color-brand-700); font-size:14px; }
+.tutorial-definition-note dd { color:#4b5563; font-size:14px; line-height:1.625; }

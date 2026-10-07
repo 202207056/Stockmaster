@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef } from 'react';
-import ChartComparison, { CandleAnatomy } from './ChartComparison';
-import { CandleLengths, CandleShapes } from './CandleDetails';
+import ChartComparison from './ChartComparison';
+import { CandleLengths, CandleShapes, CandleStructure, CandlePreviousClose } from './CandleDetails';
 import { CHART_GUIDE_TYPES } from '../../constants/chartGuideContent';
 import './ChartGuide.css';
 import './ChartTutorial.css';
@@ -26,10 +26,10 @@ export default function ChartConceptDialog({ kind, onClose }) {
     <header><div><small>튜토리얼 · 가상 가격 그림</small><h2 id={titleId}>{titles[kind] || `${current[1]}, 나란히 비교해 보세요`}</h2></div><button type="button" aria-label="그림 설명 닫기" onClick={onClose}>×</button></header>
     <div className="chart-concept-body">
       {kind==='candle' ? <>
-        <div className="chart-concept-anatomy"><CandleAnatomy/><div><h3>몸통 = 시작과 끝의 차이</h3><p>시가에서 시작해서 종가에 끝나요.</p><h3>꼬리 = 몸통 밖으로 움직인 범위</h3><p>끝까지 뻗은 곳이 고가와 저가예요.</p></div></div>
+        <CandleStructure/>
         <CandleLengths/>
         <h3>색과 모양도 함께 보세요</h3><CandleShapes/>
-        <p className="chart-guide-callout"><strong>양봉 = 오늘 시작보다 높게 마감.</strong><br/>어제 10,000원 → 오늘 시작 9,500원 → 마감 9,800원이라면, 양봉이어도 전일 대비 2% 하락이에요.</p>
+        <CandlePreviousClose/>
       </> : kind==='comparisons' ? <>
         <h3>가격 축: 금액으로 볼까, 비율로 볼까?</h3>
         <Pair first={{title:'선형: 같은 금액, 같은 거리',rows:rise,text:'100 → 200 → 400 → 800. 오른 금액이 커지면서 선도 가팔라져요.'}} second={{title:'로그: 같은 비율, 같은 거리',rows:rise,scale:'log',text:'같은 가격이에요. 매번 2배씩 늘어나므로 같은 간격으로 보여요.'}}/>

@@ -14,7 +14,7 @@ const React = await import('react');
 const { createRoot } = await import('react-dom/client');
 const { MemoryRouter } = await import('react-router-dom');
 const server = await createServer({ server: { middlewareMode: true, hmr: false }, appType: 'custom',
-  define: { 'import.meta.env.VITE_ENABLE_ORDER_SUBMISSION': '"true"' } });
+  define: { 'import.meta.env.VITE_REPEAT_BUY_TUTORIAL': '"false"', 'import.meta.env.VITE_ENABLE_ORDER_SUBMISSION': '"true"' } });
 after(async () => { await server.close(); dom.window.close(); });
 const { default: Trading } = await server.ssrLoadModule('/src/pages/Trading.jsx');
 const { AuthContext } = await server.ssrLoadModule('/src/contexts/auth-context.js');

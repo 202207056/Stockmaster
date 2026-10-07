@@ -24,3 +24,9 @@
   .trading-market-panel .market-details table { font-size: 11px; }
   .trading-market-panel .market-details th, .trading-market-panel .market-details td { padding: 9px 6px; }
 }
+
+.trading-stock-list { max-height: 500px; overflow-y: auto; }
+@media (min-width: 1024px) {
+  .trading-stock-sidebar { display: flex; flex-direction: column; align-self: stretch; min-height: 0; }
+  .trading-stock-list { flex: 1; min-height: 200px; max-height: none; contain: size; }
+}

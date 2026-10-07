@@ -66,7 +66,6 @@ function TradingExperience() {
     const target = root.current?.querySelector('.tutorial-target-active');
     const control = target?.querySelector('button, input, select') || target;
     control?.focus({ preventScroll: true });
-    control?.closest('.tutorial-anchor')?.scrollIntoView({ block: 'nearest', behavior: 'instant' });
   }, [step, running]);
 
   return <TutorialInstruction.Provider value={instruction}><div ref={root} className="trading-tutorial space-y-6">

@@ -1,9 +1,7 @@
-.trading-order-toolbar select{max-width:160px}.trading-order-type-help{font-size:12px;line-height:1.7;color:#59677b;margin:10px 0}.trading-order-execution{display:flex;align-items:center;justify-content:space-between;font-size:13px;padding-top:16px}.trading-order-execution select{border:1px solid #dce1e8;padding:6px;border-radius:6px}
 .buy-tutorial-inline{position:relative;z-index:80}
-.buy-tutorial-spotlight{position:fixed;pointer-events:none;z-index:81;border:3px solid #7562df;border-radius:8px}
-.buy-tutorial-note{position:fixed;z-index:82;background:white;border:1px solid #dad5f4;border-radius:12px;padding:18px;box-shadow:0 8px 32px #0f172a33;overflow:auto;color:#334155}
-.buy-tutorial-note strong{display:block;padding-right:24px;font-size:15px;color:#6552c8}
-.buy-tutorial-note p{font-size:14px;line-height:1.75;margin-top:8px}
+.buy-tutorial-spotlight{position:fixed;pointer-events:none;z-index:81;border:3px solid #6366f1;border-radius:9px}
+.buy-tutorial-note.tutorial-local-note{z-index:82;visibility:visible}
+.buy-tutorial-note strong{padding-right:24px}
 .buy-tutorial-close{position:absolute;right:10px;top:8px;padding:4px 8px;font-size:20px;line-height:1;color:#64748b}
 .buy-concept-dialog{position:fixed;margin:auto;width:calc(100% - 32px);max-width:580px;max-height:88dvh;overflow:auto;border:1px solid #e2def2;border-radius:18px;padding:28px;background:#fff;color:#334155;box-shadow:0 20px 70px #0f172a40}
 .buy-concept-dialog::backdrop{background:transparent}.buy-concept-dialog h2{font-size:22px;line-height:1.45;font-weight:800;margin:8px 24px 20px 0}
@@ -15,3 +13,9 @@
 .buy-concept-dialog table{width:100%;font-size:14px;border-collapse:collapse;margin:20px 0}.buy-concept-dialog caption{text-align:left;font-size:12px;color:#64748b;margin-bottom:8px}.buy-concept-dialog th,.buy-concept-dialog td{padding:10px;text-align:left;border-bottom:1px solid #e2e8f0}
 .buy-concept-dialog fieldset{display:flex;gap:8px;flex-wrap:wrap;margin-top:20px}.buy-concept-dialog legend{font-size:15px;font-weight:700;margin-bottom:10px}.buy-concept-actions{margin-top:22px}.buy-concept-actions button{width:100%;background:#6d59c7;color:#fff;font-weight:700}.buy-concept-source{display:inline-block;margin-top:14px;font-size:12px;color:#64748b;text-decoration:underline}
 @media(max-width:480px){.buy-concept-dialog{padding:20px}.buy-concept-dialog h2{font-size:19px}.buy-concept-dialog dl{padding:12px;font-size:12px}}
+
+
+.buy-fees-dismiss{position:fixed;inset:0;z-index:90;background:transparent}
+.buy-concept-dialog.buy-fees-bubble{position:fixed;z-index:91;margin:0;border:1px solid #a5b4fc;border-radius:12px;padding:16px;box-shadow:0 8px 28px #312e8126}
+.buy-fees-bubble h2{font-size:17px;margin:0 0 12px}
+.buy-fees-bubble .buy-concept-eyebrow{display:none}

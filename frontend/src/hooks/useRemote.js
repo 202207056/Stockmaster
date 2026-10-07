@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import useAuth from './useAuth';
 import { API_BASE_URL, getSessionId, getToken } from '../api/client';
 import { canRetainResource, readResource, removeResource, resourceKey, writeResource } from '../api/resourceCache';
+import { requireFreshRequest } from '../api/requestCache';
 
 // Explicit keys include every loader parameter. Unkeyed reads remain network-only.
 export default function useRemote(loader, enabled = true, { keepPreviousData = false, cacheKey, publicCache = false, cachePreview = false } = {}) {
@@ -21,6 +22,7 @@ export default function useRemote(loader, enabled = true, { keepPreviousData = f
   useEffect(() => {
     if (!enabled) return;
     const controller = new AbortController();
+    if (revision > 0) requireFreshRequest(controller.signal);
     const valid = () => !controller.signal.aborted && (publicCache || token === getToken());
     const run = async () => {
       await Promise.resolve();

@@ -23,7 +23,6 @@ export default function MisuTutorial({ onClose, onEnable }) {
   useEffect(() => { closeRef.current = onClose; }, [onClose]);
   useEffect(() => {
     const previousFocus = document.activeElement;
-    const previousScroll = { left: window.scrollX, top: window.scrollY };
     const restored = [];
     let branch = surface.current;
     while (branch && branch !== document.body) {
@@ -34,7 +33,6 @@ export default function MisuTutorial({ onClose, onEnable }) {
       }
       branch = branch.parentElement;
     }
-    surface.current?.scrollIntoView?.({ block: 'start', behavior: 'instant' });
     const keys = event => {
       if (surface.current?.querySelector('dialog[open]')) return;
       if (event.key === 'Escape') { event.preventDefault(); closeRef.current?.(); }
@@ -43,9 +41,9 @@ export default function MisuTutorial({ onClose, onEnable }) {
         .filter(node => !node.matches(':disabled') && !node.closest('[hidden], [inert]') && !node.inert && node.getClientRects().length);
       const first = controls[0], last = controls.at(-1);
       if (event.shiftKey && (document.activeElement === first || !controls.includes(document.activeElement))) {
-        event.preventDefault(); last?.focus();
+        event.preventDefault(); last?.focus({ preventScroll: true });
       } else if (!event.shiftKey && (document.activeElement === last || !controls.includes(document.activeElement))) {
-        event.preventDefault(); first?.focus();
+        event.preventDefault(); first?.focus({ preventScroll: true });
       }
     };
     document.addEventListener('keydown', keys);
@@ -53,7 +51,6 @@ export default function MisuTutorial({ onClose, onEnable }) {
       restored.forEach(([node, inert]) => { node.inert = inert; });
       document.removeEventListener('keydown', keys);
       previousFocus?.focus?.({ preventScroll: true });
-      window.scrollTo?.(previousScroll);
     };
   }, []);
 
@@ -73,7 +70,6 @@ export default function MisuTutorial({ onClose, onEnable }) {
     const inactive = [...surface.current.querySelectorAll('.trading-order button, .trading-order input, .trading-order select')]
       .filter(control => !target.contains(control) && target !== control);
     inactive.forEach(control => { control.inert = true; });
-    target.scrollIntoView?.({ block: 'center', behavior: 'instant' });
     const position = () => {
       const rect = target.getBoundingClientRect();
       const width = document.documentElement.clientWidth || window.innerWidth;
@@ -101,8 +97,6 @@ export default function MisuTutorial({ onClose, onEnable }) {
     };
     position();
     const resize = () => {
-      const bounds = target.getBoundingClientRect();
-      if (bounds.top < 12 || bounds.bottom > window.innerHeight - 12) target.scrollIntoView?.({ block: 'center', behavior: 'instant' });
       position();
     };
     const control = target.matches('button, select, input') ? target : target.querySelector('select, input, button:not(:disabled)');

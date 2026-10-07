@@ -1,4 +1,9 @@
-import { useCallback } from 'react';
+import useTutorialSetting from '../hooks/useTutorialSetting';
+import { useSearchParams } from 'react-router-dom';
+import { RefreshCw } from 'lucide-react';
+import AssetsTour from '../components/learn/AssetsTour';
+import HelpIconButton from '../components/learn/HelpIconButton';
+import { useCallback, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import useAuth from '../hooks/useAuth';
 import { won, wonSigned, signTextClass } from '../utils/format';
@@ -16,25 +21,30 @@ import { LearningCard } from '../components/learn/LearningUI';
 /** 기존 총자산·개인 지표·내 투자·보유종목 배치에 실제 조회 결과를 표시합니다. */
 export default function Assets() {
   const practice = useSitePractice();
-  const { account, accountId, isAuthenticated, hasCachedSession } = useAuth();
+  const surface = useRef(null);
+  const [tutorialsEnabled] = useTutorialSetting();
+  const [params] = useSearchParams();
+  const [tourOverride,setTourOpen] = useState(null);
+  const tourOpen = tourOverride ?? (tutorialsEnabled || params.get('practice') === 'account');
+  const { accounts = [], account, accountId, isAuthenticated, hasCachedSession } = useAuth();
   const resource = useSiteResource('portfolio', useCallback((signal) => fetchValuedPortfolio(accountId, signal), [accountId]), isAuthenticated && !!accountId, { keepPreviousData: true, cacheKey: JSON.stringify(['portfolio', accountId]), cachePreview: true });
   const totals = portfolioTotals(resource.data);
 
   const pending = !isAuthenticated ? '로그인하면 표시돼요' : resource.loading ? '불러오는 중이에요' : '조회 불가';
 
   return (
-    <div className="mx-auto flex w-full max-w-4xl flex-col gap-12">
+    <div ref={surface} className="mx-auto flex w-full max-w-4xl flex-col gap-12">
       <div className="border-b border-gray-200 pb-4">
-        <h1 className="text-xl font-extrabold text-gray-900">내 자산</h1>
+        <h1 className="flex items-center text-xl font-extrabold text-gray-900">내 자산{!practice && isAuthenticated && accounts.length > 0 && <HelpIconButton open={tourOpen} aria-label="계좌 선택과 자산 조회 안내" onClick={()=>setTourOpen(!tourOpen)}/>}</h1>
         {account && <p className="mt-1 text-sm text-gray-500">{account.account_name}</p>}
-        {(isAuthenticated || hasCachedSession) && <div className="mt-3"><AccountPicker /></div>}
+        {(isAuthenticated || hasCachedSession) && <div className="mt-3" data-assets-tour="account"><AccountPicker /></div>}
       </div>
 
       {!isAuthenticated && !hasCachedSession && <LoginNotice message="로그인하면 내 계좌의 실제 금액이 표시돼요" />}
       {resource.data?.holdings.some((holding) => holding.quoteError) && <div role="status" className="text-sm text-gray-600"><p>일부 종목의 시세 조회가 실패해 총자산·평가금액을 계산할 수 없어요.</p><ul>{resource.data.holdings.filter((holding) => holding.quoteError).map((holding) => <li key={holding.portfolio_id ?? holding.symbol_code}>{holding.security_name || holding.symbol_code}: {holding.quoteError}</li>)}</ul><button disabled={resource.loading} onClick={resource.reload} className="mt-2 underline">시세 다시 조회</button></div>}
 
       {/* ── 총자산 ──────────────────────────────────────────────── */}
-      <PracticeTarget id="asset-total"><section>
+      <PracticeTarget id="asset-total"><section data-assets-tour="total">
         <h2 className="flex items-center text-sm font-bold text-gray-500">
           총자산
           <HelpIcon termId="total_asset" />
@@ -92,7 +102,7 @@ export default function Assets() {
       </section></PracticeTarget>
 
       {/* ── 내 투자 ─────────────────────────────────────────────── */}
-      <PracticeTarget id="asset-investment"><section>
+      <PracticeTarget id="asset-investment"><section data-assets-tour="investment">
         <h2 className="flex items-center text-lg font-bold text-gray-700">
           내 투자
           <HelpIcon termId="portfolio" />
@@ -137,7 +147,7 @@ export default function Assets() {
 
 
       {/* ── 보유종목 ────────────────────────────────────────────── */}
-      <PracticeTarget id="asset-holdings"><section className="pb-8">
+      <PracticeTarget id="asset-holdings"><section data-assets-tour="holdings" className="pb-8">
         <h2 className="flex items-center text-lg font-bold text-gray-700">
           보유종목
           <HelpIcon termId="hold_quantity" />
@@ -157,8 +167,9 @@ export default function Assets() {
           </Link></PracticeTarget>
         </div>}
         </RemoteState>
-        {resource.data && <div className="mt-3 text-xs leading-relaxed text-gray-400"><p>조회 완료: {new Date(resource.data.fetchedAt).toLocaleString('ko-KR')} · 종목별 조회 시세와 평균단가 기준 참고 평가액입니다. 시세 누락 시 합계를 표시하지 않습니다.</p><button onClick={resource.reload} className="mt-2 underline">새로고침</button></div>}
+        {resource.data && <div className="mt-3 text-xs leading-relaxed text-gray-400"><p>조회 완료: {new Date(resource.data.fetchedAt).toLocaleString('ko-KR')} · 종목별 조회 시세와 평균단가 기준 참고 평가액입니다. 시세 누락 시 합계를 표시하지 않습니다.</p><button onClick={resource.reload} className="mt-2 underline" aria-label="새로고침" title="새로고침"><RefreshCw size={16} aria-hidden="true" /></button></div>}
       </section></PracticeTarget>
+      {!practice && isAuthenticated && accounts.length > 0 && tourOpen && <AssetsTour surfaceRef={surface} accountCount={accounts.length} onClose={()=>setTourOpen(false)}/>}
       <LearningCard title="손실/이익 발생 시 관련 개념 학습 (현재 미구현)"><p className="text-sm text-gray-500">보유 종목의 손익과 연결된 개념을 살펴보는 기능을 준비하고 있습니다.</p></LearningCard>
     </div>
   );
