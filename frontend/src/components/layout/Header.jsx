@@ -1,6 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { Search, TrendingUp } from 'lucide-react';
+import { TrendingUp } from 'lucide-react';
 import Nav from './Nav';
+import StockSearch from '../common/StockSearch';
 import useAuth from '../../hooks/useAuth';
 
 /** 공통 헤더. 검색어를 거래 화면에 전달하고 인증 상태를 표시합니다. */
@@ -24,22 +25,7 @@ export default function Header() {
             <span className="hidden text-base font-extrabold text-gray-900 sm:inline">프로젝트</span>
           </Link>
 
-          {/* 검색 결과는 거래 화면에서 조회합니다. */}
-          <form className="relative hidden md:block" onSubmit={(event) => { event.preventDefault(); const query = new FormData(event.currentTarget).get('search'); navigate(`/trading?search=${encodeURIComponent(query || '')}`); }}>
-            <input
-              type="search"
-              name="search"
-              placeholder="종목명 또는 코드"
-              aria-label="종목 검색"
-              className="w-56 rounded-full border border-gray-300 bg-white py-2 pr-10 pl-4 text-sm text-gray-700 placeholder:text-gray-400"
-            />
-            <Search
-              size={16}
-              strokeWidth={1.75}
-              aria-hidden="true"
-              className="absolute top-1/2 right-3.5 -translate-y-1/2 text-gray-400"
-            />
-          </form>
+          <div className="hidden md:block"><StockSearch /></div>
 
           {/* 인기 검색어 — 하나씩 순환 */}
           <div className="hidden items-center gap-2 lg:flex">
@@ -93,6 +79,7 @@ export default function Header() {
       <div className="border-t border-gray-100 lg:hidden">
         <Nav className="mx-auto w-full max-w-page overflow-x-auto px-8 py-3" />
       </div>
+      <div className="px-4 pb-3 md:hidden"><StockSearch /></div>
     </header>
   );
 }

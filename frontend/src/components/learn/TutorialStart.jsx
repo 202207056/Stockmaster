@@ -1,14 +1,15 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { TutorialRunning } from './tutorial-context';
+import { TutorialRunning, TutorialSkip } from './tutorial-context';
 
 export default function TutorialStart({ title, children }) {
   const [started, setStarted] = useState(false);
   const navigate = useNavigate();
-  return <TutorialRunning.Provider value={started}>
+  const skip = () => navigate('/learn?tab=guide', { replace: true });
+  return <TutorialSkip.Provider value={skip}><TutorialRunning.Provider value={started}>
     <div inert={!started}>{children}</div>
     {!started && <StartDialog title={title} onStart={() => setStarted(true)} onSkip={() => navigate('/learn?tab=guide', { replace: true })} />}
-  </TutorialRunning.Provider>;
+  </TutorialRunning.Provider></TutorialSkip.Provider>;
 }
 
 function StartDialog({ title, onStart, onSkip }) {

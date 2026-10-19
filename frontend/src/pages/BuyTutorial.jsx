@@ -202,7 +202,7 @@ export default function BuyTutorial({ onClose, completionKey = BUY_TUTORIAL_KEY 
         <div ref={spotlight} className="buy-tutorial-spotlight" aria-hidden="true"><TutorialPointer/></div>
         <div ref={note} className="buy-tutorial-note tutorial-local-note" role="status" aria-live="polite" aria-atomic="true">
           {!orderLesson && <button type="button" className="buy-tutorial-close" aria-label="연습 종료" onClick={onClose}>×</button>}
-          <strong className="block text-sm text-brand-700">{title}</strong><p className="mt-1 text-sm leading-relaxed text-gray-600">{text}</p>
+          <strong className="block text-sm text-brand-700">{title}</strong><p className="mt-1 text-sm leading-relaxed text-gray-600">{text}</p><button type="button" onClick={onClose} className="mt-3 rounded-lg border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-600">건너뛰기</button>
         </div>
       </>}
       {concept && <BuyConceptDialog surfaceRef={surface} key={concept} kind={concept} onExit={onClose} onContinue={() => {

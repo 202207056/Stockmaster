@@ -1,4 +1,6 @@
 import { useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { GLOSSARY_DESTINATIONS } from '../../constants/glossaryDestinations';
 import {
   CATEGORIES,
   GLOSSARY,
@@ -107,9 +109,10 @@ function CategoryChip({ active, onClick, children }) {
 
 function TermCard({ id, onPickRelated }) {
   const t = GLOSSARY[id];
+  const destination = GLOSSARY_DESTINATIONS[id];
   return (
-    <article className="flex h-full flex-col rounded-xl border border-gray-200 p-4 transition hover:border-brand-300">
-      <h3 className="text-sm font-extrabold text-gray-900">{t.term}</h3>
+    <article className={`relative flex h-full flex-col rounded-xl border border-gray-200 p-4 transition ${destination ? "hover:border-brand-400 hover:bg-brand-50/30 focus-within:border-brand-500" : ""}`}>
+      <h3 className="text-sm font-extrabold text-gray-900">{destination ? <Link to={destination.to} className="after:absolute after:inset-0 after:rounded-xl focus-visible:outline-none after:focus-visible:outline-2 after:focus-visible:outline-brand-600">{t.term}<span className="mt-1 block text-xs font-medium text-brand-600">{destination.label} →</span></Link> : t.term}</h3>
       <p className="mt-2 flex-1 text-sm leading-relaxed text-gray-600">{t.desc}</p>
       {t.example && (
         <p className="mt-3 rounded-lg bg-gray-50 p-2 text-xs leading-relaxed text-gray-500">
@@ -123,7 +126,7 @@ function TermCard({ id, onPickRelated }) {
               key={rid}
               type="button"
               onClick={() => onPickRelated(GLOSSARY[rid]?.term ?? '')}
-              className="rounded-full border border-gray-200 px-2 py-0.5 text-xs text-gray-500 transition hover:border-brand-400 hover:text-brand-700"
+              className="relative z-10 rounded-full border border-gray-200 px-2 py-0.5 text-xs text-gray-500 transition hover:border-brand-400 hover:text-brand-700"
             >
               {GLOSSARY[rid]?.term ?? rid}
             </button>

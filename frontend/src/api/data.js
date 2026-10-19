@@ -21,6 +21,10 @@ export const fetchNews = async (signal) => {
   return requireArray(response.data);
 };
 export const fetchMarketIndices = async (signal) => requireArray(await get('/market/indices', undefined, signal));
+export const analyzeNews = async (articles, signal) => {
+  const data = requireObject((await api.post('/ai/news-analysis', { articles }, { signal })).data);
+  return requireArray(data.articles);
+};
 export const fetchCoach = async (symbol, signal) => requireObject(await get('/ai/coach', { symbol }, signal));
 export const fetchNewsSummary = async (code, signal) => requireObject(await get(`/ai/news-summary/${encodeURIComponent(code)}`, undefined, signal));
 export const fetchPosts = async (page, signal, size = 20) => {

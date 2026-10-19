@@ -50,6 +50,7 @@ export default function AssetsTour({ surfaceRef, accountCount, onClose }) {
     <button type="button" className="assets-tour-close" aria-label="자산 안내 종료" onClick={onClose}>×</button>
     <strong className="block text-sm text-brand-700">{title}</strong><p className="mt-1 text-sm leading-relaxed text-gray-600">{targetId==='account' && accountCount===1 ? '현재 계좌는 하나입니다. 아래 금액과 보유종목은 이 계좌의 조회 결과입니다. 계좌가 추가되면 이곳에서 전환할 수 있습니다.' : text}</p>
     <button type="button" className="tutorial-action mt-3" onClick={next}>확인했어요</button>
+    <button type="button" onClick={onClose} className="mt-3 rounded-lg border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-600">건너뛰기</button>
     {step>0 && <button type="button" className="assets-tour-back" onClick={()=>setStep(step-1)}>뒤로가기</button>}
   </div></>;
 }

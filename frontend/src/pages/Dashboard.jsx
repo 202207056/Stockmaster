@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import useAuth from '../hooks/useAuth';
 import { Heart, MessageSquare, Star } from 'lucide-react';
 import NewsThumbnail from '../components/common/NewsThumbnail';
+import NewsAnalysisBadge from '../components/common/NewsAnalysisBadge';
+import useNewsAnalysis from '../hooks/useNewsAnalysis';
 import { comma, rateWithMark, signTextClass, wonShort } from '../utils/format';
 import { FAVORITES_EVENT, getFavorites } from '../utils/favorites';
 import EmptyState from '../components/common/EmptyState';
@@ -19,6 +21,7 @@ export default function Dashboard() {
   const { user, isAuthenticated } = useAuth();
   const [favorites, setFavorites] = useState(getFavorites);
   const news = useRemote(useCallback((signal) => fetchNews(signal), []), true, { cacheKey: 'news', publicCache: true });
+  const newsAnalysis = useNewsAnalysis(news.data);
   const posts = useRemote(useCallback((signal) => fetchPosts(1, signal, 4), []), isAuthenticated, { cacheKey: 'posts:1:4', cachePreview: true });
   const amount = useRemote(useCallback((signal) => fetchRanking('amount', signal), []), true, { cacheKey: 'ranking:amount', publicCache: true });
   const change = useRemote(useCallback((signal) => fetchRanking('change', signal), []), true, { cacheKey: 'ranking:change', publicCache: true });
@@ -112,6 +115,12 @@ export default function Dashboard() {
         {/* 뉴스 */}
         <section className="lg:col-span-2">
           <SectionTitle>오늘의 뉴스</SectionTitle>
+          {!!news.data?.length && <div className="mb-3 text-xs text-gray-500" role="status">
+            {!isAuthenticated ? '로그인하면 AI 뉴스 분석을 볼 수 있습니다.'
+              : newsAnalysis.loading ? 'AI가 뉴스의 투자영향과 중요도를 분석하고 있습니다.'
+                : newsAnalysis.error ? <>AI 분석을 불러오지 못했습니다. <button type="button" className="underline" onClick={newsAnalysis.reload}>분석 재시도</button></>
+                  : 'AI 분석 · 기사의 투자영향 방향과 중요도입니다.'}
+          </div>}
           <RemoteState resource={news} requiresAuth={false} empty={!news.data?.length}>
           <ul className="flex flex-col gap-5 rounded-xl border border-gray-100 bg-gray-50 p-6">
             {news.data?.slice(0, 3).map((n, index) => (
@@ -120,6 +129,7 @@ export default function Dashboard() {
                 <div className="flex min-w-0 flex-col justify-center gap-1.5">
                   <h3 className="text-sm font-bold text-gray-900">{safeExternalUrl(n.url) ? <a href={safeExternalUrl(n.url)} target="_blank" rel="noopener noreferrer">{n.title}</a> : n.title}</h3>
                   <p className="line-clamp-2 text-sm leading-relaxed text-gray-500">{n.summary}</p>
+                  <NewsAnalysisBadge analysis={newsAnalysis.data?.find(article => article.article_id === String(index))} />
                   <p className="mt-1 text-xs text-gray-400">
                     {[n.source, n.date].filter(Boolean).join(' · ')}
                   </p>

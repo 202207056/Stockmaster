@@ -137,7 +137,7 @@ export default function MisuTutorial({ onClose, onEnable }) {
     <div ref={spotlight} className="buy-tutorial-spotlight" aria-hidden="true" />
     <aside ref={note} className="buy-tutorial-note misu-tutorial-note" aria-live="polite">
       <button type="button" className="buy-tutorial-close" aria-label="미수 체험 종료" onClick={onClose}>×</button>
-      <h3>{title}</h3><p>{text}</p>
+      <h3>{title}</h3><p>{text}</p><button type="button" onClick={onClose} className="mt-3 rounded-lg border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-600">건너뛰기</button>
       {step === 0 && <p className="misu-danger">반대매매 · 원금 초과 손실 · 미수 이용 제한</p>}
       {step === 4 && <div className="misu-risk-picture">월요일 매수 → <strong>수요일 납부</strong><br />화요일 매도 → <strong>목요일 입금</strong><p>국내 주식 T+2는 달력의 이틀이 아니라 거래일 기준이에요. 주말·휴장일은 제외해요.</p></div>}
       {step === 5 && <div className="misu-risk-picture"><dl><div><dt>60% 하락 후 4주 매도</dt><dd>80,000원</dd></div><div><dt>매도 수수료 + 세금</dt><dd>156원</dd></div><div><dt>갚는 데 쓸 돈</dt><dd>79,844원</dd></div><div><dt>모두 팔고도 남은 빚</dt><dd className="misu-danger">20,156원</dd></div></dl><small>사이트 모의 요율 기준. 연체료·이자는 제외한 예시예요.</small></div>}
