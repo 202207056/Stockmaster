@@ -279,7 +279,7 @@ test('order dialog distinguishes estimates, confirmed fills and uncertain respon
   assert(!uncertain.includes('주문 완료!'));
 });
 
-test('assets show holdings before the future learning notice and the scenario stays in buy assistance', async () => {
+test('assets show holdings before the lazy AI briefing and the scenario stays in buy assistance', async () => {
   const { AuthContext } = await server.ssrLoadModule('/src/contexts/auth-context.js');
   const { default: Assets } = await server.ssrLoadModule('/src/pages/Assets.jsx');
   const { default: TradingLearning } = await server.ssrLoadModule('/src/components/learn/TradingLearning.jsx');
@@ -288,8 +288,10 @@ test('assets show holdings before the future learning notice and the scenario st
   const assets = render(React.createElement(Assets));
   assert(!assets.includes('투자 비중에 따른 손익 변화'));
   assert(!assets.includes('내 손익을 이해하는 기초'));
-  assert(assets.includes('손실/이익 발생 시 관련 개념 학습 (현재 미구현)'));
-  assert(assets.indexOf('보유종목') < assets.indexOf('손실/이익 발생 시 관련 개념 학습'));
+  assert(assets.includes('AI 보유종목 브리핑'));
+  assert(!assets.includes('손실/이익 발생 시 관련 개념 학습 (현재 미구현)'));
+  assert(assets.includes('보유종목이 생기면 AI 브리핑을 확인할 수 있어요.'));
+  assert(assets.indexOf('보유종목') < assets.indexOf('AI 보유종목 브리핑'));
   const props = { symbol: '005930', quantity: 2, price: 10000, cash: 100000, busy: false };
   const buy = render(React.createElement(TradingLearning, { ...props, side: '매수' }));
   const sell = render(React.createElement(TradingLearning, { ...props, side: '매도' }));
