@@ -6,6 +6,7 @@ import HelpIcon from '../components/learn/HelpIcon';
 import LoginNotice from '../components/common/LoginNotice';
 import AccountPicker from '../components/common/AccountPicker';
 import useMiniAssetsSetting from '../hooks/useMiniAssetsSetting';
+import DeleteMembership from '../components/common/DeleteMembership';
 
 /**
  * 마이페이지 (F-2 라우팅 연결)
@@ -30,6 +31,7 @@ export default function MyPage() {
 
       <section className="flex flex-col gap-3" aria-labelledby="display-settings-title">
         <h2 id="display-settings-title" className="text-sm font-bold text-gray-500">화면 설정</h2>
+        <Link to="/dashboard?tour=start" className="rounded-xl border border-brand-200 bg-brand-50 px-4 py-4 text-sm font-bold text-brand-700">사이트 둘러보기 다시 시작</Link>
         <div className="flex items-center justify-between gap-4 rounded-xl border border-gray-200 px-4 py-4">
           <div>
             <p id="mini-assets-setting-label" className="text-sm font-bold text-gray-900">미니 내 자산 탭</p>
@@ -75,7 +77,7 @@ export default function MyPage() {
                 }
                 value={
                   user?.investment_style ?? (
-                    <Link to="/survey" className="font-bold text-brand-600 hover:underline">
+                    <Link to="/survey?mode=edit" className="font-bold text-brand-600 hover:underline">
                       설문하고 확인하기 →
                     </Link>
                   )
@@ -116,6 +118,7 @@ export default function MyPage() {
               </p>
             )}
           </section>
+          <DeleteMembership />
         </>
       )}
     </div>

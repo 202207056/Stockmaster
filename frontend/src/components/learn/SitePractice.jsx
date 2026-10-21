@@ -82,5 +82,5 @@ export function PracticeTarget({ id, children }) {
   const practice = useSitePractice();
   if (!practice) return children;
   const active = practice.current?.target === id;
-  return <TutorialTarget active={active} instruction={active ? practice.current : null}>{children}{active && practice.current.read && <button type="button" className="tutorial-action mt-3 text-sm" onClick={practice.advance}>확인했어요</button>}</TutorialTarget>;
+  return <TutorialTarget active={active} instruction={active ? practice.current : null}>{children}{active && practice.current.read && <button type="button" className="tutorial-action mt-3 text-sm" onClick={practice.advance}>다음</button>}</TutorialTarget>;
 }

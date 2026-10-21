@@ -25,7 +25,7 @@ export default function Assets() {
   const [tutorialsEnabled] = useTutorialSetting();
   const [params] = useSearchParams();
   const [tourOverride,setTourOpen] = useState(null);
-  const tourOpen = tourOverride ?? (tutorialsEnabled || params.get('practice') === 'account');
+  const tourOpen = !params.has('tour') && (tourOverride ?? (tutorialsEnabled || params.get('practice') === 'account'));
   const { accounts = [], account, accountId, isAuthenticated, hasCachedSession } = useAuth();
   const resource = useSiteResource('portfolio', useCallback((signal) => fetchValuedPortfolio(accountId, signal), [accountId]), isAuthenticated && !!accountId, { keepPreviousData: true, cacheKey: JSON.stringify(['portfolio', accountId]), cachePreview: true });
   const totals = portfolioTotals(resource.data);

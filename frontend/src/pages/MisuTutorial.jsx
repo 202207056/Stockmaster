@@ -1,3 +1,4 @@
+import TutorialSkipButton from '../components/learn/TutorialSkipButton';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { AuthContext } from '../contexts/auth-context';
 import TradingOrderForm from '../components/common/TradingOrderForm';
@@ -127,7 +128,7 @@ export default function MisuTutorial({ onClose, onEnable }) {
 
   const context = { isAuthenticated: true, accountId: account.account_id, account, accounts: [account], selectAccount: () => {} };
   return <div ref={surface} className="buy-tutorial-inline" role="dialog" aria-modal="true" aria-label="미수거래 체험">
-    <AuthContext.Provider value={context}>
+    <TutorialSkipButton onSkip={onClose} /><AuthContext.Provider value={context}>
       <TradingOrderForm tutorial kind="매수" setKind={() => {}} priceType="시장가" setPriceType={() => {}} limitPrice="50000" setLimitPrice={() => {}}
         price={examplePrice} resolvedPrice={examplePrice} quantity={quantity} setQuantity={value => { setQuantity(value); if (step === 1 && Number(value) === 4) advance(); }}
         costs={costs} account={account} canSubmit={step === 2} enabled onSubmit={event => { event.preventDefault(); if (step === 2) advance(); }}
@@ -137,14 +138,14 @@ export default function MisuTutorial({ onClose, onEnable }) {
     <div ref={spotlight} className="buy-tutorial-spotlight" aria-hidden="true" />
     <aside ref={note} className="buy-tutorial-note misu-tutorial-note" aria-live="polite">
       <button type="button" className="buy-tutorial-close" aria-label="미수 체험 종료" onClick={onClose}>×</button>
-      <h3>{title}</h3><p>{text}</p><button type="button" onClick={onClose} className="mt-3 rounded-lg border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-600">건너뛰기</button>
+      <h3>{title}</h3><p>{text}</p>
       {step === 0 && <p className="misu-danger">반대매매 · 원금 초과 손실 · 미수 이용 제한</p>}
       {step === 4 && <div className="misu-risk-picture">월요일 매수 → <strong>수요일 납부</strong><br />화요일 매도 → <strong>목요일 입금</strong><p>국내 주식 T+2는 달력의 이틀이 아니라 거래일 기준이에요. 주말·휴장일은 제외해요.</p></div>}
       {step === 5 && <div className="misu-risk-picture"><dl><div><dt>60% 하락 후 4주 매도</dt><dd>80,000원</dd></div><div><dt>매도 수수료 + 세금</dt><dd>156원</dd></div><div><dt>갚는 데 쓸 돈</dt><dd>79,844원</dd></div><div><dt>모두 팔고도 남은 빚</dt><dd className="misu-danger">20,156원</dd></div></dl><small>사이트 모의 요율 기준. 연체료·이자는 제외한 예시예요.</small></div>}
       {step === 0 && <p><strong>매수 창의 ‘미수거래’를 눌러 차이를 체험해 보세요.</strong></p>}
       {step === 6 && <p className="misu-risk-picture">실제 미수동결은 원칙적으로 30일간 현금 증거금 100%를 적용해요. 소액 등 예외가 있으며 전 증권사에 적용될 수 있어요. 이 사이트는 소액 예외 없이 해당 모의계좌만 30일 제한해요.</p>}
       {step >= 3 && <div className="misu-note-actions">
-        {step < 6 ? <button type="button" className="misu-next" onClick={advance}>{step === 3 ? '결제 날짜 비교하기' : step === 4 ? '기한을 넘긴 경우 보기' : '현금 주문과 비교 마무리'}</button>
+        {step < 6 ? <button type="button" className="misu-next" onClick={advance}>다음</button>
           : <><button type="button" className="misu-next" onClick={onClose}>체험 종료 · 현금 유지</button>{onEnable && <button type="button" onClick={onEnable}>위험 확인 · 미수 선택</button>}</>}
       </div>}
     </aside>

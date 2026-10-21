@@ -1,6 +1,7 @@
 import { Outlet } from 'react-router-dom';
 import Header from './Header';
 import Footer from './Footer';
+import SiteTour from '../learn/SiteTour';
 import SitePractice from '../learn/SitePractice';
 
 /**
@@ -27,6 +28,7 @@ export default function Layout() {
       </main>
 
       <Footer />
+      <SiteTour />
     </div>
   );
 }

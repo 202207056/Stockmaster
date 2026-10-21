@@ -30,6 +30,9 @@ test('asset guide retains real account context and values, closes and never scro
   await React.act(async()=>root.render(React.createElement(MemoryRouter,{initialEntries:['/assets?practice=account']},React.createElement(AuthContext.Provider,{value:{account}},React.createElement(SitePractice,{},React.createElement(Screen))))));
   assert(container.textContent.includes('내 계좌'));
   assert(container.querySelector('.assets-tour-note').textContent.includes('현재 계좌는 하나'));
+  assert(container.querySelector('.tutorial-skip-button'));
+  assert(!container.querySelector('.assets-tour-note .tutorial-skip-button'));
+  assert(!container.querySelector('.tutorial-pointer'));
   assert(!container.textContent.includes('매매 연습 계좌'));
   for(let i=0;i<4;i++) await React.act(async()=>container.querySelector('.assets-tour-note p').click());
   assert(!container.querySelector('.assets-tour-note'));

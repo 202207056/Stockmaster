@@ -1,3 +1,4 @@
+import TutorialSkipButton from '../components/learn/TutorialSkipButton';
 import TutorialPointer from '../components/learn/TutorialPointer';
 import './TradingTutorial.css';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
@@ -182,6 +183,7 @@ export default function BuyTutorial({ onClose, completionKey = BUY_TUTORIAL_KEY 
     selectAccount: value => { if (id === 'account') { setAccountId(value); if (value === 2) { advance(); setOrderHelpOpen(true); } } }, refresh: async () => {} };
   return <AuthContext.Provider value={auth}><TutorialRunning.Provider value={true}>
     <div ref={surface} className="buy-tutorial-inline" role="dialog" aria-modal="true" aria-label="첫 매수 연습">
+      {!pending && !concept && <TutorialSkipButton onSkip={onClose} />}
       <TradingOrderForm orderHelpOpen={orderHelpOpen} onOrderHelpChange={changeOrderHelp} tutorial kind="매수" setKind={() => {}} priceType={priceType}
         setPriceType={value => {
           const expected = {market:'시장가', limit:'지정가'}[id];
@@ -199,10 +201,10 @@ export default function BuyTutorial({ onClose, completionKey = BUY_TUTORIAL_KEY 
         price={50000} resolvedPrice={price} book={['중간가', '최유리지정가', '최우선지정가'].includes(priceType) ? BOOK : null}
         costs={costs} account={account} canSubmit={['marketTry','limitTry','order'].includes(id) && !result} enabled onSubmit={prepare} />
       {!pending && !concept && !orderHelpOpen && !orderLesson && <>
-        <div ref={spotlight} className="buy-tutorial-spotlight" aria-hidden="true"><TutorialPointer/></div>
+        <div ref={spotlight} className="buy-tutorial-spotlight" aria-hidden="true">{!['quantity', 'limitPrice'].includes(id) && <TutorialPointer/>}</div>
         <div ref={note} className="buy-tutorial-note tutorial-local-note" role="status" aria-live="polite" aria-atomic="true">
           {!orderLesson && <button type="button" className="buy-tutorial-close" aria-label="연습 종료" onClick={onClose}>×</button>}
-          <strong className="block text-sm text-brand-700">{title}</strong><p className="mt-1 text-sm leading-relaxed text-gray-600">{text}</p><button type="button" onClick={onClose} className="mt-3 rounded-lg border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-600">건너뛰기</button>
+          <strong className="block text-sm text-brand-700">{title}</strong><p className="mt-1 text-sm leading-relaxed text-gray-600">{text}</p>
         </div>
       </>}
       {concept && <BuyConceptDialog surfaceRef={surface} key={concept} kind={concept} onExit={onClose} onContinue={() => {
@@ -214,9 +216,9 @@ export default function BuyTutorial({ onClose, completionKey = BUY_TUTORIAL_KEY 
           ? '1주를 50,100원에 샀어요. 현재가가 아니라 지금 팔겠다는 가격으로 체결됐어요.'
           : '50,100원은 정한 한도 50,000원보다 비싸서 아직 사지 않았어요. 더 싼 매도 주문이 없으면 체결되지 않아요.', event:'closed'}
         : {title:'주문 확인', text:`${pending.priceType} 1주를 확인하고 매수주문을 누르세요.`, event:'filled'}) : result
-        ? { title: '체결 결과', text: '현금 899,985원과 주식 2주가 남습니다. 주가가 같아도 수수료 15원만큼 총자산이 줄었습니다. 확인을 누르면 연습을 마칩니다.', event: 'closed' }
+        ? { title: '체결 결과', text: '현금 899,985원과 주식 2주가 남습니다. 주가가 같아도 수수료 15원만큼 총자산이 줄었습니다. 다음을 누르면 연습을 마칩니다.', event: 'closed' }
         : { title: '주문 확인', text: '가상 계좌·시장가 2주·수수료 15원을 확인하고 매수주문을 누르세요. 실제 계좌에는 전송되지 않습니다.', event: 'filled' }}
-        onConfirm={confirm} onClose={() => {
+        onTutorialSkip={onClose} onConfirm={confirm} onClose={() => {
           if (pending.comparison) {
             if (result) {
               if (id === 'marketTry') setLimitPrice('49000');

@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { TutorialRunning, TutorialSkip } from './tutorial-context';
+import TutorialSkipButton from './TutorialSkipButton';
 
 export default function TutorialStart({ title, children }) {
   const [started, setStarted] = useState(false);
@@ -8,6 +9,7 @@ export default function TutorialStart({ title, children }) {
   const skip = () => navigate('/learn?tab=guide', { replace: true });
   return <TutorialSkip.Provider value={skip}><TutorialRunning.Provider value={started}>
     <div inert={!started}>{children}</div>
+    {started && <TutorialSkipButton onSkip={skip} />}
     {!started && <StartDialog title={title} onStart={() => setStarted(true)} onSkip={() => navigate('/learn?tab=guide', { replace: true })} />}
   </TutorialRunning.Provider></TutorialSkip.Provider>;
 }
@@ -27,7 +29,7 @@ function StartDialog({ title, onStart, onSkip }) {
     <p id={descriptionId} className="mt-3 text-sm leading-relaxed text-gray-600">강조된 영역과 설명을 따라 직접 조작해 보세요. 지금 시작하거나 건너뛸 수 있습니다.</p>
     <div className="mt-6 flex flex-wrap gap-3">
       <button type="button" autoFocus onClick={onStart} className="flex-1 rounded-lg bg-brand-600 px-5 py-3 font-bold text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-700">시작하기</button>
-      <button type="button" onClick={onSkip} className="flex-1 rounded-lg border border-gray-300 px-5 py-3 font-bold text-gray-600">건너뛰기</button>
+      <TutorialSkipButton onSkip={onSkip} />
     </div>
   </dialog>;
 }

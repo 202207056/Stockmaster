@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import QuoteOrderPractice from './QuoteOrderPractice';
+import TutorialSkipButton from './TutorialSkipButton';
 
 // Teaching scenarios only: no account mutation or order API.
 export default function BuyConceptDialog({ kind, onContinue, onExit, surfaceRef }) {
@@ -41,7 +42,7 @@ export default function BuyConceptDialog({ kind, onContinue, onExit, surfaceRef 
   const limitFilled = ask <= 50000;
   const canContinue = quoteLesson ? quoteReady : kind === 'limitResult' ? limitFilled && answer === 'limit' : kind === 'fees' ? feeAnswer === 'short' : true;
   return <>{bubble && <div className="buy-fees-dismiss" aria-hidden="true" onClick={onContinue}/>}<Container ref={dialog} tabIndex={bubble ? -1 : undefined} role={bubble ? 'region' : undefined} className={`buy-concept-dialog ${bubble ? 'buy-fees-bubble' : ''}`} onKeyDown={event=>{if(bubble && event.key==='Escape'){event.preventDefault();event.stopPropagation();onContinue();}}} aria-labelledby={titleId} onCancel={event => { event.preventDefault(); onExit?.(); }}>
-    {!bubble && <button type="button" className="buy-concept-close" aria-label="연습 종료" onClick={onExit}>×</button>}
+    {onExit && <TutorialSkipButton onSkip={onExit} />}
     <p className="buy-concept-eyebrow">가상 비교 체험 · 실제 계좌에 반영되지 않아요</p>
     <h2 id={titleId}>{titles[kind] || { midResult: '중간가: 두 호가 사이의 가격', bestResult: '최유리지정가: 상대편 호가로 가격 정하기', ownResult: '최우선지정가: 같은 편 호가에서 기다리기' }[kind]}</h2>
     {quoteLesson && <QuoteOrderPractice kind={kind} onReady={setQuoteReady} />}
@@ -77,7 +78,7 @@ export default function BuyConceptDialog({ kind, onContinue, onExit, surfaceRef 
       {feeAnswer && <p role="status">{feeAnswer === 'short' ? '맞아요. 100,015원이 필요합니다. 주가가 그대로여도 수수료만큼 총자산은 줄어들어요. 수수료는 수익이 났을 때만 내는 돈이 아닙니다.' : '주식값은 맞지만 수수료도 현금으로 내야 해요. 주식값과 수수료를 더해 다시 생각해 보세요.'}</p>}
       <p className="buy-concept-caption">현재 연습 계좌는 1,000,000원이므로 주문할 수 있습니다. 100,000원은 이해 확인을 위한 가정이며 계좌 잔고를 바꾸지 않습니다.</p>
     </>}
-    <div className="buy-concept-actions"><button type="button" disabled={!canContinue} onClick={onContinue}>{quoteLesson ? { midResult: '최유리지정가 체험하기', bestResult: '최우선지정가 체험하기', ownResult: '수량과 비용 배우기' }[kind] : kind === 'intro' ? '시장가부터 체험하기' : kind === 'marketResult' ? '같은 시세에서 지정가 체험하기' : kind === 'fees' ? '비용 확인하고 주문하기' : '다른 주문유형도 살펴보기'}</button></div>
+    <div className="buy-concept-actions"><button type="button" disabled={!canContinue} onClick={onContinue}>다음</button></div>
     <a className="buy-concept-source" href="https://regulation.krx.co.kr/contents/RGL/03/03020204/RGL03020204.jsp" target="_blank" rel="noreferrer">한국거래소 주문유형 안내</a>
   </Container></>;
 }

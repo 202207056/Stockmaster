@@ -42,6 +42,8 @@ test('inline buy tutorial completes with no API requests or account storage acce
   try {
     await React.act(async () => root.render(React.createElement(MemoryRouter, { initialEntries: ['/trading?practice=buy'] }, React.createElement(Tutorial, { onClose: () => {} }))));
     assert(container.querySelector('.trading-order'));
+    assert(container.querySelector('.tutorial-skip-button'));
+    assert(!container.querySelector('.buy-tutorial-note .tutorial-skip-button'));
     assert(container.querySelector('[data-misu-control]'), 'same margin control as the live form');
     assert(container.querySelector('[aria-label="실행 방식"]'));
     assert(container.querySelector('[aria-label="주문유형 설명"]'));
@@ -66,7 +68,7 @@ test('inline buy tutorial completes with no API requests or account storage acce
     await click('모의 매수');
     await click('매수주문');
     assert(container.querySelector('dialog').textContent.includes('50,100원'));
-    await click('확인');
+    await click('다음');
     await select('가격 종류', '지정가');
     await React.act(async()=>{
       const input=container.querySelector('[aria-label="지정가 (원)"]');
@@ -77,7 +79,7 @@ test('inline buy tutorial completes with no API requests or account storage acce
     await click('매수주문');
     assert(container.querySelector('dialog').textContent.includes('지정가 대기'));
     assert(container.querySelector('dialog').textContent.includes('아직 사지 않았어요'));
-    await click('확인');
+    await click('다음');
     assert(container.querySelector('.trading-order-balance').textContent.includes('1,000,000'));
     assert.equal(container.querySelector('select[aria-label="가격 종류"]').value, '시장가');
     assert(container.querySelector('.buy-tutorial-note').textContent.includes('수량 입력'));
@@ -86,17 +88,17 @@ test('inline buy tutorial completes with no API requests or account storage acce
     await React.act(async () => container.querySelector('[aria-label="예상 비용 계산 내역"]').click());
     assert(container.querySelector('#tutorial-trading-order-costs').textContent.includes('100,015'));
     assert(!container.querySelector('.trading-order').textContent.includes('모의 시장가는 서버'));
-    assert(button('비용 확인하고 주문하기').disabled);
+    assert(button('다음').disabled);
     await click('주식값이 있으니 살 수 있어요');
-    assert(button('비용 확인하고 주문하기').disabled);
+    assert(button('다음').disabled);
     await click('수수료 15원이 부족해요');
-    await click('비용 확인하고 주문하기');
+    await click('다음');
     await click('모의 매수');
     assert(container.querySelector('dialog[open]').textContent.includes('100,015'));
     await click('매수주문');
     assert(!button('매수주문'));
     assert(container.textContent.includes('899,985'));
-    await click('확인');
+    await click('다음');
     assert(types.hasCompletedBuyTutorial());
     assert.equal(localStorage.getItem('gp_account_id'), '999');
     assert.equal(calls, 0);

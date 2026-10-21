@@ -1,10 +1,9 @@
 import TutorialPointer from './TutorialPointer';
 import { useContext, useId, useLayoutEffect, useRef } from 'react';
-import { TutorialInstruction, TutorialRunning, TutorialSkip } from './tutorial-context';
+import { TutorialInstruction, TutorialRunning } from './tutorial-context';
 
-export default function TutorialTarget({ active: requested = true, children, instruction }) {
+export default function TutorialTarget({ active: requested = true, children, instruction, requiresClick = true }) {
   const running = useContext(TutorialRunning);
-  const skip = useContext(TutorialSkip);
   const active = requested && running;
   const context = useContext(TutorialInstruction);
   const note = instruction || context;
@@ -59,8 +58,8 @@ export default function TutorialTarget({ active: requested = true, children, ins
   return <div className="tutorial-anchor" role={active && note ? 'group' : undefined} aria-describedby={active && note ? noteId : undefined}>
     <div ref={targetRef} tabIndex={active ? -1 : undefined} className={`tutorial-target ${active ? 'tutorial-target-active' : ''}`}>
     {children}
-    {active && <TutorialPointer/>}
+    {active && requiresClick && !note?.read && <TutorialPointer/>}
     </div>
-    {active && note && <div ref={noteRef} id={noteId} className="tutorial-local-note" role="status" aria-live="polite" aria-atomic="true"><strong className="block text-sm text-brand-700">{note.title}</strong><p className="mt-1 text-sm leading-relaxed text-gray-600">{note.text}</p>{skip && <button type="button" onClick={skip} className="mt-3 rounded-lg border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-600">건너뛰기</button>}</div>}
+    {active && note && <div ref={noteRef} id={noteId} className="tutorial-local-note" role="status" aria-live="polite" aria-atomic="true"><strong className="block text-sm text-brand-700">{note.title}</strong><p className="mt-1 text-sm leading-relaxed text-gray-600">{note.text}</p></div>}
   </div>;
 }

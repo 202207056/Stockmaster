@@ -25,7 +25,7 @@ export default function FloatingAssets() {
   const { isAuthenticated } = useAuth();
   const { pathname } = useLocation();
   const [params] = useSearchParams();
-  return enabled && isAuthenticated && pathname !== '/' && !params.has('practice') ? <FloatingAssetsPanel /> : null;
+  return enabled && isAuthenticated && !['/', '/survey', '/seed-money'].includes(pathname) && !params.has('tour') && !params.has('practice') ? <FloatingAssetsPanel /> : null;
 }
 
 function FloatingAssetsPanel() {

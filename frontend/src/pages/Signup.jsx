@@ -47,6 +47,7 @@ export default function Signup() {
     else if (!/^[A-Za-z0-9_]{4,20}$/.test(id))
       next.loginId = '영문·숫자·밑줄 4~20자로 입력해 주세요.';
 
+
     if (!form.passwd) next.passwd = '비밀번호를 입력해 주세요.';
     else if (form.passwd.length < 4) next.passwd = '비밀번호는 4자 이상이어야 해요.';
 
@@ -78,7 +79,7 @@ export default function Signup() {
         email: form.email.trim(),
       });
       // 가입 직후 투자성향 설문으로 이어집니다.
-      navigate('/survey', { replace: true });
+      navigate('/survey?onboarding=1', { replace: true });
     } catch (err) {
       setSubmitError(err);
     } finally {
@@ -89,9 +90,6 @@ export default function Signup() {
   return (
     <div className="mx-auto flex w-full max-w-md flex-col justify-center py-8">
       <h1 className="text-2xl font-extrabold text-gray-900">회원가입</h1>
-      <p className="mt-2 text-sm text-gray-500">
-        가입하면 1,000만원짜리 모의투자 계좌가 자동으로 만들어져요.
-      </p>
 
       <form onSubmit={handleSubmit} className="mt-8 flex flex-col gap-4" noValidate>
         <TextField

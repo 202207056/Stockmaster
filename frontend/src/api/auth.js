@@ -27,6 +27,10 @@ export async function fetchMe() {
   return data;
 }
 
+export async function deleteMembership(passwd) {
+  await api.delete('/users/me', { data: { passwd } });
+}
+
 /**
  * GET /api/trading/accounts
  * ⚠️ balance / withdrawable_cash 가 문자열로 옵니다. 화면에서 num() 을 거치세요.
@@ -40,5 +44,10 @@ export async function fetchAccounts() {
 /** PUT /api/users/survey — 투자성향 저장 */
 export async function updateInvestmentStyle(investment_style) {
   const { data } = await api.put('/users/survey', { investment_style });
+  return data;
+}
+
+export async function createAccount(initial_balance) {
+  const { data } = await api.post('/trading/accounts', { account_name: '시작 모의계좌', initial_balance });
   return data;
 }

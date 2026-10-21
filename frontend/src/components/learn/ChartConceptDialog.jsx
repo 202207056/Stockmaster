@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef } from 'react';
+import TutorialSkipButton from './TutorialSkipButton';
 import ChartComparison from './ChartComparison';
 import { CandleLengths, CandleShapes, CandleStructure, CandlePreviousClose } from './CandleDetails';
 import { CHART_GUIDE_TYPES } from '../../constants/chartGuideContent';
@@ -11,7 +12,7 @@ const start = [100,104,101,105,102,104,108];
 function Pair({ first, second }) {
   return <div className="chart-compare-pair">{[first,second].map(item=><figure className="chart-compare-figure" key={item.title}><ChartComparison {...item} label={item.title}/><figcaption><strong>{item.title}</strong><p>{item.text}</p></figcaption></figure>)}</div>;
 }
-export default function ChartConceptDialog({ kind, onClose }) {
+export default function ChartConceptDialog({ kind, onClose, onSkip = onClose }) {
   const ref = useRef(null), titleId = useId();
   const current = CHART_GUIDE_TYPES.find(item=>item[0]===kind);
   useEffect(() => {
@@ -23,6 +24,7 @@ export default function ChartConceptDialog({ kind, onClose }) {
   const partner = { line:'candle',bar:'candle',area:'line',baseline:'line',heikin:'candle',renko:'candle' }[kind];
   const other = CHART_GUIDE_TYPES.find(item=>item[0]===partner);
   return <dialog ref={ref} className="chart-concept-dialog chart-guide" aria-labelledby={titleId} onCancel={event=>{event.preventDefault();onClose();}} onKeyDown={event=>event.stopPropagation()}>
+    <TutorialSkipButton onSkip={onSkip} />
     <header><div><small>튜토리얼 · 가상 가격 그림</small><h2 id={titleId}>{titles[kind] || `${current[1]}, 나란히 비교해 보세요`}</h2></div><button type="button" aria-label="그림 설명 닫기" onClick={onClose}>×</button></header>
     <div className="chart-concept-body">
       {kind==='candle' ? <>

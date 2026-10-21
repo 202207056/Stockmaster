@@ -3,7 +3,8 @@ import { AuthContext } from './auth-context';
 import { API_BASE_URL, clearToken, getSessionId, getToken, setToken, EVT_UNAUTHORIZED, TOKEN_KEY } from '../api/client';
 import { canRetainResource, clearPrivateResources, readResource, resourceKey, writeResource } from '../api/resourceCache';
 import * as authApi from '../api/auth';
-import { setFavoritesOwner } from '../utils/favorites';
+import { setOnboarding } from '../utils/onboarding';
+import { deleteFavoritesForUser, setFavoritesOwner } from '../utils/favorites';
 
 const ACCOUNT_KEY = 'gp_account_id';
 const sessionCacheKey = () => getToken() && getSessionId() ? resourceKey(API_BASE_URL, getSessionId(), 'session') : null;
@@ -192,19 +193,30 @@ export function AuthProvider({ children }) {
 
   const signup = useCallback(
     async ({ loginId, passwd, userName, email }) => {
-      await authApi.register({
+      const registered = await authApi.register({
         login_id: loginId,
         passwd,
         user_name: userName,
         email,
       });
-      // 가입 직후 바로 로그인시켜 설문/대시보드로 이어지게 합니다.
+      setOnboarding(registered.user_id, 'survey');
+      // 로그인이나 새로고침 이후에도 가입 절차를 이어갈 수 있습니다.
       await login(loginId, passwd);
     },
     [login],
   );
 
   const logout = useCallback(() => clearSession(), [clearSession]);
+
+  const withdraw = useCallback(async (passwd) => {
+    const generation = session.current;
+    const token = getToken();
+    await authApi.deleteMembership(passwd);
+    if (generation !== session.current || token !== getToken()) return false;
+    deleteFavoritesForUser(user?.user_id);
+    clearSession();
+    return true;
+  }, [clearSession, user?.user_id]);
 
   const selectAccount = useCallback((id) => {
     if (!accounts.some((a) => a.account_id === id)) return;
@@ -228,11 +240,12 @@ export function AuthProvider({ children }) {
       login,
       signup,
       logout,
+      withdraw,
       refresh,
       selectAccount,
       setUser,
     }),
-    [status, user, accounts, accountId, accountError, sessionError, login, signup, logout, refresh, selectAccount],
+    [status, user, accounts, accountId, accountError, sessionError, login, signup, logout, withdraw, refresh, selectAccount],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

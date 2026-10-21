@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { SURVEY, STYLES, isComplete, toAnswerPayload } from '../constants/survey';
 import HelpIcon from '../components/learn/HelpIcon';
 import useAuth from '../hooks/useAuth';
@@ -8,6 +8,7 @@ import { fetchSurvey, saveSurvey } from '../api/data';
 import { getToken } from '../api/client';
 import RemoteState from '../components/common/RemoteState';
 import { InlineError } from '../components/common/ErrorState';
+import { getOnboarding, setOnboarding } from '../utils/onboarding';
 
 /**
  * 투자성향 설문
@@ -37,7 +38,14 @@ export default function Survey() {
 
 function SurveyForm({ answers }) {
   const navigate = useNavigate();
+  const [params] = useSearchParams();
   const { user, setUser } = useAuth();
+  const editing = params.get('mode') === 'edit' && !['survey', 'seed'].includes(getOnboarding(user?.user_id));
+  const nextPath = editing ? '/dashboard' : '/seed-money';
+  const continueOnboarding = () => {
+    if (!editing) setOnboarding(user?.user_id, 'seed');
+    navigate(nextPath);
+  };
   const [selections, setSelections] = useState(() => Object.fromEntries(SURVEY.flatMap((question) => {
     const answer = answers.find((item) => item.question_number === question.number);
     const index = question.options.findIndex((option) => option.label === answer?.selected_answer);
@@ -87,12 +95,13 @@ function SurveyForm({ answers }) {
   };
 
   return (
-    <SurveyShell>
+    <SurveyShell onHome={continueOnboarding}>
       {result ? (
         <SurveyResult
           result={result}
           onRetry={handleRetry}
-          onDone={() => navigate('/dashboard')}
+          onDone={continueOnboarding}
+          doneLabel={editing ? '결과 확인하고 홈으로' : '다음'}
         />
       ) : (
         <>
@@ -181,12 +190,13 @@ function SurveyForm({ answers }) {
               >
                 {busy ? '서버에 저장 중…' : '저장하고 결과 보기'}
               </button>
-              <Link
-                to="/dashboard"
+              <button
+                type="button"
+                onClick={continueOnboarding}
                 className="text-sm font-medium text-gray-400 hover:text-gray-700"
               >
                 나중에 할게요
-              </Link>
+              </button>
             </div>
             <InlineError error={error} />
           </form>
@@ -200,23 +210,23 @@ function SurveyForm({ answers }) {
  * 설문 전용 껍데기 — 상단 메뉴 없이 로고만 둡니다.
  * 온보딩 중에 다른 메뉴로 새어 나가지 않게 하려는 의도입니다.
  */
-function SurveyShell({ children }) {
+function SurveyShell({ children, onHome }) {
   return (
     <div className="min-h-screen bg-white">
       <div className="mx-auto w-full max-w-2xl px-6 py-8">
-        <Link to="/dashboard" className="inline-flex items-center gap-2">
+        <button type="button" onClick={onHome} className="inline-flex items-center gap-2">
           <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-600 text-xs font-extrabold text-white">
             MI
           </span>
           <span className="text-sm font-extrabold text-gray-900">프로젝트</span>
-        </Link>
+        </button>
         <div className="mt-8">{children}</div>
       </div>
     </div>
   );
 }
 
-export function SurveyResult({ result, onRetry, onDone }) {
+export function SurveyResult({ result, onRetry, onDone, doneLabel = '시작하기' }) {
   const analysis = result.analysis;
   const position = STYLES.findIndex((s) => s.label === result.investment_style);
 
@@ -271,7 +281,7 @@ export function SurveyResult({ result, onRetry, onDone }) {
           onClick={onDone}
           className="rounded-lg bg-brand-600 px-6 py-2.5 text-sm font-bold text-white transition hover:bg-brand-700"
         >
-          시작하기
+          {doneLabel}
         </button>
         <button
           type="button"

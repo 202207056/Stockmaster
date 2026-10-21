@@ -3,6 +3,7 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import AuthProvider from './contexts/AuthContext';
 import Layout from './components/layout/Layout';
 import ProtectedRoute from './components/routing/ProtectedRoute';
+import OnboardingGate from './components/routing/OnboardingGate';
 import ApiStatusBanner from './components/system/ApiStatusBanner';
 import FloatingAssets from './components/common/FloatingAssets';
 
@@ -21,8 +22,10 @@ import Assets from './pages/Assets';
 import Favorites from './pages/Favorites';
 import Community from './pages/Community';
 import Survey from './pages/Survey';
+import SeedMoney from './pages/SeedMoney';
 import MyPage from './pages/MyPage';
 import NotFound from './pages/NotFound';
+import WithdrawalComplete from './pages/WithdrawalComplete';
 
 /**
  * 라우팅
@@ -57,9 +60,10 @@ export function AppSurface() {
 function AuthenticatedApp() {
   return (
     <AuthProvider>
-        <Routes>
+        <OnboardingGate><Routes>
           {/* 공통 레이아웃 없는 화면 */}
           <Route path="/" element={<Landing />} />
+          <Route path="/withdrawal-complete" element={<WithdrawalComplete />} />
           <Route
             path="/survey"
             element={
@@ -69,6 +73,7 @@ function AuthenticatedApp() {
             }
           />
 
+          <Route path="/seed-money" element={<ProtectedRoute><SeedMoney /></ProtectedRoute>} />
           {/* 공통 레이아웃 */}
           <Route element={<Layout />}>
             <Route path="/login" element={<Login />} />
@@ -92,7 +97,7 @@ function AuthenticatedApp() {
 
             <Route path="*" element={<NotFound />} />
           </Route>
-        </Routes>
+        </Routes></OnboardingGate>
         <FloatingAssets />
 
 

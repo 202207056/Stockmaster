@@ -26,7 +26,7 @@ const client = await server.ssrLoadModule('/src/api/client.js');
 const container = document.getElementById('root');
 const visible = node => !node.closest('[hidden]');
 const button = label => [...container.querySelectorAll('button')].find(node => visible(node) && node.textContent.trim() === label);
-const click = async label => { assert(button(label), label); await React.act(async () => button(label).click()); };
+const click = async label => { assert(button(label), label + ': ' + container.querySelector('.misu-tutorial-note')?.textContent); await React.act(async () => button(label).click()); };
 const fillQuantity = async value => React.act(async () => {
   const input = [...container.querySelectorAll('[aria-label="수량"]')].find(visible);
   Object.getOwnPropertyDescriptor(dom.window.HTMLInputElement.prototype, 'value').set.call(input, value);
@@ -34,9 +34,9 @@ const fillQuantity = async value => React.act(async () => {
 });
 const finishExample = async () => {
   await click('미수거래'); await fillQuantity('4'); await click('모의 매수');
-  await click('결제 날짜 비교하기'); await click('기한을 넘긴 경우 보기');
+  await click('다음'); await click('다음');
   assert(container.querySelector('.misu-tutorial-note').textContent.includes('20,156원'));
-  await click('현금 주문과 비교 마무리');
+  await click('다음');
 };
 
 test('margin includes the entire fee, and equity deducts debt but includes unsettled proceeds', () => {

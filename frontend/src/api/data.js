@@ -27,14 +27,52 @@ export const analyzeNews = async (articles, signal) => {
 };
 export const fetchCoach = async (symbol, signal) => requireObject(await get('/ai/coach', { symbol }, signal));
 export const fetchNewsSummary = async (code, signal) => requireObject(await get(`/ai/news-summary/${encodeURIComponent(code)}`, undefined, signal));
-export const fetchPosts = async (page, signal, size = 20) => {
-  const data = requireObject(await get('/community/posts', { page, size }, signal));
-  return { ...data, items: requireArray(data.items) };
+async function withPostSymbolName(post, signal) {
+  if (!post.symbol_code || post.attachments?.symbol_name) return post;
+  try {
+    const stock = await fetchStock(post.symbol_code, signal);
+    return { ...post, attachments: { ...post.attachments, symbol_name: stock.name } };
+  } catch (error) {
+    if (signal?.aborted || error.response?.status === 401) throw error;
+    return post;
+  }
+}
+export const fetchPosts = async (page, signal, size = 20, symbol_code) => {
+  const data = requireObject(await get('/community/posts', { page, size, symbol_code: symbol_code || undefined }, signal));
+  const items = [...requireArray(data.items)];
+  // Older list responses omit the body. Hydrate those rows without issuing an
+  // unbounded burst, while current servers return complete timeline entries.
+  let next = 0;
+  await Promise.all(Array.from({ length: Math.min(4, items.length) }, async () => {
+    while (next < items.length) {
+      const index = next++;
+      const post = items[index];
+      if (post.content !== undefined && post.attachments !== undefined) {
+        items[index] = await withPostSymbolName(post, signal);
+        continue;
+      }
+      try { items[index] = { ...post, ...await fetchPost(post.post_id, signal) }; }
+      catch (error) { if (signal?.aborted || error.response?.status === 401) throw error; items[index] = { ...post, detailUnavailable: true }; }
+    }
+  }));
+  return { ...data, items };
 };
-export const fetchPost = async (id, signal) => requireObject(await get(`/community/posts/${id}`, undefined, signal));
-export const createPost = async (payload) => (await api.post('/community/posts', payload)).data;
+export const fetchPost = async (id, signal) => withPostSymbolName(requireObject(await get(`/community/posts/${id}`, undefined, signal)), signal);
+export const createPost = async (payload) => {
+  if (payload.images?.length || payload.poll || payload.trade_id || payload.quote_post_id) {
+    let capabilities;
+    try { capabilities = (await api.get('/community/capabilities', { cache: false })).data; }
+    catch (error) {
+      if (error.response?.status !== 404) throw error;
+      throw new Error('현재 서버는 사진·투표·거래내역·인용 저장을 지원하지 않습니다. 서버 업데이트 후 다시 등록해 주세요. 작성 내용은 유지됩니다.', { cause: error });
+    }
+    if (!capabilities?.attachments || (payload.quote_post_id && !capabilities?.quotes)) throw new Error('서버 업데이트가 필요합니다. 첨부 내용이 누락되지 않도록 등록을 중단했습니다.');
+  }
+  return (await api.post('/community/posts', payload)).data;
+};
 export const createComment = async (id, content) => (await api.post(`/community/posts/${id}/comments`, { content })).data;
 export const toggleLike = async (id) => (await api.post(`/community/posts/${id}/like`)).data;
+export const votePost = async (id, option_index) => (await api.put(`/community/posts/${id}/vote`, { option_index })).data;
 export const fetchOrders = async (accountId, signal) => requireArray(await get('/trading/orders', { account_id: accountId }, signal));
 export const submitOrder = async (payload) => (await api.post('/trading/orders', payload)).data;
 export const cancelOrder = async (orderId) => (await api.put(`/trading/orders/${encodeURIComponent(orderId)}/cancel`)).data;

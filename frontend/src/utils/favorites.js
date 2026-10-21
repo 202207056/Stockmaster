@@ -20,6 +20,14 @@ export const setFavoritesOwner = (id) => {
 /** 같은 탭 안에서도 변경을 감지할 수 있도록 커스텀 이벤트를 씁니다. */
 export const FAVORITES_EVENT = 'favorites:change';
 
+export const deleteFavoritesForUser = (userId) => {
+  if (userId == null) return;
+  const key = `${KEY}:user:${userId}`;
+  try {
+    [key, `${key}:groups`, `${key}:recent`].forEach(item => localStorage.removeItem(item));
+  } catch { /* Storage may be unavailable. Session cleanup must still proceed. */ }
+};
+
 const read = () => {
   try {
     const raw = JSON.parse(localStorage.getItem(storageKey()) || '[]');

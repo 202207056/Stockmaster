@@ -61,14 +61,14 @@ export default function Dashboard() {
       )}
 
       {/* ── 주요 시세 (자동 스크롤) ─────────────────────────────── */}
-      <MarketStrip />
+      <div data-site-tour="market"><MarketStrip /></div>
 
       {/* ── 실시간 랭킹 3열 ─────────────────────────────────────── */}
       <section>
         <SectionTitle>실시간 랭킹</SectionTitle>
         <div className="grid gap-8 lg:grid-cols-3">
           {rankings.map((col) => (
-            <div key={col.key}>
+            <div key={col.key} data-site-tour={`ranking-${col.key}`}>
               <div className="mb-2">
                 <h3 className="text-sm font-bold text-gray-700">{col.title}</h3>
                 <p className="text-xs text-gray-400">{col.hint}</p>
@@ -113,7 +113,7 @@ export default function Dashboard() {
       {/* ── 뉴스 + 오른쪽 사이드 ────────────────────────────────── */}
       <div className="grid gap-10 lg:grid-cols-3">
         {/* 뉴스 */}
-        <section className="lg:col-span-2">
+        <section className="lg:col-span-2" data-site-tour="news">
           <SectionTitle>오늘의 뉴스</SectionTitle>
           {!!news.data?.length && <div className="mb-3 text-xs text-gray-500" role="status">
             {!isAuthenticated ? '로그인하면 AI 뉴스 분석을 볼 수 있습니다.'
@@ -142,7 +142,7 @@ export default function Dashboard() {
 
         {/* 오른쪽 — 관심종목 + 커뮤니티 */}
         <div className="flex flex-col gap-10">
-          <section>
+          <section data-site-tour="favorites">
             <SectionTitle to="/favorites">관심종목</SectionTitle>
             {favorites.length === 0 ? (
               <EmptyState
@@ -162,7 +162,7 @@ export default function Dashboard() {
             )}
           </section>
 
-          <section>
+          <section data-site-tour="community">
             <SectionTitle to="/community">
               커뮤니티
             </SectionTitle>
