@@ -255,3 +255,36 @@ test('Assets keeps holdings and totals on briefing failure; anonymous view has n
   await renderAssets({ ...auth, user: null, accounts: [], accountId: null, account: null, isAuthenticated: false });
   assert.doesNotMatch(container.textContent, /AI 보유종목 브리핑/);
 });
+
+
+test('StrictMode reconciles removed selection without warnings, stale content or automatic generation', async () => {
+  let calls = 0;
+  const errors = [];
+  const originalError = console.error;
+  console.error = (...args) => errors.push(args.map(String).join(' '));
+  client.default.defaults.adapter = async config => {
+    calls++;
+    return response(config, brief(config.url.split('/').at(-1), 'STRICT_PREVIOUS'));
+  };
+  root = createRoot(container);
+  const renderStrict = list => act(async () => root.render(React.createElement(React.StrictMode, null,
+    React.createElement(Card, { accountId: 7, holdings: list }))));
+  try {
+    await renderStrict(holdings);
+    assert.equal(calls, 0);
+    await select('000660');
+    await click();
+    assert.match(container.textContent, /STRICT_PREVIOUS/);
+    await renderStrict([holdings[0]]);
+    assert.equal(container.querySelector('select').value, '005930');
+    assert.doesNotMatch(container.textContent, /STRICT_PREVIOUS/);
+    await renderStrict([]);
+    assert.equal(button(), null);
+    await renderStrict([...holdings].reverse());
+    assert.equal(container.querySelector('select').value, '000660');
+    assert.equal(calls, 1);
+    assert.deepEqual(errors, []);
+  } finally {
+    console.error = originalError;
+  }
+});
