@@ -27,6 +27,22 @@ export const analyzeNews = async (articles, signal) => {
 };
 export const fetchCoach = async (symbol, signal) => requireObject(await get('/ai/coach', { symbol }, signal));
 export const fetchNewsSummary = async (code, signal) => requireObject(await get(`/ai/news-summary/${encodeURIComponent(code)}`, undefined, signal));
+export const fetchPortfolioBrief = async (accountId, code, signal, profile = 'luna') => {
+  // A manual refresh must generate a new briefing, including within the GET cache TTL.
+  const data = requireObject((await api.get(`/ai/portfolio-brief/${encodeURIComponent(code)}`, {
+    params: { account_id: accountId, profile }, signal, cache: false,
+  })).data);
+  const sections = ['current_status', 'entry_context', 'position_summary', 'recent_issues',
+    'positive_factors', 'risk_factors', 'watch_points', 'limitations'];
+  if (data.symbol_code !== String(code)
+    || !['headline', 'disclaimer'].every(key => typeof data[key] === 'string' && data[key].trim())
+    || !sections.every(key => Array.isArray(data[key]) && data[key].length <= 3
+      && data[key].every(item => typeof item === 'string' && item.trim()))
+    || !data.current_status.length) {
+    throw new Error('브리핑 응답 형식을 확인할 수 없습니다.');
+  }
+  return data;
+};
 async function withPostSymbolName(post, signal) {
   if (!post.symbol_code || post.attachments?.symbol_name) return post;
   try {
