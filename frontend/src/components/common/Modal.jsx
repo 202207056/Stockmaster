@@ -84,24 +84,24 @@ export default function Modal({
         aria-modal="true"
         aria-label={typeof title === 'string' ? title : undefined}
         tabIndex={-1}
-        className={`relative z-10 w-full ${sizeClass} rounded-xl bg-white shadow-xl outline-none`}
+        className={`relative z-10 flex max-h-[calc(100dvh-2rem)] min-w-0 w-full flex-col ${sizeClass} rounded-xl bg-white shadow-xl outline-none`}
       >
         {title && (
-          <div className="flex items-start justify-between border-b border-gray-100 px-6 py-4">
+          <div className="flex shrink-0 items-start justify-between gap-2 border-b border-gray-100 px-4 py-3 sm:px-6 sm:py-4">
             <h2 className="text-base font-bold text-gray-900">{title}</h2>
             <button
               type="button"
               onClick={onClose}
               aria-label="닫기"
-              className="-mt-1 -mr-2 rounded p-1 text-gray-400 transition hover:text-gray-700"
+              className="-mt-2 -mr-2 flex h-11 w-11 shrink-0 items-center justify-center rounded text-gray-400 transition hover:text-gray-700"
             >
               <X size={18} strokeWidth={1.75} aria-hidden="true" />
             </button>
           </div>
         )}
-        <div className="px-6 py-5 text-sm leading-relaxed text-gray-700">{children}</div>
+        <div className="min-h-0 overflow-y-auto overscroll-contain px-4 py-5 text-sm leading-relaxed text-gray-700 sm:px-6">{children}</div>
         {footer && (
-          <div className="flex justify-end gap-2 border-t border-gray-100 px-6 py-4">{footer}</div>
+          <div className="flex shrink-0 flex-wrap justify-end gap-2 border-t border-gray-100 px-4 py-4 sm:px-6">{footer}</div>
         )}
       </div>
     </div>,

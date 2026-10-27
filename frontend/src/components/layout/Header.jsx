@@ -15,8 +15,8 @@ export default function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-30 border-b border-gray-200 bg-white/95 backdrop-blur">
-      <div className="mx-auto flex w-full max-w-page items-center justify-between gap-6 px-8 py-5">
+    <header className="app-header relative z-30 border-b border-gray-200 bg-white/95 backdrop-blur md:sticky md:top-0">
+      <div className="mx-auto flex w-full max-w-page items-center justify-between gap-3 px-4 py-3 sm:px-8 sm:py-5">
         <div className="flex items-center gap-4">
           <Link to="/dashboard" className="flex shrink-0 items-center gap-2">
             <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-600 text-sm font-extrabold text-white">
@@ -28,7 +28,7 @@ export default function Header() {
           <div className="hidden md:block"><StockSearch /></div>
 
           {/* 인기 검색어 — 하나씩 순환 */}
-          <div className="hidden items-center gap-2 lg:flex">
+          <div className="hidden items-center gap-2 2xl:flex">
             <span className="flex shrink-0 items-center gap-1 text-xs font-bold text-gray-400">
               <TrendingUp size={14} strokeWidth={2} aria-hidden="true" />
               인기 검색어
@@ -37,21 +37,21 @@ export default function Header() {
           </div>
         </div>
 
-        <Nav className="hidden lg:flex" />
+        <Nav className="hidden xl:flex" />
 
-        <div className="flex shrink-0 items-center gap-3">
+        <div className="flex min-w-0 items-center gap-2 sm:gap-3">
           {isAuthenticated ? (
             <>
               <Link
                 to="/mypage"
-                className="hidden text-sm font-medium text-gray-700 hover:text-gray-900 sm:inline"
+                className="max-w-20 truncate py-3 text-sm font-medium text-gray-700 hover:text-gray-900 sm:max-w-28"
               >
                 {user?.user_name ?? '내 정보'}님
               </Link>
               <button
                 type="button"
                 onClick={handleLogout}
-                className="rounded-md border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-600 transition hover:bg-gray-50"
+                className="min-h-11 rounded-md border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-600 transition hover:bg-gray-50"
               >
                 로그아웃
               </button>
@@ -60,13 +60,13 @@ export default function Header() {
             <>
               <Link
                 to="/login"
-                className="text-sm font-medium text-gray-600 transition hover:text-gray-900"
+                className="py-3 text-sm font-medium text-gray-600 transition hover:text-gray-900"
               >
                 로그인
               </Link>
               <Link
                 to="/signup"
-                className="rounded-md bg-brand-600 px-4 py-1.5 text-sm font-bold text-white transition hover:bg-brand-700"
+                className="flex min-h-11 items-center rounded-md bg-brand-600 px-4 py-1.5 text-sm font-bold text-white transition hover:bg-brand-700"
               >
                 가입
               </Link>
@@ -76,8 +76,8 @@ export default function Header() {
       </div>
 
       {/* 좁은 화면에서는 메뉴를 아래줄로 내려 가로 스크롤로 봅니다. */}
-      <div className="border-t border-gray-100 lg:hidden">
-        <Nav className="mx-auto w-full max-w-page overflow-x-auto px-8 py-3" />
+      <div className="border-t border-gray-100 xl:hidden">
+        <Nav className="mobile-nav mx-auto w-full max-w-page overflow-x-auto px-2 py-2 sm:px-8 sm:py-3" />
       </div>
       <div className="px-4 pb-3 md:hidden"><StockSearch /></div>
     </header>

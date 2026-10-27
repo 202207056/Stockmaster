@@ -4,9 +4,9 @@
 .site-tour-pointer .tutorial-pointer svg { flex: none; }
 .site-tour-pointer .site-tour-pointer-flipped { flex-direction: row-reverse; }
 .site-tour-pointer .site-tour-pointer-flipped svg { transform: scaleX(-1); }
-.site-tour-note button:focus-visible { outline: 2px solid #312e81; outline-offset: 2px; }
+.site-tour-note button:focus-visible { outline:2px solid #312e81; outline-offset: 2px; }
 [data-site-tour] { scroll-margin-top: 160px; }
-.site-tour-welcome { margin: auto; width: calc(100% - 32px); max-width: 520px; max-height: calc(100dvh - 32px); overflow: auto; border: 1px solid #a5b4fc; border-radius: 16px; padding: 28px; background: white; box-shadow: 0 8px 28px #312e8126; }
-.site-tour-welcome::backdrop { background: rgb(0 0 0 / 50%); }
+.site-tour-welcome { margin: auto; width: calc(100% - 32px); max-width: 520px; max-height: calc(100dvh - 32px); overflow: auto; border:1px solid var(--theme-a5b4fc, #a5b4fc); border-radius: 16px; padding: 28px; background:var(--surface); box-shadow: 0 8px 28px #312e8126; }
+.site-tour-welcome::backdrop { background:rgb(0 0 0 / 50%); }
 .site-tour-welcome h2 { font-size: 20px; font-weight: 800; line-height: 1.6; }
-.site-tour-welcome p { margin-top: 16px; font-size: 14px; line-height: 1.7; color: #4b5563; }
+.site-tour-welcome p { margin-top: 16px; font-size: 14px; line-height: 1.7; color:var(--theme-4b5563, #4b5563); }

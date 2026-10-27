@@ -1,2 +1,2 @@
-button.tutorial-skip-button { position: fixed; top: max(16px, env(safe-area-inset-top)); right: max(16px, env(safe-area-inset-right)); z-index: 200; margin: 0; padding: 10px 16px; border: 1px solid #c7d2fe; border-radius: 9px; background: white; color: #4338ca; font-size: 14px; font-weight: 700; line-height: 1.4; box-shadow: 0 3px 12px #312e811a; cursor: pointer; }
-button.tutorial-skip-button:focus-visible { outline: 2px solid #4338ca; outline-offset: 3px; }
+button.tutorial-skip-button { position: fixed; top: max(16px, env(safe-area-inset-top)); right: max(16px, env(safe-area-inset-right)); z-index: 200; margin: 0; padding: 10px 16px; border:1px solid var(--theme-c7d2fe, #c7d2fe); border-radius: 9px; background:var(--surface); color:var(--theme-accent, #4338ca); font-size: 14px; font-weight: 700; line-height: 1.4; box-shadow: 0 3px 12px #312e811a; cursor: pointer; }
+button.tutorial-skip-button:focus-visible { outline:2px solid #4338ca; outline-offset: 3px; }

@@ -45,19 +45,19 @@ export default function CandleChart({ rows: sourceRows, type = 'line', periodLab
       if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') { event.preventDefault(); setHoverIndex(index => Math.max(0, Math.min(rows.length - 1, (index ?? 0) + (event.key === 'ArrowRight' ? 1 : -1)))); }
       else if (event.key === 'Escape') setHoverIndex(null);
     }} aria-label={`${label(rows[0])}부터 ${label(rows.at(-1))}까지 ${periodLabel} 기간 ${type === 'line' ? '종가 꺾은선' : chartName} 차트. 좌우 방향키로 날짜와 가격 확인`} className="w-full rounded-lg bg-gray-50">
-      {[0, 1, 2, 3].map(i => { const price = inverse(bottom + (top - bottom) * i / 3); return <g key={i}><line x1="20" x2="605" y1={y(price)} y2={y(price)} stroke="#e5e7eb" /><text x="615" y={y(price) + 4} fontSize="11" fill="#6b7280">{won(price)}</text></g>; })}
+      {[0, 1, 2, 3].map(i => { const price = inverse(bottom + (top - bottom) * i / 3); return <g key={i}><line x1="20" x2="605" y1={y(price)} y2={y(price)} stroke="var(--theme-e5e7eb, #e5e7eb)" /><text x="615" y={y(price) + 4} fontSize="11" fill="var(--theme-6b7280, #6b7280)">{won(price)}</text></g>; })}
       {lineType ? <>
-        {type === 'area' && <polygon points={`20,260 ${points} ${20 + step * (rows.length - .5)},260`} fill="#dbeafe" />}
+        {type === 'area' && <polygon points={`20,260 ${points} ${20 + step * (rows.length - .5)},260`} fill="var(--theme-dbeafe, #dbeafe)" />}
         {type === 'baseline' && <>
           <defs><clipPath id={clipId + 'up'}><rect x="20" y="0" width="580" height={baseY} /></clipPath><clipPath id={clipId + 'down'}><rect x="20" y={baseY} width="580" height="300" /></clipPath></defs>
-          <polygon points={`20,${baseY} ${points} 600,${baseY}`} fill="#fecaca" clipPath={`url(#${clipId}up)`} />
-          <polygon points={`20,${baseY} ${points} 600,${baseY}`} fill="#bfdbfe" clipPath={`url(#${clipId}down)`} />
-          <line x1="20" x2="600" y1={baseY} y2={baseY} stroke="#64748b" strokeDasharray="4 3" />
+          <polygon points={`20,${baseY} ${points} 600,${baseY}`} fill="var(--theme-fecaca, #fecaca)" clipPath={`url(#${clipId}up)`} />
+          <polygon points={`20,${baseY} ${points} 600,${baseY}`} fill="var(--theme-bfdbfe, #bfdbfe)" clipPath={`url(#${clipId}down)`} />
+          <line x1="20" x2="600" y1={baseY} y2={baseY} stroke="var(--theme-64748b, #64748b)" strokeDasharray="4 3" />
         </>}
-        {rows.length > 1 ? <polyline points={points} fill="none" stroke="#2563eb" strokeWidth="2" strokeLinejoin="round" /> : <text x="310" y="140" textAnchor="middle" fontSize="12" fill="#6b7280">꺾은선을 표시할 데이터가 부족합니다.</text>}
+        {rows.length > 1 ? <polyline points={points} fill="none" stroke="#2563eb" strokeWidth="2" strokeLinejoin="round" /> : <text x="310" y="140" textAnchor="middle" fontSize="12" fill="var(--theme-6b7280, #6b7280)">꺾은선을 표시할 데이터가 부족합니다.</text>}
       </> : rows.map((row, i) => { const x = 20 + step * (i + .5), color = row.close >= row.open ? '#dc2626' : '#2563eb'; return <g key={rowKey(row)}><title>{`${label(row)} 시가 ${won(row.open)}, 고가 ${won(row.high)}, 저가 ${won(row.low)}, 종가 ${won(row.close)}`}</title><line x1={x} x2={x} y1={y(row.high)} y2={y(row.low)} stroke={color} />{type === 'bar' ? <><line x1={x - step * .3} x2={x} y1={y(row.open)} y2={y(row.open)} stroke={color} /><line x1={x} x2={x + step * .3} y1={y(row.close)} y2={y(row.close)} stroke={color} /></> : <rect x={x - step * .3} y={Math.min(y(row.open), y(row.close))} width={Math.max(step * .6, 1)} height={Math.max(Math.abs(y(row.open) - y(row.close)), 1)} fill={color} />}</g>; })}
       {average.some(value => value !== null) && <polyline aria-label={`${maPeriod}기간 이동평균`} points={average.map((value, i) => value === null ? null : `${20 + step * (i + .5)},${y(value)}`).filter(Boolean).join(' ')} fill="none" stroke="#a855f7" strokeWidth="2" />}
-      <text x="20" y="287" fontSize="11" fill="#6b7280">{label(rows[0])}</text><text x="600" y="287" textAnchor="end" fontSize="11" fill="#6b7280">{label(rows.at(-1))}</text>
+      <text x="20" y="287" fontSize="11" fill="var(--theme-6b7280, #6b7280)">{label(rows[0])}</text><text x="600" y="287" textAnchor="end" fontSize="11" fill="var(--theme-6b7280, #6b7280)">{label(rows.at(-1))}</text>
       {active && !onExplain && <g pointerEvents="none"><line x1={activeX} x2={activeX} y1="30" y2="260" stroke="#94a3b8" strokeDasharray="4 4" /><g transform={`translate(${Math.max(20, Math.min(activeX - 95, 410))},34)`}><rect width="190" height="52" rx="6" fill="#111827" /><text x="12" y="20" fontSize="12" fill="white">{label(active)}</text><text x="12" y="39" fontSize="13" fill="white">{synthetic ? '합성 값' : '종가'} {won(active.close)}</text></g></g>}
     </svg>
     {candleStep !== undefined ? <CandleWalkthroughMarks rows={rows} step={step} y={y} index={candleStep}/> : onExplain && <ChartLessonMarks type={type} rows={rows} step={step} y={y} onExplain={onExplain}/>}

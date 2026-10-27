@@ -1,3 +1,5 @@
+import ThemeToggle from '../common/ThemeToggle';
+
 /**
  * 공통 푸터 (F-5)
  *
@@ -9,7 +11,7 @@
 export default function Footer() {
   return (
     <footer className="mt-auto border-t border-gray-100 bg-white">
-      <div className="mx-auto w-full max-w-page px-8 py-10">
+      <div className="mx-auto w-full max-w-page px-4 py-8 sm:px-8 sm:py-10">
         <p className="text-base font-extrabold text-gray-800">인생한방</p>
         <p className="mt-2 max-w-3xl text-sm leading-relaxed text-gray-500">
           가상 자금으로 거래를 연습할 수 있는 학습용 모의투자 서비스입니다.
@@ -18,7 +20,10 @@ export default function Footer() {
           <br />
           특정 금융상품에 대한 투자 권유 또는 투자 자문을 목적으로 하지 않습니다.
         </p>
-        <p className="mt-6 text-xs text-gray-400">© 인생한방 프로젝트</p>
+        <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
+          <p className="text-xs text-gray-400">© 인생한방 프로젝트</p>
+          <ThemeToggle />
+        </div>
       </div>
     </footer>
   );

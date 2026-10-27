@@ -26,6 +26,16 @@
 }
 
 .trading-stock-list { max-height: 500px; overflow-y: auto; }
+@media (max-width: 1023px) {
+  .trading-stock-list { max-height: 240px; overscroll-behavior-y: contain; }
+  .trading-stock-sidebar > ul { max-height: 180px; overflow-y: auto; }
+}
+@media (max-width: 639px) {
+  .trading-workspace .trading-order-stepper { height: 46px; }
+  .trading-workspace .trading-order-stepper button { flex-basis: 44px; }
+  .trading-workspace .trading-order-percent button,
+  .trading-workspace .trading-order-tabs button { min-height: 44px; }
+}
 @media (min-width: 1024px) {
   .trading-stock-sidebar { display: flex; flex-direction: column; align-self: stretch; min-height: 0; }
   .trading-stock-list { flex: 1; min-height: 200px; max-height: none; contain: size; }

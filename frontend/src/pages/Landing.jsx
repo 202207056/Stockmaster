@@ -40,52 +40,52 @@ export default function Landing() {
           aria-hidden="true"
         />
 
-        <header className="relative z-10 mx-auto flex w-full max-w-page items-center justify-between px-10 py-6">
+        <header className="relative z-10 mx-auto flex w-full max-w-page items-center justify-between gap-3 px-4 py-4 sm:px-10 sm:py-6">
           <span className="flex items-center gap-2">
             <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-600 text-sm font-extrabold text-white">
               MI
             </span>
-            <span className="text-base font-extrabold text-gray-900">프로젝트</span>
+            <span className="hidden text-base font-extrabold text-gray-900 sm:inline">프로젝트</span>
           </span>
 
-          <div className="flex items-center gap-4">
+          <div className="flex shrink-0 items-center gap-3 sm:gap-4">
             <Link
               to="/login"
-              className="text-sm font-medium text-gray-600 transition hover:text-gray-900"
+              className="py-3 text-sm font-medium text-gray-600 transition hover:text-gray-900"
             >
               로그인
             </Link>
             <Link
               to="/signup"
-              className="rounded-md border border-gray-400 px-5 py-1.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
+              className="flex min-h-11 items-center rounded-md border border-gray-400 px-4 py-1.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50 sm:px-5"
             >
               가입
             </Link>
           </div>
         </header>
 
-        <main className="relative z-10 mx-auto flex w-full max-w-page flex-1 flex-col px-10 pb-16">
+        <main className="relative z-10 mx-auto flex w-full max-w-page flex-1 flex-col px-4 pb-10 sm:px-10 sm:pb-16">
           {/* 부제가 화면 세로 한가운데에 오도록 위쪽 여백을 잡습니다.
               빼는 값 두 가지
                 5.25rem — 이 화면 헤더 높이 (py-6 + 로고 h-9 = 84px)
                 3rem    — 제목 밑줄에서 부제 한가운데까지
                           (mt-8 32px + 한 줄 높이의 절반 약 16px)
               이 블록은 justify-end 라 블록 하단 = 제목 밑줄 위치입니다. */}
-          <div className="flex min-h-[calc(50vh-8.25rem)] flex-col justify-end">
+          <div className="flex flex-col justify-end pt-10 sm:min-h-[calc(50vh-8.25rem)]">
             <p className="text-sm font-bold text-brand-600">투자, 배우면서 시작하세요</p>
 
-            <h1 className="mt-4 inline-block max-w-3xl border-b-4 border-gray-900 pb-3 text-5xl leading-tight font-extrabold text-gray-900">
+            <h1 className="mt-4 inline-block max-w-3xl border-b-4 border-gray-900 pb-3 text-3xl leading-tight font-extrabold text-gray-900 sm:text-5xl">
               (가제)모의투자 프로젝트
             </h1>
           </div>
 
           {/* max-w 를 두지 않아 넓은 화면에서는 한 줄로 나옵니다.
               (화면이 좁아지면 자연스럽게 줄바꿈됩니다) */}
-          <p className="mt-8 text-xl leading-relaxed text-gray-700">
+          <p className="mt-6 text-base leading-relaxed text-gray-700 sm:mt-8 sm:text-xl">
             실제 증권 시세와 연동된 모의투자로 투자 감각을 익히고, 맞춤형 투자 학습을 경험해 보세요.
           </p>
 
-          <div className="mt-10 flex flex-wrap items-center gap-3">
+          <div className="mt-8 flex flex-col gap-3 text-center sm:mt-10 sm:flex-row sm:flex-wrap sm:items-center">
             <Link
               to="/signup"
               className="rounded-lg bg-brand-600 px-7 py-3 text-sm font-bold text-white transition hover:bg-brand-700"
@@ -101,7 +101,7 @@ export default function Landing() {
           </div>
 
           {/* 특징 3가지 — 첫 화면이 비어 보이지 않도록 채우면서 서비스 설명도 겸합니다 */}
-          <ul className="mt-20 grid gap-6 md:grid-cols-3">
+          <ul className="mt-10 grid gap-4 sm:mt-20 sm:gap-6 md:grid-cols-3">
             {FEATURES.map(({ Icon, title, desc }) => (
               <li key={title} className="rounded-2xl border border-gray-200 p-6">
                 <Icon size={24} strokeWidth={1.5} aria-hidden="true" className="text-gray-400" />

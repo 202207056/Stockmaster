@@ -23,7 +23,7 @@ export default function Layout() {
 
       <Header />
 
-      <main id="main" className="mx-auto w-full max-w-page flex-1 px-8 py-8">
+      <main id="main" className="mx-auto min-w-0 w-full max-w-page flex-1 px-4 py-5 sm:px-8 sm:py-8">
         <SitePractice inlineBuy><Outlet /></SitePractice>
       </main>
 

@@ -3,4 +3,4 @@
 .assets-tour-note.tutorial-local-note{z-index:85;visibility:visible}
 .assets-tour-note strong{padding-right:24px}
 .assets-tour-close{position:absolute;right:8px;top:6px;padding:4px 8px;font-size:20px}
-.assets-tour-back{margin-top:12px;padding:6px 10px;border-radius:6px;background:#f1f5f9;font-size:12px}
+.assets-tour-back{margin-top:12px;padding:6px 10px;border-radius:6px;background:var(--theme-f1f5f9, #f1f5f9);font-size:12px}

@@ -75,6 +75,7 @@ function FloatingAssetsPanel() {
   }, [open, isAuthenticated, accountId, reload, resource.loading, resource.data]);
 
   const startDrag = (event) => {
+    if (window.matchMedia('(max-width: 639px)').matches) return;
     if (event.button !== 0 || !event.isPrimary) return;
     suppressClick.current = false;
     gesture.current = { id: event.pointerId, x: event.clientX, y: event.clientY, position, moved: false };
@@ -96,7 +97,7 @@ function FloatingAssetsPanel() {
   const amount = (value) => value == null ? pending : won(value);
   const percentage = totals?.cost > 0 && totals?.unrealized != null ? rate(totals.unrealized / totals.cost * 100) : null;
 
-  return <aside ref={root} className={`mini-assets ${open ? 'is-open' : ''}`} style={{ left: position.x, top: position.y }} aria-label="미니 내 자산" onKeyDown={(event) => {
+  return <aside ref={root} className={`mini-assets ${open ? 'is-open' : ''}`} style={{ '--mini-assets-left': `${position.x}px`, '--mini-assets-top': `${position.y}px` }} aria-label="미니 내 자산" onKeyDown={(event) => {
     if (event.key === 'Escape' && open) { event.stopPropagation(); close(); }
   }}>
     <div className="mini-assets-header">
@@ -106,7 +107,7 @@ function FloatingAssetsPanel() {
         onClick={(event) => { if (event.detail !== 0 && suppressClick.current) { suppressClick.current = false; return; } setOpen((value) => !value); }}
         onKeyDown={(event) => {
           const offsets = { ArrowLeft: [-16, 0], ArrowRight: [16, 0], ArrowUp: [0, -16], ArrowDown: [0, 16] };
-          if (offsets[event.key]) { event.preventDefault(); const [dx, dy] = offsets[event.key]; setPosition((previous) => clamp({ x: previous.x + dx, y: previous.y + dy })); }
+          if (offsets[event.key] && !window.matchMedia('(max-width: 639px)').matches) { event.preventDefault(); const [dx, dy] = offsets[event.key]; setPosition((previous) => clamp({ x: previous.x + dx, y: previous.y + dy })); }
         }}>
         <Wallet size={17} /><span>내 자산</span><GripVertical size={16} className="mini-assets-grip" />
       </button>

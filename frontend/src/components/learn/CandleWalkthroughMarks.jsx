@@ -9,7 +9,7 @@ export default function CandleWalkthroughMarks({ rows, step, y, index }) {
     <svg viewBox="0 0 720 300" aria-hidden="true">
       {lesson.compare!==undefined && (()=>{ const r=rows[lesson.compare]; return <rect x={20+step*(lesson.compare+.2)} y={Math.min(y(r.open),y(r.close))-5} width={step*.6} height={Math.max(10,Math.abs(y(r.open)-y(r.close))+10)} fill="none" stroke="#94a3b8" strokeWidth="2" strokeDasharray="4 3"/>; })()}
       <rect data-candle-target x={x-step*.35-4} y={y(top)-5} width={step*.7+8} height={Math.max(12,y(bottom)-y(top)+10)} rx="4" fill="none" stroke="#7c3aed" strokeWidth="3"/>
-      <text x={x} y="22" textAnchor="middle" fill="#6d28d9" fontSize="14" fontWeight="700">예시 {lesson.row+1}</text>
+      <text x={x} y="22" textAnchor="middle" fill="var(--accent-ink)" fontSize="14" fontWeight="700">예시 {lesson.row+1}</text>
     </svg>
     <div className="candle-live-prices" aria-label={`예시 ${lesson.row+1} 가격`}>
       {['range','body'].includes(lesson.part) && <><span>시가 <b>{row.open}원</b></span><span>종가 <b>{row.close}원</b></span></>}

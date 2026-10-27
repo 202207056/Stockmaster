@@ -5,6 +5,7 @@ import { createAccount } from '../api/auth';
 import { getToken } from '../api/client';
 import { InlineError } from '../components/common/ErrorState';
 import { setOnboarding } from '../utils/onboarding';
+import ThemeToggle from '../components/common/ThemeToggle';
 
 export default function SeedMoney() {
   const { user, isAuthenticated, isLoading, accounts, refresh, selectAccount } = useAuth();
@@ -56,9 +57,11 @@ export default function SeedMoney() {
 
   return <main className="min-h-screen bg-white">
     <div className="mx-auto w-full max-w-2xl px-6 py-8">
-      <div className="inline-flex items-center gap-2">
+      <div className="flex items-center justify-between gap-2">
+        <div className="inline-flex items-center gap-2">
         <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-600 text-xs font-extrabold text-white">MI</span>
         <span className="text-sm font-extrabold text-gray-900">프로젝트</span>
+        </div>
       </div>
     <section className="mt-8">
       <p className="text-sm font-bold text-brand-600">시드머니 설정</p>
@@ -91,6 +94,7 @@ export default function SeedMoney() {
         </div>
       </form>}
     </section>
+    <div className="mt-6 flex justify-end border-t border-gray-100 pt-3"><ThemeToggle /></div>
     </div>
   </main>;
 }

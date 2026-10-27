@@ -50,8 +50,8 @@ export default function StockSearch() {
         }
       }}
       className="w-full rounded-full border border-gray-300 bg-white py-2 pr-10 pl-4 text-sm text-gray-700 placeholder:text-gray-400 md:w-56" />
-    <button type="submit" aria-label="종목 검색 실행" className="absolute top-1/2 right-3.5 -translate-y-1/2 text-gray-500"><Search size={16} aria-hidden="true" /></button>
-    {open && keyword && <div className="absolute top-full left-0 z-50 mt-2 w-full min-w-64 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg">
+    <button type="submit" aria-label="종목 검색 실행" className="absolute top-1/2 right-0 flex h-11 w-11 -translate-y-1/2 items-center justify-center text-gray-500"><Search size={16} aria-hidden="true" /></button>
+    {open && keyword && <div className="absolute top-full left-0 z-50 mt-2 max-h-[50dvh] w-full overflow-y-auto overscroll-contain rounded-xl border border-gray-200 bg-white shadow-lg">
       <p role="status" className="px-4 py-2 text-xs text-gray-500">{!ready ? '검색 중…' : result.error ? '검색할 수 없습니다. 잠시 후 다시 시도해 주세요.' : rows.length ? '종목을 선택해 거래 화면으로 이동하세요.' : '검색 결과가 없습니다.'}</p>
       <ul id={listId} role="listbox" aria-label="종목 검색 결과">{rows.map((stock, index) => <li key={stock.symbol_code} role="option" id={`${listId}-${index}`} aria-selected={active === index}
         className={active === index ? 'bg-brand-50' : 'hover:bg-gray-50'}>

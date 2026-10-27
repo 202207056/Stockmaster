@@ -1,0 +1,138 @@
+/* Shared palette: white foregrounds on action buttons remain white. */
+:root {
+  --surface: #fff;
+  --surface-muted: #f8fafc;
+  --ink: #334155;
+  --ink-muted: #64748b;
+  --line: #e2e8f0;
+  --accent-ink: #6d28d9;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --surface: #111827;
+  --surface-muted: #1b2536;
+  --ink: #dce4f0;
+  --ink-muted: #a8b5c8;
+  --line: #344155;
+  --accent-ink: #c4b5fd;
+  --theme-accent: #c4b5fd;
+  --color-gray-50: #0c1422;
+  --color-gray-100: #1b2536;
+  --color-gray-200: #303c50;
+  --color-gray-300: #526079;
+  --color-gray-400: #9aa9bd;
+  --color-gray-500: #a8b5c8;
+  --color-gray-600: #bec9d9;
+  --color-gray-700: #d4ddeb;
+  --color-gray-800: #e2e8f0;
+  --color-gray-900: #f1f5f9;
+  --color-brand-50: #212342;
+  --color-brand-100: #30305c;
+  --color-brand-200: #494477;
+  --color-up-50: #321c29;
+  --color-up-100: #492333;
+  --color-up-200: #713044;
+  --color-up-500: #fb7185;
+  --color-up-600: #fb7185;
+  --color-up-700: #fda4af;
+  --color-down-50: #162a46;
+  --color-down-100: #1e385b;
+  --color-down-200: #2b507e;
+  --color-down-500: #60a5fa;
+  --color-down-600: #60a5fa;
+  --color-down-700: #93c5fd;
+  --color-flat-50: #1b2536;
+  --color-flat-100: #303c50;
+  --color-flat-500: #a8b5c8;
+  --color-flat-600: #bec9d9;
+  --color-warn-50: #352b18;
+  --color-warn-200: #79602e;
+  --color-warn-600: #fbbf24;
+  --color-ok-50: #15352e;
+  --color-ok-600: #6ee7b7;
+}
+
+:root[data-theme="dark"] .bg-white { background-color: var(--surface); }
+:root[data-theme="dark"] .bg-white\/95 { background-color: rgb(17 24 39 / 95%); }
+:root[data-theme="dark"] .bg-white\/60 { background-color: rgb(17 24 39 / 60%); }
+:root[data-theme="dark"] .text-black { color: var(--ink); }
+:root[data-theme="dark"] :is(.bg-amber-50, .misu-summary, .misu-risk-picture) { background-color: #352b18; }
+:root[data-theme="dark"] .bg-red-50 { background-color: #321c29; }
+:root[data-theme="dark"] .bg-blue-50 { background-color: #162a46; }
+:root[data-theme="dark"] .bg-emerald-50 { background-color: #15352e; }
+:root[data-theme="dark"] :is(.text-amber-800, .text-amber-900) { color: #fcd34d; }
+:root[data-theme="dark"] :is(.text-red-500, .text-red-600, .text-red-700, .misu-danger) { color: #fda4af; }
+:root[data-theme="dark"] :is(.text-blue-500, .text-blue-600, .text-blue-700) { color: #93c5fd; }
+:root[data-theme="dark"] .text-emerald-700 { color: #6ee7b7; }
+:root[data-theme="dark"] .text-purple-700 { color: #c4b5fd; }
+:root[data-theme="dark"] :is(.text-brand-600, .text-brand-700) { color: #a5b4fc; }
+:root[data-theme="dark"] :is(.bg-gray-800, .bg-gray-900) { background-color: #28354b; }
+
+/* Native dialogs, including learning popovers, share the surrounding surface. */
+dialog { background-color: var(--surface); color: var(--ink); }
+
+:root[data-theme="dark"] .misu-toggle[aria-pressed=true] { background: #352b18; color: #fcd34d; }
+:root[data-theme="dark"] .buy-concept-dialog button { background: #30254d; }
+:root[data-theme="dark"] .buy-concept-dialog .buy-concept-actions button { background: #6d59c7; }
+:root[data-theme="dark"] .buy-concept-result { background: #162a46; color: #bfdbfe; }
+:root[data-theme="dark"] .buy-concept-eyebrow { color: #c4b5fd; }
+:root[data-theme="dark"] .chart-lesson-mark { background: rgb(17 24 39 / 95%); }
+:root[data-theme="dark"] .market-depth-ask { color: var(--color-down-600); }
+:root[data-theme="dark"] .market-depth-bid { color: var(--color-up-600); }
+
+/* Legacy component colors retain their light values as fallbacks. */
+:root[data-theme="dark"] {
+  --theme-0f172a: #f1f5f9;
+  --theme-172b3a: #e2e8f0;
+  --theme-182338: #f1f5f9;
+  --theme-25334b: #e2e8f0;
+  --theme-333: #dce4f0;
+  --theme-334155: #dce4f0;
+  --theme-374151: #d4ddeb;
+  --theme-475569: #bec9d9;
+  --theme-4b5563: #bec9d9;
+  --theme-59677b: #bec9d9;
+  --theme-64748b: #a8b5c8;
+  --theme-666: #bec9d9;
+  --theme-666875: #bec9d9;
+  --theme-6b7280: #a8b5c8;
+  --theme-777: #a8b5c8;
+  --theme-838383: #a8b5c8;
+  --theme-85858e: #a8b5c8;
+  --theme-94949b: #a8b5c8;
+  --theme-94a3b8: #9aa9bd;
+  --theme-a5b4fc: #818cf8;
+  --theme-bfdbfe: #2b507e;
+  --theme-c4b5fd: #685b95;
+  --theme-c7d2fe: #494477;
+  --theme-cbd5e1: #475569;
+  --theme-d4dee6: #475569;
+  --theme-dad5f4: #544873;
+  --theme-dbeafe: #1e385b;
+  --theme-dce1e8: #475569;
+  --theme-ddd6fe: #544873;
+  --theme-dedee1: #344155;
+  --theme-e2def2: #544873;
+  --theme-e2e8f0: #344155;
+  --theme-e5e7eb: #344155;
+  --theme-ede9fe: #30254d;
+  --theme-eee: #344155;
+  --theme-eeeaf5: #3e3555;
+  --theme-eef2ff: #212342;
+  --theme-f1f5f9: #243146;
+  --theme-f3f4f6: #243146;
+  --theme-f4f4f4: #243146;
+  --theme-f5f3ff: #252039;
+  --theme-f5f6f8: #243146;
+  --theme-f5f6fa: #243146;
+  --theme-f7f6fc: #1e1b30;
+  --theme-f8f9fb: #1b2536;
+  --theme-f8fafc: #1b2536;
+  --theme-f9fafb: #1b2536;
+  --theme-faf9ff: #1e1b30;
+  --theme-fafbfc: #1b2536;
+  --theme-fecaca: #713044;
+  --theme-ffe4e6: #492333;
+  --theme-fff: #111827;
+}
