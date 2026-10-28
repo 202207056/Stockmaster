@@ -43,7 +43,7 @@ export default function ProfileSettings() {
     try {
       const saved = await updateProfile({ user_name: name.trim(), profile_image: photo });
       setName(saved.user_name); setPhoto(saved.profile_image);
-      setMessage('프로필을 저장했어요. 커뮤니티 글과 댓글에도 반영돼요.');
+      setMessage('프로필을 저장했어요.');
     } catch { setError('프로필을 저장하지 못했어요. 잠시 후 다시 시도해 주세요.'); }
     finally { setBusy(false); }
   };
