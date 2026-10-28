@@ -1,3 +1,4 @@
+import ProfileSettings from '../components/common/ProfileSettings';
 import useTutorialSetting from '../hooks/useTutorialSetting';
 import { Link } from 'react-router-dom';
 import useAuth from '../hooks/useAuth';
@@ -62,10 +63,11 @@ export default function MyPage() {
         <LoginNotice message="내 정보는 로그인해야 볼 수 있어요" />
       ) : (
         <>
+          <ProfileSettings key={user?.user_id} />
           <section className="flex flex-col gap-3">
             <h2 className="text-sm font-bold text-gray-500">계정</h2>
             <dl className="divide-y divide-gray-100 rounded-xl border border-gray-200">
-              <Row label="이름" value={user?.user_name} />
+              <Row label="닉네임" value={user?.user_name} />
               <Row label="아이디" value={user?.login_id} />
               <Row label="이메일" value={user?.email} />
               <Row

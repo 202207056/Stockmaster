@@ -87,6 +87,8 @@ export const createPost = async (payload) => {
   return (await api.post('/community/posts', payload)).data;
 };
 export const createComment = async (id, content) => (await api.post(`/community/posts/${id}/comments`, { content })).data;
+export const updatePost = async (id, payload) => (await api.put(`/community/posts/${id}`, payload)).data;
+export const deletePost = async (id) => (await api.delete(`/community/posts/${id}`)).data;
 export const toggleLike = async (id) => (await api.post(`/community/posts/${id}/like`)).data;
 export const votePost = async (id, option_index) => (await api.put(`/community/posts/${id}/vote`, { option_index })).data;
 export const fetchOrders = async (accountId, signal) => requireArray(await get('/trading/orders', { account_id: accountId }, signal));

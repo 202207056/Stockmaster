@@ -3,12 +3,12 @@ import { Heart, MessageCircle, Repeat2, Send, ChevronRight } from 'lucide-react'
 import { toggleLike } from '../../api/data';
 import { InlineError } from '../common/ErrorState';
 import PostAttachments from './PostAttachments';
+import PostMenu from './PostMenu';
 
-export function Avatar({ name }) {
-  return <span aria-hidden="true" className="community-avatar flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-brand-50 text-base font-bold text-brand-700 ring-1 ring-brand-100">{Array.from(name || '?')[0]}</span>;
-}
+export { default as Avatar } from "../common/Avatar";
+import Avatar from "../common/Avatar";
 
-export default function TimelinePost({ post, authenticated, onOpen, onQuote, onChanged }) {
+export default function TimelinePost({ post, authenticated, onOpen, onQuote, onChanged, onDeleted }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
   const [likedOverride, setLikedOverride] = useState(null);
@@ -29,9 +29,9 @@ export default function TimelinePost({ post, authenticated, onOpen, onQuote, onC
     } catch (err) { if (err.name !== 'AbortError') shareDialog.current.showModal(); }
   };
   return <article className="community-post">
-    <Avatar name={post.author_name} />
+    <Avatar name={post.author_name} src={post.author_profile_image} />
     <div className="min-w-0">
-      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm"><span className="break-all font-semibold text-gray-800">{post.author_name}</span>{post.symbol_code && <><ChevronRight size={14} className="text-gray-300" aria-hidden="true" /><span className="font-semibold text-brand-600">{post.attachments?.symbol_name || post.symbol_code}</span></>}<time dateTime={post.created_at} className="ml-auto text-[11px] text-gray-400">{String(post.created_at || '').replace('T', ' ').slice(0, 16)}</time></div>
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm"><span className="break-all font-semibold text-gray-800">{post.author_name}</span>{post.symbol_code && <><ChevronRight size={14} className="text-gray-300" aria-hidden="true" /><span className="font-semibold text-brand-600">{post.attachments?.symbol_name || post.symbol_code}</span></>}<time dateTime={post.created_at} className="ml-auto text-[11px] text-gray-400">{String(post.created_at || '').replace('T', ' ').slice(0, 16)}</time><PostMenu post={post} authenticated={authenticated} onChanged={onChanged} onDeleted={onDeleted} onShare={share} /></div>
       <button type="button" onClick={onOpen} className="mt-4 block w-full text-left"><h2 className="break-words text-lg font-bold leading-relaxed text-gray-900">{post.title}</h2></button>
       <p className="mt-2 whitespace-pre-wrap break-words text-sm leading-7 text-gray-600">{post.content}</p>
       {post.detailUnavailable && <button type="button" onClick={onOpen} className="mt-2 text-xs text-brand-600">본문을 불러오지 못했어요. 게시글 열기</button>}

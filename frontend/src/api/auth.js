@@ -27,6 +27,11 @@ export async function fetchMe() {
   return data;
 }
 
+export async function updateProfile(profile) {
+  const { data } = await api.put('/users/me', profile);
+  return data;
+}
+
 export async function deleteMembership(passwd) {
   await api.delete('/users/me', { data: { passwd } });
 }

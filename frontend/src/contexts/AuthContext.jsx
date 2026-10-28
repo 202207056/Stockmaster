@@ -208,6 +208,17 @@ export function AuthProvider({ children }) {
 
   const logout = useCallback(() => clearSession(), [clearSession]);
 
+  const updateProfile = useCallback(async (profile) => {
+    const generation = session.current;
+    const token = getToken();
+    const updated = await authApi.updateProfile(profile);
+    if (generation !== session.current || token !== getToken()) throw new Error('로그인 상태가 변경되었습니다.');
+    clearPrivateResources();
+    setUser(updated);
+    writeResource(sessionCacheKey(), { user: updated, accounts }, true);
+    return updated;
+  }, [accounts]);
+
   const withdraw = useCallback(async (passwd) => {
     const generation = session.current;
     const token = getToken();
@@ -244,8 +255,9 @@ export function AuthProvider({ children }) {
       refresh,
       selectAccount,
       setUser,
+      updateProfile,
     }),
-    [status, user, accounts, accountId, accountError, sessionError, login, signup, logout, withdraw, refresh, selectAccount],
+    [status, user, accounts, accountId, accountError, sessionError, login, signup, logout, withdraw, refresh, selectAccount, updateProfile],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
