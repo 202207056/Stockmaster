@@ -84,6 +84,15 @@ export default function MyPage() {
                 }
               />
             </dl>
+            {/* ✅ 추가: 투자성향 설문 다시하기 버튼 */}
+            {user?.investment_style && (
+              <Link
+                to="/survey?mode=edit"
+                className="rounded-xl border border-brand-200 bg-brand-50 px-4 py-4 text-center text-sm font-bold text-brand-700 hover:bg-brand-100"
+              >
+                투자성향 설문 다시하기
+              </Link>
+            )}
           </section>
 
           <section className="flex flex-col gap-3">
