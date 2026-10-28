@@ -55,6 +55,11 @@ VITE_ENABLE_ORDER_SUBMISSION=false
 
 ## 검증 명령
 
+운영 빌드의 모의 주문 활성화 기본값은 버전 관리되는 `.env.production`의
+`VITE_ENABLE_ORDER_SUBMISSION=true`입니다. 이 파일에는 공개 기능 설정만 넣습니다.
+배포 환경에서 같은 변수를 `false`로 지정하면 점검 모드로 비활성화할 수 있습니다.
+로컬 `.env.local` 설정만으로는 Vercel 빌드에 전달되지 않습니다.
+
 ```powershell
 npm.cmd run lint
 npm.cmd test

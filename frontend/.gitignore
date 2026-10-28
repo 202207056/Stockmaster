@@ -8,6 +8,7 @@ dist-ssr/
 .env
 .env.*
 !.env.example
+!.env.production
 
 # 로그
 npm-debug.log*
