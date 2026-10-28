@@ -2,7 +2,7 @@ import { useCallback, useRef, useState } from 'react';
 import { ImagePlus, ListChecks, Hash, ReceiptText, X } from 'lucide-react';
 import useAuth from '../../hooks/useAuth';
 import useRemote from '../../hooks/useRemote';
-import { createPost, fetchStocks, fetchOrders } from '../../api/data';
+import { createPost, fetchStocks, fetchShareableOrders } from '../../api/data';
 import { InlineError } from '../common/ErrorState';
 import RemoteState from '../common/RemoteState';
 import { QuoteCard, TradeCard } from './PostAttachments';
@@ -44,7 +44,7 @@ export default function PostComposer({ onSaved, initialSymbol = null, quote = nu
   const [tradeAccountId, setTradeAccountId] = useState(accountId);
   const fileInput = useRef(null);
   const stocks = useRemote(useCallback(signal => fetchStocks(query, signal), [query]), panel === 'symbol' && !!query);
-  const orders = useRemote(useCallback(signal => fetchOrders(tradeAccountId, signal), [tradeAccountId]), panel === 'trade' && tradeAccountId != null);
+  const orders = useRemote(useCallback(signal => fetchShareableOrders(tradeAccountId, signal), [tradeAccountId]), panel === 'trade' && tradeAccountId != null);
   const filledOrders = orders.data?.filter(order => order.status === '체결') || [];
   const photos = async event => {
     const files = Array.from(event.target.files || []); event.target.value = '';

@@ -14,12 +14,35 @@ const { MemoryRouter } = await import('react-router-dom');
 const server = await createServer({ server: { middlewareMode: true, hmr: false }, appType: 'custom' });
 after(async () => { await server.close(); dom.window.close(); });
 const { default: Composer } = await server.ssrLoadModule('/src/components/community/PostComposer.jsx');
+const { TradeCard } = await server.ssrLoadModule('/src/components/community/PostAttachments.jsx');
 const { default: Attachments } = await server.ssrLoadModule('/src/components/community/PostAttachments.jsx');
 const { AuthContext } = await server.ssrLoadModule('/src/contexts/auth-context.js');
 const client = await server.ssrLoadModule('/src/api/client.js');
 const dataApi = await server.ssrLoadModule('/src/api/data.js');
 const { default: Community } = await server.ssrLoadModule('/src/pages/Community.jsx');
 const h = React.createElement;
+
+test('trade cards show stock names, buy date, and blue signed sale returns without the old heading', async () => {
+  const root = createRoot(document.getElementById('root'));
+  const base = { name: '삼성전자', symbol_code: '005930', quantity: 20, price: 73500, created_at: '2026-10-28T09:30:00' };
+  try {
+    await React.act(async () => root.render(h(TradeCard, { trade: { ...base, order_type: '매수' } })));
+    assert(document.body.textContent.includes('삼성전자'));
+    assert(document.body.textContent.includes('20주 · 주당 73,500원'));
+    assert(document.body.textContent.includes('2026-10-28 09:30'));
+    assert(!document.body.textContent.includes('005930'));
+    assert(!document.body.textContent.includes('모의투자 거래내역'));
+    assert.equal(document.querySelector('.text-red-500').textContent, '매수');
+    for (const profit of [70000, -70000, 0]) {
+      await React.act(async () => root.render(h(TradeCard, { trade: { ...base, order_type: '매도', profit_loss: profit, profit_rate: profit / 14000 } })));
+      const expected = profit > 0 ? '+70,000원(5.0%)' : profit < 0 ? '-70,000원(-5.0%)' : '0원(0.0%)';
+      assert.equal(document.querySelector('p.text-blue-500').textContent, expected);
+      assert.equal(document.querySelector('span.text-blue-500').textContent, '매도');
+    }
+    await React.act(async () => root.render(h(TradeCard, { trade: { ...base, order_type: '매도' } })));
+    assert(document.body.textContent.includes('손익 정보 없음'));
+  } finally { await React.act(async () => root.unmount()); }
+});
 const button = label => [...document.querySelectorAll('button')].find(el => el.textContent === label || el.getAttribute('aria-label') === label);
 async function click(label) { assert(button(label), label); await React.act(async () => button(label).click()); }
 async function fill(label, value) {
@@ -42,6 +65,7 @@ test('composer selects attachments, preserves draft on failure and sends verifie
       data = { post_id: 42 };
     } else if (config.url === '/community/capabilities') data = { attachments: true, quotes: true };
     else if (config.url === '/stocks') data = [{ symbol_code: '005930', name: '삼성전자' }];
+    else if (config.url === '/stocks/005930') data = { symbol_code: '005930', name: '삼성전자' };
     else if (config.url === '/trading/orders') data = [
       { order_id: 1, symbol_code: '005930', order_type: '매수', status: '체결', price: 70000, quantity: 2 },
       { order_id: 2, symbol_code: 'PENDING', order_type: '매수', status: '대기', price: 1, quantity: 1 },
@@ -57,7 +81,8 @@ test('composer selects attachments, preserves draft on failure and sends verifie
     await click('+ 선택지 추가'); await fill('선택지 3', '보합'); await click('선택지 3 삭제');
     await click('종목 태그'); await fill('종목명 또는 코드', '삼성'); await click('검색'); await click('삼성전자 005930');
     await click('거래내역'); assert(!document.body.textContent.includes('PENDING'));
-    const tradeButton = [...document.querySelectorAll('button')].find(el => el.textContent.includes('모의투자 거래내역'));
+    const tradeButton = [...document.querySelectorAll('button')].find(el => el.textContent.includes('삼성전자') && el.textContent.includes('주당'));
+    assert(tradeButton, 'trade picker resolves the stock name');
     await React.act(async () => tradeButton.click());
     // Exercise the real photo picker path with browser decoding/canvas mocked in JSDOM.
     globalThis.createImageBitmap = async () => ({ width: 800, height: 600, close() {} });

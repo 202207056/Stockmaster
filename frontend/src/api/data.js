@@ -92,6 +92,16 @@ export const deletePost = async (id) => (await api.delete(`/community/posts/${id
 export const toggleLike = async (id) => (await api.post(`/community/posts/${id}/like`)).data;
 export const votePost = async (id, option_index) => (await api.put(`/community/posts/${id}/vote`, { option_index })).data;
 export const fetchOrders = async (accountId, signal) => requireArray(await get('/trading/orders', { account_id: accountId }, signal));
+export const fetchShareableOrders = async (accountId, signal) => {
+  const orders = (await fetchOrders(accountId, signal)).filter(order => order.status === '체결');
+  const names = new Map();
+  for (const order of orders) {
+    if (order.name || names.has(order.symbol_code)) continue;
+    try { names.set(order.symbol_code, (await fetchStock(order.symbol_code, signal)).name); }
+    catch (error) { if (signal?.aborted || error.response?.status === 401) throw error; names.set(order.symbol_code, null); }
+  }
+  return orders.map(order => ({ ...order, name: order.name || names.get(order.symbol_code) || null }));
+};
 export const submitOrder = async (payload) => (await api.post('/trading/orders', payload)).data;
 export const cancelOrder = async (orderId) => (await api.put(`/trading/orders/${encodeURIComponent(orderId)}/cancel`)).data;
 export const fetchAutomationCapabilities = async (signal) => requireObject(await get('/trading/automations/capabilities', undefined, signal));

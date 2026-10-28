@@ -3,11 +3,17 @@ import { votePost } from '../../api/data';
 import { InlineError } from '../common/ErrorState';
 
 export function TradeCard({ trade }) {
+  const sale = trade.order_type === '매도';
+  const profit = trade.profit_loss == null ? null : Number(trade.profit_loss);
+  const rate = trade.profit_rate == null ? null : Number(trade.profit_rate);
+  const hasProfit = Number.isFinite(profit) && Number.isFinite(rate);
+  const amount = hasProfit ? Math.round(profit) : null;
+  const date = String(trade.filled_at || trade.created_at || '').replace('T', ' ').slice(0, 16);
   return <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 text-sm">
-    <p className="mb-2 text-xs font-bold text-gray-500">모의투자 거래내역</p>
-    <div className="flex flex-wrap justify-between gap-2"><strong>{trade.name || trade.symbol_code}</strong><span className={trade.order_type === '매수' ? 'font-bold text-red-500' : 'font-bold text-blue-500'}>{trade.order_type} · 체결</span></div>
+    <div className="flex items-start justify-between gap-3"><strong className="min-w-0 break-words">{trade.name || trade.security_name || '종목명 확인 불가'}</strong><span className={`shrink-0 font-bold ${sale ? 'text-blue-500' : 'text-red-500'}`}>{trade.order_type}</span></div>
+    {sale && <p className="mt-2 font-bold text-blue-500" title="매도 당시 평균 매수가 대비 손익 · 수수료 및 세금 제외">{hasProfit ? `${amount > 0 ? '+' : amount < 0 ? '-' : ''}${Math.abs(amount).toLocaleString('ko-KR')}원(${rate.toFixed(1)}%)` : '손익 정보 없음'}</p>}
     <p className="mt-2 text-gray-700">{Number(trade.quantity).toLocaleString()}주 · 주당 {Number(trade.price).toLocaleString()}원</p>
-    <p className="mt-1 text-xs text-gray-400">{String(trade.created_at || '').replace('T', ' ').slice(0, 16)}</p>
+    {!sale && date && <p className="mt-1 text-xs text-gray-400">{date}</p>}
   </div>;
 }
 
