@@ -11,6 +11,7 @@ import EmptyState from '../components/common/EmptyState';
 import RemoteState from '../components/common/RemoteState';
 import StockQuote from '../components/common/StockQuote';
 import StockLogo from '../components/common/StockLogo';
+import MarketMoodCard from '../components/dashboard/MarketMoodCard';
 import MarketStrip from '../components/dashboard/MarketStrip';
 import useRemote from '../hooks/useRemote';
 import { fetchRanking, fetchNews, fetchPosts } from '../api/data';
@@ -114,6 +115,7 @@ export default function Dashboard() {
       <div className="grid gap-10 lg:grid-cols-3">
         {/* 뉴스 */}
         <section className="lg:col-span-2" data-site-tour="news">
+          <MarketMoodCard news={news.data} resource={newsAnalysis} authenticated={isAuthenticated} />
           <SectionTitle>오늘의 뉴스</SectionTitle>
           {!!news.data?.length && <div className="mb-3 text-xs text-gray-500" role="status">
             {!isAuthenticated ? '로그인하면 AI 뉴스 분석을 볼 수 있습니다.'
