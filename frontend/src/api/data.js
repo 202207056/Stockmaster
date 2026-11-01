@@ -25,6 +25,23 @@ export const analyzeNews = async (articles, signal) => {
   const data = requireObject((await api.post('/ai/news-analysis', { articles }, { signal })).data);
   return requireArray(data.articles);
 };
+export const fetchThemeBrief = async (signal) => {
+  const data = requireObject(await get('/ai/theme-brief', undefined, signal));
+  const validTheme = theme => theme && typeof theme.id === 'string' && typeof theme.name === 'string'
+    && ['change_rate', 'rise_count', 'fall_count', 'total_count'].every(key => Number.isFinite(theme[key]))
+    && (theme.reason === null || typeof theme.reason === 'string')
+    && Array.isArray(theme.leaders) && theme.leaders.length <= 3
+    && theme.leaders.every(stock => typeof stock.code === 'string' && typeof stock.name === 'string'
+      && Number.isFinite(stock.price) && Number.isFinite(stock.change_rate))
+    && Array.isArray(theme.evidence) && theme.evidence.length <= 3
+    && theme.evidence.every(article => typeof article.title === 'string');
+  if (!['rising', 'falling'].every(key => Array.isArray(data[key]) && data[key].length <= 3 && data[key].every(validTheme))
+    || typeof data.source !== 'string' || typeof data.disclaimer !== 'string'
+    || typeof data.as_of !== 'string' || !Number.isFinite(Date.parse(data.as_of))) {
+    throw new Error('테마 브리핑 응답 형식을 확인할 수 없습니다.');
+  }
+  return data;
+};
 export const fetchCoach = async (symbol, signal) => requireObject(await get('/ai/coach', { symbol }, signal));
 export const fetchNewsSummary = async (code, signal) => requireObject(await get(`/ai/news-summary/${encodeURIComponent(code)}`, undefined, signal));
 export const fetchPortfolioBrief = async (accountId, code, signal, profile = 'luna') => {

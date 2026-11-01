@@ -12,6 +12,7 @@ import RemoteState from '../components/common/RemoteState';
 import StockQuote from '../components/common/StockQuote';
 import StockLogo from '../components/common/StockLogo';
 import MarketStrip from '../components/dashboard/MarketStrip';
+import ThemeBriefCard from '../components/ai/ThemeBriefCard';
 import useRemote from '../hooks/useRemote';
 import { fetchRanking, fetchNews, fetchPosts } from '../api/data';
 import { numberOrNull, safeExternalUrl } from '../api/normalize';
@@ -62,6 +63,7 @@ export default function Dashboard() {
 
       {/* ── 주요 시세 (자동 스크롤) ─────────────────────────────── */}
       <div data-site-tour="market"><MarketStrip /></div>
+      <ThemeBriefCard />
 
       {/* ── 실시간 랭킹 3열 ─────────────────────────────────────── */}
       <section>
