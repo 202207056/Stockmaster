@@ -12,6 +12,17 @@ import { LearningCard } from '../learn/LearningUI';
 const kstTime = new Intl.DateTimeFormat('ko-KR', {
   timeZone: 'Asia/Seoul', hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
 });
+const kstDay = new Intl.DateTimeFormat('ko-KR', {
+  timeZone: 'Asia/Seoul', month: 'numeric', day: 'numeric', weekday: 'short',
+});
+
+// 주말·휴일에는 지난 거래일 시세이므로 날짜를 함께 보여 준다.
+function asOfLabel(value) {
+  const at = new Date(value);
+  if (kstDay.format(at) === kstDay.format(new Date())) return kstTime.format(at);
+  const part = Object.fromEntries(kstDay.formatToParts(at).map(({ type, value }) => [type, value]));
+  return `${part.month}.${part.day}(${part.weekday}) ${kstTime.format(at)}`;
+}
 
 export default function ThemeBriefCard() {
   const { isAuthenticated, user } = useAuth();
@@ -51,7 +62,7 @@ function ThemeRequest() {
 function ThemeContent({ data }) {
   const first = [...data.rising, ...data.falling].find(theme => theme.reason)?.id;
   return <LearningCard title="오늘의 테마" aside={<span className="text-xs text-gray-500">
-    {data.source} · {kstTime.format(new Date(data.as_of))} 기준
+    {data.source} · {asOfLabel(data.as_of)} 기준
   </span>}>
     <div className="grid min-w-0 gap-5 sm:grid-cols-2">
       {['rising', 'falling'].map(direction => <section key={direction} className="min-w-0">

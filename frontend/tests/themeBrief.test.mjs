@@ -65,7 +65,7 @@ test('authenticated card uses one Backend GET, KST time, signed two-digit rates 
   await render();
   assert.equal(calls, 1);
   assert.match(container.textContent, /오늘의 테마/);
-  assert.match(container.textContent, /네이버 증권 · 20:20 기준/);
+  assert.match(container.textContent, /네이버 증권 · 10\.30\(금\) 20:20 기준/);
   assert.match(container.textContent, /상승 0 · 하락 14 \/ 14종목/);
   assert.match(container.textContent, /\+1\.20%/);
   assert.match(container.textContent, /-9\.87%/);
@@ -155,4 +155,12 @@ test('helper passes signal and rejects malformed contract without rendering unsa
     client.default.defaults.adapter = async config => response(config, invalid);
     await assert.rejects(fetchThemeBrief());
   }
+});
+
+test('same-day quote time omits the date', async () => {
+  const now = new Date();
+  client.setToken('theme-test'); mock(brief({ as_of: now.toISOString() }));
+  await render();
+  const time = new Intl.DateTimeFormat('ko-KR', { timeZone: 'Asia/Seoul', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(now);
+  assert.match(container.textContent, new RegExp(`네이버 증권 · ${time} 기준`));
 });
