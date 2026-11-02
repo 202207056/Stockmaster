@@ -197,3 +197,15 @@ test('theme tabs show a top theme in the main panel, leaders open their briefing
   assert.equal(dialog.querySelector('.trading-news-main h3').textContent, '삼성전자');
   assert.equal(calls.filter(url => url === '/ai/theme-brief').length, 1);
 });
+
+test('the stock briefing can be reported with its identifiers only', async () => {
+  let body;
+  serve({ '/ai/brief-reports': config => { body = JSON.parse(config.data); return response(config, { id: 1, created_at: main.generated_at }); } });
+  await render();
+  await React.act(async () => document.querySelector('.trading-news-banner').click());
+  const detail = document.querySelector('.trading-news-main');
+  await React.act(async () => [...detail.querySelectorAll('button')].find(item => item.textContent === '신고하기').click());
+  await React.act(async () => detail.querySelector('form[aria-label="브리핑 신고"] button[type="submit"]').click());
+  assert.deepEqual(body, { kind: 'stock', symbol_code: '000660', generated_at: main.generated_at, account_id: null, reason: 'wrong_fact', note: null });
+  assert.match(detail.textContent, /신고가 접수됐어요/);
+});

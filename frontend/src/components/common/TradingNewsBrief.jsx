@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { ChevronRight, Sparkles } from 'lucide-react';
 import Modal from './Modal';
+import BriefReport from '../ai/BriefReport';
 import { ThemeContent } from '../ai/ThemeBriefCard';
 import { fetchPortfolio, fetchStockBrief, fetchThemeBrief } from '../../api/data';
 import { safeExternalUrl } from '../../api/normalize';
@@ -211,6 +212,7 @@ function BriefDetail({ autoFocus, code, initial, quantity }) {
           })}</ul>
         </section>}
         <p className="trading-news-footnote">{brief.source} · {kstStamp(brief.generated_at)} 생성 · {brief.disclaimer}</p>
+        <BriefReport key={brief.generated_at} kind="stock" code={brief.symbol_code} generatedAt={brief.generated_at} />
       </div>
     </>}
   </article>;

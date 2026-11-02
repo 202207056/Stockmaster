@@ -59,14 +59,22 @@ export const fetchPortfolioBrief = async (accountId, code, signal, profile = 'lu
   if (!isPortfolioBrief(data, code)) throw new Error('브리핑 응답 형식을 확인할 수 없습니다.');
   return data;
 };
-// Saved briefings are read from the server without generating a new one.
-export const fetchSavedPortfolioBriefs = async (accountId, code, signal) => {
-  const data = requireObject((await api.get(`/ai/portfolio-brief/${encodeURIComponent(code)}/saved`, {
+// Saved briefings (today back to three days ago) are read without generating anything.
+export const fetchPortfolioBriefHistory = async (accountId, signal) => {
+  const data = requireObject((await api.get('/ai/portfolio-briefs', {
     params: { account_id: accountId }, signal, cache: false,
   })).data);
-  return requireArray(data.items).filter(item => isPortfolioBrief(item, code)
-    && Number.isFinite(Date.parse(item.generated_at))).slice(0, 2);
+  return requireArray(data.items).filter(item => Number.isInteger(item?.id) && isPortfolioBrief(item, item.symbol_code)
+    && Number.isFinite(Date.parse(item.generated_at)));
 };
+export const deletePortfolioBrief = (accountId, id) => api.delete(`/ai/portfolio-briefs/${encodeURIComponent(id)}`, {
+  params: { account_id: accountId },
+});
+// The server attaches its own saved copy of the briefing; only identifiers are sent.
+export const reportBrief = ({ kind, code, generatedAt, accountId, reason, note }) => api.post('/ai/brief-reports', {
+  kind, symbol_code: code, generated_at: generatedAt, account_id: kind === 'portfolio' ? accountId : null,
+  reason, note: note?.trim() || null,
+});
 export const fetchStockBrief = async (code, signal) => {
   const data = requireObject(await get(`/ai/stock-brief/${encodeURIComponent(code)}`, undefined, signal));
   const texts = list => Array.isArray(list) && list.length <= 3 && list.every(item => typeof item === 'string');

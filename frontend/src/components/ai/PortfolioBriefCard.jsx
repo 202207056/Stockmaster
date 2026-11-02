@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
-import { fetchPortfolioBrief, fetchSavedPortfolioBriefs } from '../../api/data';
+import { deletePortfolioBrief, fetchPortfolioBrief, fetchPortfolioBriefHistory } from '../../api/data';
 import { numberOrNull, quotePrice } from '../../api/normalize';
 import { readResource, resourceKey, writeResource } from '../../api/resourceCache';
 import { rate, signTextClass } from '../../utils/format';
 import { kstStamp } from '../../utils/kstStamp';
 import { LearningButton, LearningCard } from '../learn/LearningUI';
+import BriefReport from './BriefReport';
 import './PortfolioBriefCard.css';
 
 const sections = [
@@ -17,21 +18,35 @@ const sections = [
   ['watch_points', '앞으로 확인할 점'],
   ['limitations', '데이터 안내'],
 ];
-// The latest and one previous briefing per account and stock.
-const HISTORY_LIMIT = 2;
-// One AI call per stock, generated in order; three keeps a run short.
-const MAX_ON = 3;
+// One AI call per stock, generated in order; four keeps a run under half a minute.
+const MAX_ON = 4;
 const MOVING = 3;
-const EMPTY = { history: [], loading: false, error: false, sync: 'idle' };
+// Same window as the server: today and the three days before it (KST dates).
+const KEEP_DAYS = 3;
+const KEEP_LIMIT = 100;
+const DAY_LABELS = ['오늘', '1일 전', '2일 전', '3일 전'];
+const IDLE = { loading: false, error: false, sync: 'idle' };
 const stamp = item => Date.parse(item?.generated_at) || 0;
-const historyKey = (accountId, code) => resourceKey('portfolio-brief', accountId, code);
+const recordKey = item => item.id ?? `${item.symbol_code}:${item.generated_at}`;
+const kstDate = value => new Date(value + 9 * 3600e3).toISOString().slice(0, 10);
+const daysAgo = item => Math.max(0, Math.round((Date.parse(kstDate(Date.now())) - Date.parse(kstDate(stamp(item)))) / 86400e3));
+const kept = items => items.filter(item => daysAgo(item) <= KEEP_DAYS)
+  .sort((a, b) => stamp(b) - stamp(a)).slice(0, KEEP_LIMIT);
+const historyKey = accountId => resourceKey('portfolio-brief-history', accountId, 'all');
+const kstTime = new Intl.DateTimeFormat('ko-KR', { timeZone: 'Asia/Seoul', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
 
-function readHistory(key) {
-  const items = readResource(key)?.data;
+function readRecords(accountId) {
+  const items = readResource(historyKey(accountId))?.data;
   // Browser copies are optional; anything unexpected is ignored instead of rendered.
-  return Array.isArray(items) ? items.filter(item => stamp(item) > 0
+  return Array.isArray(items) ? kept(items.filter(item => stamp(item) > 0 && typeof item.symbol_code === 'string'
     && typeof item.headline === 'string' && typeof item.disclaimer === 'string'
-    && sections.every(([field]) => Array.isArray(item[field]))).slice(0, HISTORY_LIMIT) : [];
+    && sections.every(([field]) => Array.isArray(item[field])))) : [];
+}
+
+// The server list wins; briefings it never confirmed stay as unsaved browser copies.
+function merge(server, local) {
+  const known = new Set(server.map(item => `${item.symbol_code}:${item.generated_at}`));
+  return kept([...server, ...local.filter(item => item.id === undefined && !known.has(`${item.symbol_code}:${item.generated_at}`))]);
 }
 
 // Big moves today first, then the largest positions.
@@ -64,17 +79,19 @@ function AccountBrief({ accountId, holdings }) {
   // Until the viewer chooses, the top-ranked holding is on.
   const on = (prefs.on ?? ranked.slice(0, 1).map(stock => stock.code)).filter(code => held.has(code)).slice(0, MAX_ON);
   const closed = prefs.closed.filter(code => held.has(code) && !on.includes(code));
-  const [briefs, setBriefs] = useState({});
-  // One block is open at a time; the rest show their headline.
-  const [open, setOpen] = useState(null);
+  const [records, setRecords] = useState(() => readRecords(accountId));
+  const [status, setStatus] = useState({});
+  const [openCode, setOpenCode] = useState(null);
   const [run, setRun] = useState('idle');
-  const latestBriefs = useRef(briefs);
+  const latestRecords = useRef(records);
   const latestOn = useRef(on);
-  const requested = useRef(new Set());
   const controllers = useRef(new Map());
   const alive = useRef(true);
 
-  useEffect(() => { latestBriefs.current = briefs; }, [briefs]);
+  useEffect(() => {
+    latestRecords.current = records;
+    writeResource(historyKey(accountId), records, true);
+  }, [accountId, records]);
   useEffect(() => { latestOn.current = on; });
   useEffect(() => {
     alive.current = true;
@@ -91,35 +108,33 @@ function AccountBrief({ accountId, holdings }) {
     controllers.current.forEach((controller, code) => { if (!heldKey.split(',').includes(code)) controller.abort(); });
   }, [heldKey]);
 
-  const patch = (code, change) => setBriefs(prev => ({ ...prev, [code]: { ...EMPTY, ...prev[code], ...change } }));
-
-  const onKey = on.join(',');
+  // Saved briefings are DB reads only; they never generate.
+  async function refresh(signal) {
+    const server = await fetchPortfolioBriefHistory(accountId, signal);
+    if (!alive.current || signal?.aborted) return server;
+    const next = merge(server, latestRecords.current);
+    latestRecords.current = next;
+    setRecords(next);
+    return server;
+  }
+  const refreshOnOpen = useRef(refresh);
+  const hasHoldings = holdings.length > 0;
   useEffect(() => {
-    // Saved copies are DB reads only; they never generate.
-    for (const code of onKey ? onKey.split(',') : []) {
-      if (requested.current.has(code)) continue;
-      requested.current.add(code);
-      const local = readHistory(historyKey(accountId, code));
-      setBriefs(prev => ({ ...prev, [code]: { ...EMPTY, ...prev[code], history: local, sync: 'checking' } }));
-      fetchSavedPortfolioBriefs(accountId, code).then(items => {
-        if (!alive.current) return;
-        // The server copy wins when it is at least as new as this browser's copy.
-        const useServer = items.length && stamp(items[0]) >= stamp(local[0]);
-        if (useServer) writeResource(historyKey(accountId, code), items, true);
-        setBriefs(prev => ({ ...prev, [code]: { ...EMPTY, ...prev[code],
-          ...(useServer && !prev[code]?.loading ? { history: items } : {}),
-          sync: prev[code]?.sync === 'checking' ? (items.length ? 'saved' : 'idle') : prev[code]?.sync } }));
-      }).catch(() => {
-        if (alive.current) setBriefs(prev => ({ ...prev, [code]: { ...EMPTY, ...prev[code],
-          sync: prev[code]?.sync === 'checking' ? 'idle' : prev[code]?.sync } }));
-      });
-    }
-  }, [accountId, onKey]);
+    if (!hasHoldings) return undefined;
+    const controller = new AbortController();
+    refreshOnOpen.current(controller.signal).catch(() => { /* Browser copies stay; the server list is optional. */ });
+    return () => controller.abort();
+  }, [accountId, hasHoldings]);
 
-  async function generate() {
-    if (run === 'busy' || !on.length) return;
+  const patch = (code, change) => setStatus(prev => ({ ...prev, [code]: { ...IDLE, ...prev[code], ...change } }));
+  const latestOf = code => records.find(item => item.symbol_code === code);
+  // The main button only fills stocks without a briefing today; ↻ regenerates one on purpose.
+  const pending = on.filter(code => !latestOf(code) || daysAgo(latestOf(code)) > 0);
+
+  async function generate(codes) {
+    if (run === 'busy' || !codes.length) return;
     setRun('busy');
-    for (const code of on) {
+    for (const code of codes) {
       if (!alive.current) return;
       // A chip turned off while earlier stocks were generating is skipped.
       if (!latestOn.current.includes(code)) continue;
@@ -130,22 +145,29 @@ function AccountBrief({ accountId, holdings }) {
         const data = await fetchPortfolioBrief(accountId, code, controller.signal, 'luna');
         if (controller.signal.aborted) continue;
         const brief = stamp(data) ? data : { ...data, generated_at: new Date().toISOString() };
-        const history = [brief, ...(latestBriefs.current[code]?.history ?? [])].slice(0, HISTORY_LIMIT);
-        writeResource(historyKey(accountId, code), history, true);
-        patch(code, { history, loading: false, sync: 'saving' });
-        setOpen(prev => prev ?? code);
-        // Show the saved mark only after the server returns this exact briefing.
-        const saved = await fetchSavedPortfolioBriefs(accountId, code, controller.signal).catch(() => []);
-        if (!controller.signal.aborted) patch(code, { sync: saved[0]?.generated_at === brief.generated_at ? 'saved' : 'unsaved' });
+        const next = kept([brief, ...latestRecords.current]);
+        latestRecords.current = next;
+        setRecords(next);
+        patch(code, { loading: false, sync: 'saving' });
+        setOpenCode(prev => prev ?? code);
+        await refresh(controller.signal).catch(() => []);
+        if (!controller.signal.aborted) patch(code, { sync: 'idle' });
       } catch {
         // Never display raw upstream details, URLs or provider errors.
         if (!controller.signal.aborted) patch(code, { loading: false, error: true });
       } finally {
         if (controllers.current.get(code) === controller) controllers.current.delete(code);
-        if (controller.signal.aborted && alive.current) patch(code, { loading: false });
+        if (controller.signal.aborted && alive.current) patch(code, { loading: false, sync: 'idle' });
       }
     }
     if (alive.current) setRun('done');
+  }
+
+  async function remove(item) {
+    if (item.id !== undefined) await deletePortfolioBrief(accountId, item.id);
+    const next = latestRecords.current.filter(other => recordKey(other) !== recordKey(item));
+    latestRecords.current = next;
+    setRecords(next);
   }
 
   function toggle(code) {
@@ -156,7 +178,6 @@ function AccountBrief({ accountId, holdings }) {
       setPrefs({ on: [...on, code], closed: closed.filter(item => item !== code) });
     }
   }
-  const flip = code => setOpen(prev => prev === code ? null : code);
 
   if (!holdings.length) return <p className="text-sm text-gray-500">보유종목이 생기면 AI 브리핑을 확인할 수 있어요.</p>;
   const names = Object.fromEntries(ranked.map(stock => [stock.code, stock]));
@@ -176,55 +197,111 @@ function AccountBrief({ accountId, holdings }) {
       })}
     </div>
     <p className="mt-2 text-xs text-gray-500">오늘 크게 움직인 종목과 비중이 큰 종목이 앞에 있어요. 최대 {MAX_ON}개까지 켤 수 있어요.</p>
-    <div className="mt-4">
-      <LearningButton onClick={generate} disabled={run === 'busy' || !on.length}>
+    <div className="mt-4 flex flex-wrap items-center gap-3">
+      <LearningButton onClick={() => generate(pending)} disabled={run === 'busy' || !pending.length}>
         {run === 'busy' ? '브리핑 생성 중...' : '브리핑 생성하기'}
       </LearningButton>
+      {run !== 'busy' && on.length > 0 && !pending.length && <span className="text-xs text-gray-500">켠 종목은 오늘 브리핑이 있어요. 새로 만들려면 블록의 ↻ 다시 생성을 눌러 주세요.</span>}
+      {run !== 'busy' && pending.length > 0 && pending.length < on.length && <span className="text-xs text-gray-500">오늘 브리핑이 없는 {pending.length}종목만 생성해요.</span>}
     </div>
     <p role="status" className="mt-2 text-sm text-gray-500">{run === 'busy' ? '브리핑을 생성하고 있어요.' : run === 'done' ? '브리핑 생성이 완료됐어요.' : ''}</p>
     <div className="space-y-3">
-      {on.map(code => <BriefBlock key={code} stock={names[code]} state={briefs[code] ?? EMPTY}
-        open={open === code} onFlip={() => flip(code)} onClose={() => toggle(code)} />)}
+      {on.map(code => <BriefBlock key={code} stock={names[code]} latest={latestOf(code)} state={status[code] ?? IDLE}
+        accountId={accountId} busy={run === 'busy'} open={openCode === code}
+        onFlip={() => setOpenCode(prev => prev === code ? null : code)} onClose={() => toggle(code)}
+        onRegenerate={() => generate([code])} />)}
     </div>
     {closed.length > 0 && <div className="portfolio-brief-tray" aria-label="닫은 브리핑">
       <span>닫은 브리핑</span>
       {closed.map(code => <button type="button" key={code} disabled={on.length >= MAX_ON}
         onClick={() => toggle(code)} aria-label={`${names[code].name} 브리핑 다시 열기`}>↺ {names[code].name}</button>)}
     </div>}
+    {records.length > 0 && <BriefHistory records={records} names={names} accountId={accountId} onRemove={remove} />}
   </>;
 }
 
-function BriefBlock({ stock, state, open, onFlip, onClose }) {
-  const [latest, previous] = state.history;
-  const status = state.loading ? '브리핑을 생성하고 있어요.'
-    : state.sync === 'saving' ? '서버에 저장 확인 중…'
-      : state.sync === 'checking' ? '저장된 브리핑 불러오는 중…' : '';
+function BriefBlock({ stock, latest, state, accountId, busy, open, onFlip, onClose, onRegenerate }) {
+  // A server id means the server listed this exact briefing.
+  const saved = latest?.id !== undefined;
+  const status = state.loading ? '브리핑을 생성하고 있어요.' : state.sync === 'saving' ? '서버에 저장 확인 중…' : '';
   return <section className="portfolio-brief-block" aria-label={`${stock.name} 브리핑`}>
     <header className="portfolio-brief-block__head">
       <div className="min-w-0">
         <p className="font-bold text-gray-900">{stock.name} <span className="text-xs font-normal text-gray-500">{stock.code}</span></p>
         <p className="portfolio-brief-stamp">
-          {state.sync === 'saved' && latest && <span className="portfolio-brief-saved">✓ 서버에 저장됨</span>}
+          {saved && !state.loading && <span className="portfolio-brief-saved">✓ 서버에 저장됨</span>}
           {latest && !state.loading && <span>{kstStamp(latest.generated_at)} 생성</span>}
           {status && <span>{status}</span>}
         </p>
       </div>
       <div className="flex shrink-0 gap-1">
+        {latest && <button type="button" className="portfolio-brief-block__btn" disabled={busy} onClick={onRegenerate}
+          aria-label={`${stock.name} 브리핑 다시 생성`}>↻ 다시 생성</button>}
         {latest && <button type="button" className="portfolio-brief-block__btn" aria-expanded={open} onClick={onFlip}>{open ? '접기' : '펼치기'}</button>}
         <button type="button" className="portfolio-brief-block__btn" aria-label={`${stock.name} 브리핑 닫기`} onClick={onClose}>×</button>
       </div>
     </header>
     {state.error && <p role="alert" className="mt-2 text-sm text-gray-600">AI 브리핑을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.</p>}
-    {!latest && !state.loading && !state.error && state.sync !== 'checking' && <p className="mt-2 text-sm text-gray-500">아직 브리핑이 없어요. 브리핑 생성하기를 눌러 주세요.</p>}
+    {!latest && !state.loading && !state.error && <p className="mt-2 text-sm text-gray-500">아직 브리핑이 없어요. 브리핑 생성하기를 눌러 주세요.</p>}
     {latest && !open && <p className={`portfolio-brief-block__preview${state.loading ? ' opacity-50' : ''}`}>{latest.headline}</p>}
     {latest && open && <div className={state.loading ? 'opacity-50' : undefined}>
       <BriefResult key={latest.generated_at} data={latest} />
-      {previous && <details className="portfolio-brief-previous">
-        <summary>이전 브리핑 · {kstStamp(previous.generated_at)} 생성</summary>
-        <BriefResult data={previous} still />
-      </details>}
+      {saved && <div className="mt-3"><BriefReport kind="portfolio" code={latest.symbol_code} generatedAt={latest.generated_at} accountId={accountId} /></div>}
     </div>}
   </section>;
+}
+
+// Every saved briefing from today back to three days ago, two small boxes per row.
+function BriefHistory({ records, names, accountId, onRemove }) {
+  const [openKey, setOpenKey] = useState(null);
+  const groups = DAY_LABELS.map((label, days) => [label, records.filter(item => daysAgo(item) === days)]).filter(([, items]) => items.length);
+  return <section className="portfolio-brief-history" aria-label="이전 브리핑">
+    <h3 className="text-sm font-bold text-gray-900">이전 브리핑</h3>
+    <p className="mt-1 text-xs text-gray-500">오늘부터 3일 전까지 보관하고, 그보다 오래된 브리핑은 자동으로 지워져요.</p>
+    {groups.map(([label, items]) => {
+      const opened = items.find(item => recordKey(item) === openKey);
+      return <div key={label} className="mt-3">
+        <h4 className="portfolio-brief-history__day">{label}</h4>
+        <ul className="portfolio-brief-history__grid">
+          {items.map(item => <HistoryBox key={recordKey(item)} item={item} name={names[item.symbol_code]?.name || item.security_name || item.symbol_code}
+            open={item === opened} onFlip={() => setOpenKey(prev => prev === recordKey(item) ? null : recordKey(item))} onRemove={onRemove} />)}
+        </ul>
+        {opened && <div className="portfolio-brief-history__open">
+          <BriefResult data={opened} still />
+          {opened.id !== undefined && <div className="mt-3"><BriefReport kind="portfolio" code={opened.symbol_code} generatedAt={opened.generated_at} accountId={accountId} /></div>}
+        </div>}
+      </div>;
+    })}
+  </section>;
+}
+
+function HistoryBox({ item, name, open, onFlip, onRemove }) {
+  const [step, setStep] = useState('idle');
+  async function confirm() {
+    setStep('deleting');
+    try {
+      await onRemove(item);
+    } catch {
+      setStep('failed');
+    }
+  }
+  return <li className={`portfolio-brief-history__box${open ? ' is-open' : ''}`} aria-label={`${name} ${kstTime.format(stamp(item))} 브리핑`}>
+    <div className="flex items-start justify-between gap-2">
+      <p className="min-w-0 text-xs"><span className="font-bold text-gray-900">{name}</span> <span className="text-gray-500">{kstTime.format(stamp(item))}</span></p>
+      <div className="flex shrink-0 gap-1">
+        <button type="button" className="portfolio-brief-block__btn" aria-expanded={open} onClick={onFlip}
+          aria-label={`${name} 브리핑 ${open ? '접기' : '펼치기'}`}>{open ? '▣' : '□'}</button>
+        <button type="button" className="portfolio-brief-block__btn" onClick={() => setStep('confirm')} aria-label={`${name} 브리핑 삭제`}>×</button>
+      </div>
+    </div>
+    <p className="portfolio-brief-history__headline">{item.headline}</p>
+    {item.id === undefined && <p className="mt-1 text-[11px] text-gray-400">이 브라우저에만 저장됨</p>}
+    {step !== 'idle' && <div className="portfolio-brief-history__confirm" role="group" aria-label="삭제 확인">
+      <span>{step === 'failed' ? '삭제하지 못했어요.' : '삭제할까요?'}</span>
+      <button type="button" onClick={confirm} disabled={step === 'deleting'}>삭제</button>
+      <button type="button" onClick={() => setStep('idle')}>취소</button>
+    </div>}
+  </li>;
 }
 
 function BriefResult({ data, still = false }) {
