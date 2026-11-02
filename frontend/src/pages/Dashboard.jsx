@@ -12,7 +12,6 @@ import RemoteState from '../components/common/RemoteState';
 import StockQuote from '../components/common/StockQuote';
 import StockLogo from '../components/common/StockLogo';
 import MarketStrip from '../components/dashboard/MarketStrip';
-import ThemeBriefCard from '../components/ai/ThemeBriefCard';
 import useRemote from '../hooks/useRemote';
 import { fetchRanking, fetchNews, fetchPosts } from '../api/data';
 import { numberOrNull, safeExternalUrl } from '../api/normalize';
@@ -63,7 +62,6 @@ export default function Dashboard() {
 
       {/* ── 주요 시세 (자동 스크롤) ─────────────────────────────── */}
       <div data-site-tour="market"><MarketStrip /></div>
-      <ThemeBriefCard />
 
       {/* ── 실시간 랭킹 3열 ─────────────────────────────────────── */}
       <section>
@@ -117,12 +115,6 @@ export default function Dashboard() {
         {/* 뉴스 */}
         <section className="lg:col-span-2" data-site-tour="news">
           <SectionTitle>오늘의 뉴스</SectionTitle>
-          {!!news.data?.length && <div className="mb-3 text-xs text-gray-500" role="status">
-            {!isAuthenticated ? '로그인하면 AI 뉴스 분석을 볼 수 있습니다.'
-              : newsAnalysis.loading ? 'AI가 뉴스의 투자영향과 중요도를 분석하고 있습니다.'
-                : newsAnalysis.error ? <>AI 분석을 불러오지 못했습니다. <button type="button" className="underline" onClick={newsAnalysis.reload}>분석 재시도</button></>
-                  : 'AI 분석 · 기사의 투자영향 방향과 중요도입니다.'}
-          </div>}
           <RemoteState resource={news} requiresAuth={false} empty={!news.data?.length}>
           <ul className="flex flex-col gap-5 rounded-xl border border-gray-100 bg-gray-50 p-6">
             {news.data?.slice(0, 3).map((n, index) => (
@@ -179,7 +171,7 @@ export default function Dashboard() {
                     <span>{String(p.created_at || '').replace('T', ' ').slice(0, 16)}</span>
                     {p.symbol_code && (
                       <span className="tabular rounded bg-gray-100 px-1.5 py-0.5 font-bold text-gray-500">
-                        {p.symbol_code}
+                        {p.attachments?.symbol_name || '종목명 확인 불가'}
                       </span>
                     )}
                     <span className="ml-auto flex items-center gap-2">

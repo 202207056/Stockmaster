@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { fetchPortfolioBrief } from '../../api/data';
 import { LearningButton, LearningCard } from '../learn/LearningUI';
+import './PortfolioBriefCard.css';
 
 const sections = [
   ['current_status', '현재 상태'],
@@ -72,13 +73,24 @@ function BriefRequest({ accountId, symbol }) {
     </LearningButton>
     <p role="status" className="mt-2 text-sm text-gray-500">{state.loading ? '브리핑을 생성하고 있어요.' : state.data ? '브리핑 생성이 완료됐어요.' : ''}</p>
     {state.error && <p role="alert" className="mt-3 text-sm text-gray-600">AI 브리핑을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.</p>}
-    {state.data && <div className="mt-4 space-y-5 break-words [overflow-wrap:anywhere]">
-      <h3 className="text-base font-bold text-gray-900">{state.data.headline}</h3>
-      {sections.map(([field, title]) => state.data[field].length > 0 && <section key={field} className={field === 'limitations' ? 'text-xs text-gray-500' : 'text-sm text-gray-700'}>
-        <h4 className="mb-2 font-bold">{title}</h4>
-        <ul className="list-disc space-y-1 pl-5 leading-relaxed">{state.data[field].map((text, index) => <li key={index}>{text}</li>)}</ul>
-      </section>)}
-      <p className="border-t border-gray-100 pt-3 text-xs leading-relaxed text-gray-500">{state.data.disclaimer}</p>
-    </div>}
+    {state.data && <BriefResult data={state.data} />}
+  </div>;
+}
+
+function BriefResult({ data }) {
+  let line = 0;
+  const nextLineStyle = () => ({ '--brief-line': line++ });
+
+  return <div className="portfolio-brief-reveal">
+    <div className="portfolio-brief-reveal__clip">
+      <div className="mt-4 space-y-5 break-words [overflow-wrap:anywhere]">
+        <h3 className="portfolio-brief-line text-base font-bold text-gray-900" style={nextLineStyle()}>{data.headline}</h3>
+        {sections.map(([field, title]) => data[field].length > 0 && <section key={field} className={field === 'limitations' ? 'text-xs text-gray-500' : 'text-sm text-gray-700'}>
+          <h4 className="portfolio-brief-line mb-2 font-bold" style={nextLineStyle()}>{title}</h4>
+          <ul className="list-disc space-y-1 pl-5 leading-relaxed">{data[field].map((text, index) => <li key={index} className="portfolio-brief-line" style={nextLineStyle()}>{text}</li>)}</ul>
+        </section>)}
+        <p className="portfolio-brief-line border-t border-gray-100 pt-3 text-xs leading-relaxed text-gray-500" style={nextLineStyle()}>{data.disclaimer}</p>
+      </div>
+    </div>
   </div>;
 }

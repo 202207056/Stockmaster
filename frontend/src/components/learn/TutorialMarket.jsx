@@ -62,7 +62,6 @@ export default function TutorialMarket({ active, advance }) {
         </div></>}
       {selected ? <CandleChart key={`${period}:${type}`} rows={chartData[period]} type={type} periodLabel={periods[period]} /> : <div className="flex h-[420px] items-center justify-center rounded-lg border border-dashed border-gray-200"><p className="text-center text-sm leading-relaxed text-gray-400">조회할 종목을 선택해 주세요.</p></div>}
       {selected && <p className="mt-3 text-xs text-gray-500">{periods[period]} · {{ D: '5분봉', W: '일봉', M: '일봉', Y: '주봉' }[period]} · {chartData[period].length}개 가격 데이터</p>}
-      <p className="mt-3 text-xs text-gray-500">제공된 기간의 데이터만 표시되며, 꺾은선은 각 기간의 종가를 연결합니다. 시세는 자동 갱신되지 않으며 기준시각을 제공받지 못해 지연 여부를 확인할 수 없습니다.</p>
       {active('chart-check') && <div className="mt-4"><Target><button onClick={advance} className="tutorial-action">확인</button></Target></div>}
     </section>
   </>;

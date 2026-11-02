@@ -59,9 +59,9 @@ function ThemeRequest() {
   return <ThemeContent data={state.data} />;
 }
 
-function ThemeContent({ data }) {
+export function ThemeContent({ data, showMetadata = true }) {
   const first = [...data.rising, ...data.falling].find(theme => theme.reason)?.id;
-  return <LearningCard title="오늘의 테마" aside={<span className="text-xs text-gray-500">
+  return <LearningCard title="오늘의 테마" aside={showMetadata && <span className="text-xs text-gray-500">
     {data.source} · {asOfLabel(data.as_of)} 기준
   </span>}>
     <div className="grid min-w-0 gap-5 sm:grid-cols-2">
@@ -76,7 +76,7 @@ function ThemeContent({ data }) {
         </p>}
       </section>)}
     </div>
-    <p className="mt-4 border-t border-gray-100 pt-3 text-xs leading-relaxed text-gray-500">{data.disclaimer}</p>
+    {showMetadata && <p className="mt-4 border-t border-gray-100 pt-3 text-xs leading-relaxed text-gray-500">{data.disclaimer}</p>}
   </LearningCard>;
 }
 

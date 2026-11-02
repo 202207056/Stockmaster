@@ -116,8 +116,8 @@ test('guest trading starts public data loading and retains the order login notic
     React.createElement(MemoryRouter, { initialEntries: ['/trading?code=005930'] }, React.createElement(Trading))));
   assert.ok((markup.match(/불러오는 중이에요/g) || []).length >= 3, 'public stock/detail/chart resources start loading');
   assert.ok(markup.includes('로그인'));
-  assert.equal((markup.match(/로그인하면 최신 데이터를/g) || []).length, 2); // Coaching and news summary require authentication.
-  assert.ok(markup.includes('AI 뉴스 요약'));
+  assert.equal((markup.match(/로그인하면 최신 데이터를/g) || []).length, 1); // Coaching requires authentication; the news banner uses local mock data.
+  assert.ok(markup.includes('왜 하락했을까?'));
 });
 
 test('guest routes render public or login states without mock prices or posts', async () => {

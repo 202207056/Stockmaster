@@ -74,13 +74,15 @@ function TourStep({ index }) {
   }, [clickSelector, index, navigate, user?.user_id]);
 
   useLayoutEffect(() => {
-    const selector = clickSelector || (navPath ? `nav[aria-label="주 메뉴"] a[href="${navPath}"]` : targetId === 'navigation' ? 'nav[aria-label="주 메뉴"]' : targetId === 'page' ? '#main' : `[data-site-tour="${targetId}"]`);
+    const menuDescription = !clickSelector && (targetId === 'page' || Boolean(navPath));
+    const menuPath = navPath || (targetId === 'page' ? path : null);
+    const selector = clickSelector || (menuPath ? `nav[aria-label="주 메뉴"] a[href="${menuPath}"]` : targetId === 'navigation' ? 'nav[aria-label="주 메뉴"]' : `[data-site-tour="${targetId}"]`);
     const candidates = [...document.querySelectorAll(selector)];
     const previousFocus = document.activeElement;
     let highlighted;
     const findTarget = () => candidates.find(element => element.getBoundingClientRect().width > 0);
     const initial = findTarget();
-    if (initial) {
+    if (initial && !menuDescription) {
       const rect = initial.getBoundingClientRect();
       if (rect.top < 160 || rect.bottom > window.innerHeight - 24) initial.scrollIntoView({ block: 'center', inline: 'nearest' });
     }
@@ -88,7 +90,7 @@ function TourStep({ index }) {
       const target = findTarget();
       if (highlighted !== target) {
         highlighted?.classList.remove('assets-tour-target');
-        target?.classList.add('assets-tour-target');
+        if (!menuDescription) target?.classList.add('assets-tour-target');
         highlighted = target;
       }
       const popup = note.current;
@@ -115,7 +117,12 @@ function TourStep({ index }) {
       let left = width - box.width - 12;
       let top = minTop;
       if (rect) {
-        if (rect.right + box.width + 24 <= width) { left = rect.right + 12; top = rect.top; }
+        if (menuDescription) {
+          left = rect.left + rect.width / 2 - box.width / 2;
+          top = Math.max(12, rect.bottom + 12);
+          popup.style.maxHeight = `${Math.max(0, height - top - 12)}px`;
+        }
+        else if (rect.right + box.width + 24 <= width) { left = rect.right + 12; top = rect.top; }
         else if (rect.left - box.width - 12 >= 12) { left = rect.left - box.width - 12; top = rect.top; }
         else {
           left = rect.left;
@@ -124,7 +131,7 @@ function TourStep({ index }) {
         }
       }
       popup.style.left = `${Math.max(12, Math.min(left, width - box.width - 12))}px`;
-      popup.style.top = `${Math.max(minTop, Math.min(top, height - box.height - 12))}px`;
+      popup.style.top = `${menuDescription && rect ? top : Math.max(minTop, Math.min(top, height - box.height - 12))}px`;
     };
     position();
     (clickSelector && initial ? initial : note.current).focus({ preventScroll: true });
@@ -142,7 +149,7 @@ function TourStep({ index }) {
       window.removeEventListener('scroll', position, true);
       if (previousFocus?.isConnected) previousFocus.focus?.({ preventScroll: true });
     };
-  }, [index, targetId, navPath, clickSelector]);
+  }, [index, targetId, navPath, clickSelector, path]);
 
   // Reuse the existing asset tutorial's non-modal callout, pointer and controls.
   return <>

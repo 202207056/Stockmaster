@@ -1,0 +1,38 @@
+.portfolio-brief-reveal {
+  display: grid;
+  grid-template-rows: 1fr;
+  animation: portfolio-brief-expand 600ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.portfolio-brief-reveal__clip {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.portfolio-brief-line {
+  animation: portfolio-brief-line-in 420ms ease-out both;
+  animation-delay: calc(180ms + var(--brief-line, 0) * 90ms);
+}
+
+@keyframes portfolio-brief-expand {
+  from { grid-template-rows: 0fr; }
+  to { grid-template-rows: 1fr; }
+}
+
+@keyframes portfolio-brief-line-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .portfolio-brief-reveal,
+  .portfolio-brief-line {
+    animation: none;
+  }
+}

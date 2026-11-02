@@ -24,7 +24,7 @@ import GroupedFavoriteButton from '../components/common/GroupedFavoriteButton';
 import StockQuote from '../components/common/StockQuote';
 import StockLogo from '../components/common/StockLogo';
 import StockCoach from '../components/common/StockCoach';
-import StockNewsSummary from '../components/common/StockNewsSummary';
+import TradingNewsBrief from '../components/common/TradingNewsBrief';
 import HelpIcon from '../components/learn/HelpIcon';
 import TradingLearning from '../components/learn/TradingLearning';
 import OrderReflection from '../components/learn/OrderReflection';
@@ -70,9 +70,8 @@ export default function Trading() {
         </RemoteState></div>
       </aside>
       <StockPanel key={`chart:${user?.user_id ?? 'guest'}:${code}`} code={code} favorite={favorites.includes(code)} onFavoriteChange={() => practice?.toggleFavorite(code)} />
-      {code && !practice && <StockNewsSummary key={`news:${user?.user_id ?? 'guest'}:${code}`} code={code} />}
       {code && !practice && <StockCoach key={`coach:${user?.user_id ?? 'guest'}:${code}`} code={code} />}
-      {(isAuthenticated || hasCachedSession) && <div className="lg:col-span-4"><OrderHistory key={user?.user_id} /></div>}
+      {(isAuthenticated || hasCachedSession) && <div className="lg:col-span-4"><OrderHistory key={`${user?.user_id}:${code}`} code={code} /></div>}
     </div>
   </div>;
 }
@@ -202,14 +201,15 @@ function StockPanel({ code, favorite, onFavoriteChange }) {
   };
   return <><div className="trading-workspace lg:col-span-3"><section className="trading-chart-panel rounded-xl border border-gray-200 p-4 lg:col-span-2">
     <h2 className="mb-3 flex items-center text-sm font-bold text-gray-700">차트<HelpIcon termId="candle" /></h2>
-    {code && <div className="mb-5 flex flex-wrap justify-between gap-3"><div className="flex items-center gap-2"><StockLogo code={code} name={detail.data?.name} /><h3 className="text-lg font-bold">{detail.data?.name || code} <span className="text-sm font-normal text-gray-500">{code}</span></h3></div>{practice ? <FavoriteButton selected={favorite} onClick={onFavoriteChange} /> : <GroupedFavoriteButton code={code} />}</div>}
+    {code && <div className="mb-5 flex flex-wrap items-center justify-between gap-3"><div className="flex items-center gap-2"><StockLogo code={code} name={detail.data?.name} /><h3 className="text-lg font-bold">{detail.data?.name || code} <span className="text-sm font-normal text-gray-500">{code}</span></h3></div>{practice ? <FavoriteButton selected={favorite} onClick={onFavoriteChange} /> : <GroupedFavoriteButton code={code} />}</div>}
+    <div className={code && !practice ? 'trading-news-quote-row' : undefined}><div className="min-w-0">
     {detail.error && <InlineError error={detail.error} />}
     {code && <RemoteState resource={quote} requiresAuth={false}>
       <div className="mb-4 flex flex-wrap items-center gap-3"><p className="text-2xl font-extrabold">{price === null ? '시세 이용 불가' : won(price)}</p><span className={`text-sm ${signTextClass(changeRate)}`} aria-label={changeRate === null ? '등락 정보 없음' : `전일 대비 ${changeRate > 0 ? '상승' : changeRate < 0 ? '하락' : '보합'}`} >{changeRate === null ? '—' : `${signMark(changeRate)} ${changeAmount === null ? '—' : Math.round(changeRate < 0 ? -Math.abs(changeAmount) : Math.abs(changeAmount))}원(${changeRate.toFixed(2)}%)`}</span><button className="text-xs text-gray-500 underline" onClick={quote.reload} aria-label="시세 새로고침" title="시세 새로고침"><RefreshCw size={16} aria-hidden="true" /></button></div>
     </RemoteState>}
+    </div>{code && !practice && <TradingNewsBrief key={code} />}</div>
     {code ? <ChartWorkspace key={String(chartReplay)} emptyContent={<RemoteState resource={chart} requiresAuth={false} empty={!chartRows?.length} />} rows={chartRows} userId={user?.user_id} periodLabel={chart.data?.displayLabel || periodLabel} period={chartPeriod} onPeriod={setChartPeriod} replay={chartReplay} onReplayClose={closeChartReplay} allowTutorial={!practice} /> : chartReplay ? <ChartWorkspace rows={CHART_EXAMPLE} userId={user?.user_id} periodLabel="학습 예시" replay onReplayClose={closeChartReplay} demo /> : <div className="flex h-[420px] items-center justify-center rounded-lg border border-dashed border-gray-200"><p className="text-center text-sm leading-relaxed text-gray-400">조회할 종목을 선택해 주세요.</p></div>}
     {chart.data?.notice && <p className="mt-2 text-xs text-gray-500">{chart.data.notice}</p>}
-    <p className="mt-3 text-xs text-gray-500">제공된 기간의 데이터만 표시되며, 꺾은선은 각 기간의 종가를 연결합니다. 시세는 자동 갱신되지 않으며 기준시각을 제공받지 못해 지연 여부를 확인할 수 없습니다.</p>
   </section><section className="trading-order-panel rounded-xl border border-gray-200 p-3 lg:col-span-1">
     <h2 className="sr-only">주문</h2>
     {tutorialActive && <BuyTutorial onClose={closeTutorial} completionKey={buyTutorialKey(user?.user_id)} />}
@@ -235,17 +235,17 @@ function OrderStockName({ code }) {
   return <span>{stock.data?.name || (stock.loading ? '조회 중…' : '종목명 이용 불가')}</span>;
 }
 
-function OrderHistory() {
+function OrderHistory({ code }) {
   const practice = useSitePractice();
   const { user, accountId, isAuthenticated } = useAuth();
   const [reviewId, setReviewId] = useState(null);
   const orders = useSiteResource('orders', useCallback((signal) => fetchOrders(accountId, signal), [accountId]), isAuthenticated && !!accountId, { cacheKey: JSON.stringify(['orders', accountId]), cachePreview: true });
+  const visibleOrders = orders.data?.filter((order) => !!code && order.symbol_code === code) ?? [];
   const scope = learningScope(user?.user_id, accountId);
-  const review = !orders.loading && !orders.error && orders.data?.find((order) => `${accountId}:${order.order_id}` === reviewId && order.status === '체결');
+  const review = !orders.loading && !orders.error && visibleOrders.find((order) => `${accountId}:${order.order_id}` === reviewId && order.status === '체결');
   return <PracticeTarget id="history"><section className="rounded-xl border border-gray-200 p-5"><div className="mb-4 flex justify-between"><h2 className="font-bold">주문내역</h2><PracticeTarget id="history-refresh"><button disabled={orders.loading || !accountId} onClick={orders.reload} className="text-sm underline" aria-label="내역 새로고침" title="내역 새로고침"><RefreshCw size={16} aria-hidden="true" /></button></PracticeTarget></div>
     {!practice && <OrderUpdates reload={orders.reload} />}
-    {!accountId ? <p className="text-sm text-gray-500">계좌를 선택해 주세요.</p> : <RemoteState resource={orders} empty={!orders.data?.length}><div className="max-h-80 overflow-auto"><table className="w-full min-w-[480px] text-right text-sm"><thead><tr>{['번호', '종목', '구분', '자금 방식', '가격 종류', '수량', '주문/체결가', '수수료', '거래세', '상태', '취소', '복기'].map((label) => <th className="p-2" key={label}>{label}</th>)}</tr></thead><tbody>{orders.data?.map((order) => <tr key={order.order_id} className="border-t border-gray-100"><td className="p-2">{order.order_id}</td><td className="p-2"><OrderStockName code={order.symbol_code} /></td><td className="p-2">{order.order_type}</td><td className="p-2">{order.funding_type || '현금'}</td><td className="p-2">{order.price_type || '시장가'}</td><td className="p-2">{order.quantity}</td><td className="p-2">{numberOrNull(order.price) === null ? '—' : won(order.price)}</td><td className="p-2">{won(order.commission ?? 0)}{order.status !== '체결' && ' (예상)'}</td><td className="p-2">{won(order.tax ?? 0)}{order.status !== '체결' && ' (예상)'}</td><td className="p-2">{order.status}</td><td className="p-2">{order.status === '대기' && !practice && isAuthenticated ? <div className="flex gap-2"><CheckOrderButton orderId={order.order_id} /><CancelOrderButton key={accountId} orderId={order.order_id} /></div> : '—'}</td><td className="p-2">{order.status === '체결' && !practice ? <button type="button" onClick={() => setReviewId(`${accountId}:${order.order_id}`)} className="whitespace-nowrap text-xs text-brand-700 underline">돌아보기</button> : '—'}</td></tr>)}</tbody></table></div></RemoteState>}
-    {!practice && <p className="mt-3 text-xs text-gray-500">대기·취소 주문의 비용은 예상값입니다. 체결 확인을 누를 때 서버 호가로 전량 체결 가능 여부를 확인하며 중간가도 갱신됩니다. 현금·수량은 예약되지 않아 부족하면 거부됩니다. 부분 체결·대기 순서·자동 감시는 재현하지 않습니다.</p>}
+    {!accountId ? <p className="text-sm text-gray-500">계좌를 선택해 주세요.</p> : <RemoteState resource={orders} empty={!visibleOrders.length}><div className="max-h-80 overflow-auto"><table className="w-full min-w-[480px] text-right text-sm"><thead><tr>{['번호', '종목', '구분', '자금 방식', '가격 종류', '수량', '주문/체결가', '수수료', '거래세', '상태', '취소', '복기'].map((label) => <th className="p-2" key={label}>{label}</th>)}</tr></thead><tbody>{visibleOrders.map((order) => <tr key={order.order_id} className="border-t border-gray-100"><td className="p-2">{order.order_id}</td><td className="p-2"><OrderStockName code={order.symbol_code} /></td><td className="p-2">{order.order_type}</td><td className="p-2">{order.funding_type || '현금'}</td><td className="p-2">{order.price_type || '시장가'}</td><td className="p-2">{order.quantity}</td><td className="p-2">{numberOrNull(order.price) === null ? '—' : won(order.price)}</td><td className="p-2">{won(order.commission ?? 0)}{order.status !== '체결' && ' (예상)'}</td><td className="p-2">{won(order.tax ?? 0)}{order.status !== '체결' && ' (예상)'}</td><td className="p-2">{order.status}</td><td className="p-2">{order.status === '대기' && !practice && isAuthenticated ? <div className="flex gap-2"><CheckOrderButton orderId={order.order_id} /><CancelOrderButton key={accountId} orderId={order.order_id} /></div> : '—'}</td><td className="p-2">{order.status === '체결' && !practice ? <button type="button" onClick={() => setReviewId(`${accountId}:${order.order_id}`)} className="whitespace-nowrap text-xs text-brand-700 underline">돌아보기</button> : '—'}</td></tr>)}</tbody></table></div></RemoteState>}
     {review && <OrderReflection key={`${scope}:${review.order_id}`} scope={scope} order={review} onClose={() => setReviewId(null)} />}
   </section></PracticeTarget>;
 }

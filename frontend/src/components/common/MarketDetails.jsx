@@ -44,7 +44,7 @@ function MarketContent({ code, tab }) {
       {data && empty && <div role="status" className="market-details-empty"><p className="font-semibold">{tab === 'orderbook' ? '현재 제공되는 매수·매도 호가가 없습니다.' : tab === 'trades' ? '현재 제공되는 시장 체결 내역이 없습니다.' : '현재 제공되는 일별 가격이 없습니다.'}</p><p className="mt-2">{tab === 'daily' ? '잠시 후 다시 조회해 주세요.' : '조회는 완료됐지만 시세 제공처가 빈 데이터를 반환했습니다. 장 시작 전·휴장 또는 시세 제공 지연일 수 있습니다. 장중에도 계속 비어 있으면 시세 연결을 확인해야 합니다.'}</p><button type="button" onClick={resource.reload} className="mt-3 text-brand-700 underline">다시 조회</button></div>}
       {data && !empty && <MarketTableViewport tab={tab} data={data} />}
     </RemoteState>
-    <p className="market-details-footnote">{tab === 'daily' ? '최근 거래일 기준 · 당일 값은 장중 변동될 수 있습니다.' : `${data?.market_time ? `호가 접수 ${data.market_time} · ` : ''}조회 시점 데이터 · 자동 갱신되지 않습니다.`}{data?.observed_at && Number.isFinite(Date.parse(data.observed_at)) && <span className="block">조회: {new Date(data.observed_at).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' })} (한국시간)</span>}</p>
+    <p className="market-details-footnote">{tab === 'daily' ? '최근 거래일 기준 · 당일 값은 장중 변동될 수 있습니다.' : `${data?.market_time ? `호가 접수 ${data.market_time} · ` : ''}조회 시점 데이터`}{data?.observed_at && Number.isFinite(Date.parse(data.observed_at)) && <span className="block">조회: {new Date(data.observed_at).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' })} (한국시간)</span>}</p>
   </>;
 }
 

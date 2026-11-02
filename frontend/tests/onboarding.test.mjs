@@ -79,7 +79,7 @@ test('home tour highlights each actual section using the existing pointer and ca
   try {
     await React.act(async () => root.render(h(MemoryRouter, { initialEntries: ['/dashboard?tour=0'] }, h(AuthContext.Provider, { value: {} }, h(Tour)), h(Location))));
     for (let i = 0; i < targets.length; i++) {
-      assert.equal(document.querySelector('.assets-tour-target'), targets[i]);
+      assert.equal(document.querySelector('.assets-tour-target'), i === 1 ? null : targets[i]);
       assert(document.querySelector('.assets-tour-note.tutorial-local-note .tutorial-action'));
       assert(!document.querySelector('.tutorial-pointer'));
       assert(!document.querySelector('.site-tour-note .tutorial-skip-button'));
@@ -118,6 +118,26 @@ test('click pointer stays anchored to a narrow button on resize and scroll', asy
     rect = { ...rect, top: 180, bottom: 220 };
     window.dispatchEvent(new dom.window.Event('scroll'));
     assert.equal(parseFloat(overlay.style.top) + parseFloat(cursor.style.top) + 3, 215, 'pointer follows scrolling');
+  } finally { await React.act(async () => root.unmount()); fixture.remove(); }
+});
+
+test('menu descriptions appear below their menu button without outlining the page', async () => {
+  const fixture = document.createElement('div');
+  fixture.innerHTML = '<nav aria-label="주 메뉴"><a href="/favorites">즐겨찾기</a></nav><main id="main">Page content</main>';
+  document.body.prepend(fixture);
+  const menu = fixture.querySelector('a');
+  menu.getBoundingClientRect = () => ({ left: 400, right: 460, top: 80, bottom: 120, width: 60, height: 40 });
+  const index = SITE_TOUR_STEPS.findIndex(step => step.path === '/favorites' && step.target === 'page');
+  const root = createRoot(document.getElementById('root'));
+  try {
+    await React.act(async () => root.render(h(MemoryRouter, { initialEntries: [`/favorites?tour=${index}`] }, h(AuthContext.Provider, { value: {} }, h(Tour)))));
+    const note = document.querySelector('.site-tour-note');
+    note.getBoundingClientRect = () => ({ width: 300, height: 160 });
+    window.dispatchEvent(new dom.window.Event('resize'));
+    assert.equal(note.style.top, '132px');
+    assert.equal(note.style.left, '280px');
+    assert.equal(document.querySelector('.assets-tour-target'), null);
+    assert.equal(document.querySelector('.tutorial-pointer'), null);
   } finally { await React.act(async () => root.unmount()); fixture.remove(); }
 });
 

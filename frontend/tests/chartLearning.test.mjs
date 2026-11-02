@@ -54,6 +54,45 @@ test('all seven charts render finite geometry, raw price tables, and synthetic d
   assert(!flat.includes('NaN'));
 });
 
+test('volume bars align with candles and distinguish zero from missing data', () => {
+  const rows = [0, 100, null, -1].map((volume, i) => ({date:`day-${i}`,open:100,high:120,low:90,close:110,volume}));
+  const fragment = JSDOM.fragment(renderToString(React.createElement(Chart, { rows, type:'candle', showVolume:true })));
+  const charts = fragment.querySelectorAll('svg');
+  assert.equal(charts.length, 1, 'price and volume share one chart');
+  const candles = [...charts[0].querySelectorAll('rect')].filter(rect => !rect.closest('[aria-label="시간별 거래량"]'));
+  const volumePanel = charts[0].querySelector('g[aria-label="시간별 거래량"]');
+  const bars = volumePanel.querySelectorAll('rect');
+  assert.equal(bars.length, 2);
+  for (let i = 0; i < bars.length; i++) {
+    const center = node => Number(node.getAttribute('x')) + Number(node.getAttribute('width')) / 2;
+    assert.equal(center(bars[i]), center(candles[i]));
+  }
+  assert.equal(Number(bars[0].getAttribute('height')), 0);
+  assert(Number(bars[1].getAttribute('height')) > 0);
+  assert.equal(charts[0].getAttribute('viewBox'), '0 0 720 300', 'volume does not add a separate panel');
+  assert(Number(bars[1].getAttribute('y')) >= 200, 'volume stays in the lower part of the price plot');
+  assert.equal(Number(bars[1].getAttribute('y')) + Number(bars[1].getAttribute('height')), 260);
+  assert(Number(bars[1].getAttribute('fill-opacity')) < 1, 'volume leaves price visible');
+  assert(fragment.textContent.includes('day-3 · 데이터 없음'));
+  const zero = renderToString(React.createElement(Chart, {rows:rows.slice(0,1),showVolume:true}));
+  assert(!zero.includes('NaN')); assert(!zero.includes('Infinity'));
+  assert(zero.includes('0주'));
+});
+
+test('volume keyboard selection updates the shared date and exact quantity', async () => {
+  const root = createRoot(container);
+  try {
+    const rows = [123, 456].map((volume,i) => ({date:`day-${i}`,open:100,high:120,low:90,close:110,volume}));
+    await React.act(async () => root.render(React.createElement(Chart, {rows,showVolume:true})));
+    const volume = container.querySelector('.chart-illustrated-plot svg');
+    await React.act(async () => volume.focus());
+    assert(container.textContent.includes('day-0 · 123주'));
+    await React.act(async () => volume.dispatchEvent(new window.KeyboardEvent('keydown', {key:'ArrowRight',bubbles:true})));
+    assert(container.textContent.includes('day-1 · 456주'));
+    assert(container.querySelector('.chart-illustrated-plot').textContent.includes('day-1'));
+  } finally { await React.act(async () => root.unmount()); }
+});
+
 test('first interaction stays in-place, follows resizing, advances on selection then opens concepts without API calls', async () => {
   localStorage.clear(); let calls = 0;
   client.default.defaults.adapter = async () => { calls++; throw new Error('No account API'); };

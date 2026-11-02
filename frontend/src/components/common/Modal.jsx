@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { X } from 'lucide-react';
+import { GripVertical, X } from 'lucide-react';
 
 const FOCUSABLE =
   'a[href], button:not([disabled]), textarea, input, select, [tabindex]:not([tabindex="-1"])';
@@ -22,9 +22,42 @@ export default function Modal({
   footer,
   size = 'md',
   closeOnBackdrop = true,
+  draggable = false,
+  dimBackdrop = true,
 }) {
   const panelRef = useRef(null);
   const lastFocused = useRef(null);
+  const gesture = useRef(null);
+  const offset = useRef({ x: 0, y: 0 });
+
+  const movePanel = useCallback((dx, dy) => {
+    const panel = panelRef.current;
+    if (!panel) return;
+    offset.current = { x: offset.current.x + dx, y: offset.current.y + dy };
+    panel.style.transform = `translate(${offset.current.x}px, ${offset.current.y}px)`;
+  }, []);
+
+  useLayoutEffect(() => {
+    if (!open || !draggable) return;
+    offset.current = { x: 0, y: 0 };
+    panelRef.current.style.transform = '';
+    return () => {
+      gesture.current = null;
+    };
+  }, [open, draggable]);
+
+  const startDrag = (event) => {
+    if (event.button !== 0 || event.isPrimary === false) return;
+    gesture.current = { id: event.pointerId, x: event.clientX, y: event.clientY };
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+  };
+  const moveDrag = (event) => {
+    const drag = gesture.current;
+    if (!drag || drag.id !== event.pointerId) return;
+    movePanel(event.clientX - drag.x, event.clientY - drag.y);
+    gesture.current = { id: drag.id, x: event.clientX, y: event.clientY };
+  };
+  const endDrag = () => { gesture.current = null; };
 
   const handleKeyDown = useCallback(
     (e) => {
@@ -66,7 +99,7 @@ export default function Modal({
 
   if (!open) return null;
 
-  const sizeClass = { sm: 'max-w-sm', md: 'max-w-md', lg: 'max-w-2xl' }[size];
+  const sizeClass = { sm: 'max-w-sm', md: 'max-w-md', lg: 'max-w-2xl', xl: 'max-w-7xl' }[size];
 
   return createPortal(
     <div
@@ -74,7 +107,7 @@ export default function Modal({
       onKeyDown={handleKeyDown}
     >
       <div
-        className="absolute inset-0 bg-black/40"
+        className={`absolute inset-0 ${dimBackdrop ? 'bg-black/40' : 'bg-transparent'}`}
         onClick={closeOnBackdrop ? onClose : undefined}
         aria-hidden="true"
       />
@@ -84,11 +117,22 @@ export default function Modal({
         aria-modal="true"
         aria-label={typeof title === 'string' ? title : undefined}
         tabIndex={-1}
+        style={dimBackdrop ? undefined : { boxShadow: '0 0 28px 6px rgb(15 23 42 / 22%)' }}
         className={`relative z-10 flex max-h-[calc(100dvh-2rem)] min-w-0 w-full flex-col ${sizeClass} rounded-xl bg-white shadow-xl outline-none`}
       >
         {title && (
           <div className="flex shrink-0 items-start justify-between gap-2 border-b border-gray-100 px-4 py-3 sm:px-6 sm:py-4">
-            <h2 className="text-base font-bold text-gray-900">{title}</h2>
+            {draggable ? <h2 className="min-w-0 flex-1 text-base font-bold text-gray-900">
+              <button type="button" className="flex w-full touch-none select-none items-center gap-2 text-left cursor-grab active:cursor-grabbing"
+                title="드래그 또는 방향키로 이동" aria-label={`${title} 팝업 이동`}
+                onPointerDown={startDrag} onPointerMove={moveDrag} onPointerUp={endDrag} onPointerCancel={endDrag} onLostPointerCapture={endDrag}
+                onKeyDown={event => {
+                  const steps = { ArrowLeft: [-16, 0], ArrowRight: [16, 0], ArrowUp: [0, -16], ArrowDown: [0, 16] };
+                  if (steps[event.key]) { event.preventDefault(); movePanel(...steps[event.key]); }
+                }}>
+                <GripVertical size={18} className="shrink-0 text-gray-400" aria-hidden="true" />{title}
+              </button>
+            </h2> : <h2 className="text-base font-bold text-gray-900">{title}</h2>}
             <button
               type="button"
               onClick={onClose}
