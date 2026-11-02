@@ -72,3 +72,16 @@
 .portfolio-brief-history__confirm { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 8px; font-size: 12px; color: var(--ink, #334155); }
 .portfolio-brief-history__confirm button { border: 1px solid var(--line, #e5e7eb); border-radius: 6px; padding: 1px 8px; background: var(--surface, #fff); color: var(--ink, #334155); cursor: pointer; }
 .portfolio-brief-history__confirm button:first-of-type { border-color: var(--color-up-600, #dc2626); color: var(--color-up-600, #dc2626); }
+
+/* Hold an ON chip to switch it to RE: a soft rainbow fills the chip while held, and the RE badge keeps the rainbow. */
+.portfolio-brief-chip { position: relative; isolation: isolate; overflow: hidden; -webkit-touch-callout: none; user-select: none; touch-action: manipulation; }
+.portfolio-brief-chip::before { content: ""; position: absolute; inset: 0; z-index: -1; opacity: 0; clip-path: inset(0 100% 0 0);
+  background: linear-gradient(90deg, #fca5a5, #fdba74, #fde047, #86efac, #7dd3fc, #a5b4fc, #f0abfc);
+  transition: clip-path .3s ease-out, opacity .3s ease-out; }
+.portfolio-brief-chip.is-charging::before { opacity: .18; clip-path: inset(0); transition: clip-path var(--hold-ms, 1000ms) linear, opacity .15s; }
+.portfolio-brief-chip.is-redo { border-color: #a5b4fc; }
+.portfolio-brief-chip.is-charging .portfolio-brief-chip__switch, .portfolio-brief-chip.is-redo .portfolio-brief-chip__switch {
+  background: linear-gradient(90deg, #f87171, #fbbf24, #4ade80, #38bdf8, #a78bfa); color: #fff; text-shadow: 0 1px 1px rgba(0, 0, 0, .3); }
+@media (prefers-reduced-motion: reduce) {
+  .portfolio-brief-chip::before, .portfolio-brief-chip.is-charging::before { transition: none; }
+}

@@ -82,6 +82,14 @@ const byLabel = label => container.querySelector(`[aria-label="${label}"]`);
 const buttonIn = (element, text) => [...element.querySelectorAll('button')].find(item => item.textContent === text);
 async function press(element) { await act(async () => element.click()); }
 async function generate() { await press(gen()); }
+const fire = (element, type) => element.dispatchEvent(new window.MouseEvent(type, { bubbles: true, button: 0 }));
+const switchOf = name => chip(name).querySelector('.portfolio-brief-chip__switch').textContent;
+// Presses a chip down for `ms`, then lets go the way a browser does: pointerup followed by click.
+async function hold(name, ms) {
+  await act(async () => fire(chip(name), 'pointerdown'));
+  await act(async () => { await new Promise(resolve => setTimeout(resolve, ms)); });
+  await act(async () => { fire(chip(name), 'pointerup'); chip(name).click(); });
+}
 let root;
 async function render(props = {}) {
   root ??= createRoot(container);
@@ -214,7 +222,7 @@ test('generation runs one stock at a time, blocks duplicates and opens only the 
   assert.match(container.textContent, /모의투자 연습용 설명이며 투자 권유가 아닙니다\./);
 });
 
-test('the main button only fills stocks without a briefing today; ↻ regenerates one stock on purpose', async () => {
+test('the main button fills stocks without a briefing today; holding a chip marks it RE for the next run', async () => {
   const urls = [];
   client.default.defaults.adapter = async config => {
     urls.push(codeOf(config));
@@ -228,10 +236,46 @@ test('the main button only fills stocks without a briefing today; ↻ regenerate
   assert.deepEqual(urls, ['000660']);
   assert(gen().disabled);
   assert.match(container.textContent, /켠 종목은 오늘 브리핑이 있어요/);
-  await press(byLabel('테스트전자 브리핑 다시 생성'));
+  assert.equal(byLabel('테스트전자 브리핑 다시 생성'), null, 'no separate regenerate button');
+  await act(async () => fire(chip('테스트전자'), 'pointerdown'));
+  assert.equal(switchOf('테스트전자'), 'ON', 'a quick tap shows nothing');
+  await act(async () => { await new Promise(resolve => setTimeout(resolve, 450)); });
+  assert.equal(switchOf('테스트전자'), 'RE');
+  assert(chip('테스트전자').classList.contains('is-charging'));
+  await act(async () => { chip('테스트전자').dispatchEvent(new window.MouseEvent('pointerout', { bubbles: true, relatedTarget: container })); });
+  assert.equal(switchOf('테스트전자'), 'ON', 'sliding off cancels the charge');
+  await act(async () => fire(chip('테스트전자'), 'pointerdown'));
+  await act(async () => { await new Promise(resolve => setTimeout(resolve, 600)); });
+  await act(async () => { fire(chip('테스트전자'), 'pointerup'); chip('테스트전자').click(); });
+  assert.equal(switchOf('테스트전자'), 'ON', 'letting go mid-charge settles back to ON');
+  assert.equal(chip('테스트전자').getAttribute('aria-pressed'), 'true');
+  await hold('테스트전자', 1500);
+  assert.deepEqual(urls, ['000660'], 'holding only selects; it never generates by itself');
+  assert.equal(switchOf('테스트전자'), 'RE');
+  assert.equal(chip('테스트전자').getAttribute('aria-pressed'), 'true', 'the hold does not also toggle the chip');
+  assert.match(container.textContent, /RE 1종목만 생성해요/);
+  await press(chip('테스트전자'));
+  assert.equal(switchOf('테스트전자'), 'ON', 'a tap on RE goes back to ON');
+  assert(gen().disabled);
+  await hold('테스트전자', 1500);
+  await generate();
   assert.deepEqual(urls, ['000660', '005930']);
+  assert.equal(switchOf('테스트전자'), 'ON', 'RE returns to ON after regenerating');
   assert.match(block('테스트전자').textContent, /BRIEF_2/);
   assert.match(history().textContent, /TODAY_DONE/, 'the replaced briefing stays in the history');
+  assert(gen().disabled);
+  await hold('테스트전자', 200);
+  assert.equal(chip('테스트전자').getAttribute('aria-pressed'), 'false', 'a short press only toggles');
+});
+
+test('a chip without a briefing never charges', async () => {
+  client.default.defaults.adapter = async () => assert.fail('must not generate');
+  await render();
+  await act(async () => fire(chip('테스트전자'), 'pointerdown'));
+  assert.equal(switchOf('테스트전자'), 'ON', 'nothing to regenerate yet');
+  await act(async () => { await new Promise(resolve => setTimeout(resolve, 1500)); });
+  assert.equal(switchOf('테스트전자'), 'ON');
+  await act(async () => fire(chip('테스트전자'), 'pointerup'));
 });
 
 test('fold shows only the headline; close moves a block to the tray and restore brings it back intact', async () => {

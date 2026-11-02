@@ -25,6 +25,10 @@ const MOVING = 3;
 const KEEP_DAYS = 3;
 const KEEP_LIMIT = 100;
 const DAY_LABELS = ['오늘', '1일 전', '2일 전', '3일 전'];
+// Holding an ON chip that already has a briefing switches it to RE; the main button then regenerates it.
+// A quick tap stays a plain ON/OFF toggle: nothing shows until the press outlasts GRACE_MS.
+const GRACE_MS = 350;
+const HOLD_MS = 1000;
 const IDLE = { loading: false, error: false, sync: 'idle' };
 const stamp = item => Date.parse(item?.generated_at) || 0;
 const recordKey = item => item.id ?? `${item.symbol_code}:${item.generated_at}`;
@@ -82,6 +86,7 @@ function AccountBrief({ accountId, holdings }) {
   const [records, setRecords] = useState(() => readRecords(accountId));
   const [status, setStatus] = useState({});
   const [openCode, setOpenCode] = useState(null);
+  const [again, setAgain] = useState([]);
   const [run, setRun] = useState('idle');
   const latestRecords = useRef(records);
   const latestOn = useRef(on);
@@ -128,8 +133,10 @@ function AccountBrief({ accountId, holdings }) {
 
   const patch = (code, change) => setStatus(prev => ({ ...prev, [code]: { ...IDLE, ...prev[code], ...change } }));
   const latestOf = code => records.find(item => item.symbol_code === code);
-  // The main button only fills stocks without a briefing today; ↻ regenerates one on purpose.
-  const pending = on.filter(code => !latestOf(code) || daysAgo(latestOf(code)) > 0);
+  // The main button fills stocks without a briefing today, plus the ones switched to RE on purpose.
+  const redo = again.filter(code => on.includes(code) && latestOf(code));
+  const fresh = on.filter(code => !latestOf(code) || daysAgo(latestOf(code)) > 0);
+  const pending = on.filter(code => fresh.includes(code) || redo.includes(code));
 
   async function generate(codes) {
     if (run === 'busy' || !codes.length) return;
@@ -149,6 +156,7 @@ function AccountBrief({ accountId, holdings }) {
         latestRecords.current = next;
         setRecords(next);
         patch(code, { loading: false, sync: 'saving' });
+        setAgain(prev => prev.filter(item => item !== code));
         setOpenCode(prev => prev ?? code);
         await refresh(controller.signal).catch(() => []);
         if (!controller.signal.aborted) patch(code, { sync: 'idle' });
@@ -171,7 +179,9 @@ function AccountBrief({ accountId, holdings }) {
   }
 
   function toggle(code) {
-    if (on.includes(code)) {
+    if (again.includes(code)) {
+      setAgain(prev => prev.filter(item => item !== code));
+    } else if (on.includes(code)) {
       controllers.current.get(code)?.abort();
       setPrefs({ on: on.filter(item => item !== code), closed: [code, ...closed.filter(item => item !== code)] });
     } else if (on.length < MAX_ON) {
@@ -186,30 +196,27 @@ function AccountBrief({ accountId, holdings }) {
     <div role="group" aria-label="브리핑 대상 종목" className="portfolio-brief-chips">
       {ranked.map(stock => {
         const active = on.includes(stock.code);
-        return <button type="button" key={stock.code} aria-pressed={active} disabled={!active && on.length >= MAX_ON}
-          onClick={() => toggle(stock.code)} className="portfolio-brief-chip">
-          <span className="portfolio-brief-chip__switch" aria-hidden="true">{active ? 'ON' : 'OFF'}</span>
-          <span className="font-bold">{stock.name}</span>
-          <span className="portfolio-brief-chip__meta">{stock.code}</span>
-          {stock.change !== null && <span className={`portfolio-brief-chip__meta ${signTextClass(stock.change)}`}>{rate(stock.change)}</span>}
-          {stock.weight !== null && <span className="portfolio-brief-chip__meta">비중 {Math.round(stock.weight)}%</span>}
-        </button>;
+        const latest = latestOf(stock.code);
+        return <StockChip key={stock.code} stock={stock} active={active} disabled={!active && on.length >= MAX_ON}
+          redo={redo.includes(stock.code)} canHold={active && Boolean(latest) && !redo.includes(stock.code) && run !== 'busy'}
+          onToggle={() => toggle(stock.code)} onHold={() => setAgain(prev => [...prev, stock.code])} />;
       })}
     </div>
-    <p className="mt-2 text-xs text-gray-500">오늘 크게 움직인 종목과 비중이 큰 종목이 앞에 있어요. 최대 {MAX_ON}개까지 켤 수 있어요.</p>
+    <p className="mt-2 text-xs text-gray-500">오늘 크게 움직인 종목과 비중이 큰 종목이 앞에 있어요. 최대 {MAX_ON}개까지 켤 수 있어요.
+      브리핑이 있는 종목은 ON을 길게 누르면 RE로 바뀌고, 브리핑 생성하기를 누르면 다시 생성해요.</p>
     <div className="mt-4 flex flex-wrap items-center gap-3">
       <LearningButton onClick={() => generate(pending)} disabled={run === 'busy' || !pending.length}>
         {run === 'busy' ? '브리핑 생성 중...' : '브리핑 생성하기'}
       </LearningButton>
-      {run !== 'busy' && on.length > 0 && !pending.length && <span className="text-xs text-gray-500">켠 종목은 오늘 브리핑이 있어요. 새로 만들려면 블록의 ↻ 다시 생성을 눌러 주세요.</span>}
-      {run !== 'busy' && pending.length > 0 && pending.length < on.length && <span className="text-xs text-gray-500">오늘 브리핑이 없는 {pending.length}종목만 생성해요.</span>}
+      {run !== 'busy' && on.length > 0 && !pending.length && <span className="text-xs text-gray-500">켠 종목은 오늘 브리핑이 있어요. 새로 만들려면 종목의 ON을 길게 눌러 RE로 바꿔 주세요.</span>}
+      {run !== 'busy' && pending.length > 0 && (pending.length < on.length || redo.length > 0) && <span className="text-xs text-gray-500">
+        {[fresh.length && `오늘 브리핑이 없는 ${fresh.length}종목`, redo.length && `RE ${redo.length}종목`].filter(Boolean).join('과 ')}{pending.length < on.length ? '만' : '을'} 생성해요.</span>}
     </div>
     <p role="status" className="mt-2 text-sm text-gray-500">{run === 'busy' ? '브리핑을 생성하고 있어요.' : run === 'done' ? '브리핑 생성이 완료됐어요.' : ''}</p>
     <div className="space-y-3">
       {on.map(code => <BriefBlock key={code} stock={names[code]} latest={latestOf(code)} state={status[code] ?? IDLE}
-        accountId={accountId} busy={run === 'busy'} open={openCode === code}
-        onFlip={() => setOpenCode(prev => prev === code ? null : code)} onClose={() => toggle(code)}
-        onRegenerate={() => generate([code])} />)}
+        accountId={accountId} open={openCode === code}
+        onFlip={() => setOpenCode(prev => prev === code ? null : code)} onClose={() => toggle(code)} />)}
     </div>
     {closed.length > 0 && <div className="portfolio-brief-tray" aria-label="닫은 브리핑">
       <span>닫은 브리핑</span>
@@ -220,7 +227,56 @@ function AccountBrief({ accountId, holdings }) {
   </>;
 }
 
-function BriefBlock({ stock, latest, state, accountId, busy, open, onFlip, onClose, onRegenerate }) {
+function StockChip({ stock, active, disabled, redo, canHold, onToggle, onHold }) {
+  const [charging, setCharging] = useState(false);
+  const timer = useRef(null);
+  const fired = useRef(false);
+  useEffect(() => () => clearTimeout(timer.current), []);
+  function start() {
+    fired.current = false;
+    if (!canHold || timer.current) return;
+    timer.current = setTimeout(() => {
+      // Once the charge shows, letting go early settles back to ON instead of switching off.
+      fired.current = true;
+      setCharging(true);
+      timer.current = setTimeout(() => {
+        timer.current = null;
+        setCharging(false);
+        onHold();
+      }, HOLD_MS);
+    }, GRACE_MS);
+  }
+  function stop() {
+    clearTimeout(timer.current);
+    timer.current = null;
+    setCharging(false);
+  }
+  // Sliding off never ends in a click, so nothing is left to swallow.
+  function cancel() {
+    stop();
+    fired.current = false;
+  }
+  function click() {
+    // The click that ends a hold must not also turn the chip off.
+    if (fired.current) fired.current = false;
+    else onToggle();
+  }
+  return <button type="button" aria-pressed={active} disabled={disabled} onClick={click}
+    onPointerDown={event => { if (event.button === 0) start(); }} onPointerUp={stop} onPointerLeave={cancel} onPointerCancel={cancel}
+    onKeyDown={event => { if (event.key === ' ' && !event.repeat) start(); }} onKeyUp={event => { if (event.key === ' ') stop(); }}
+    onContextMenu={event => { if (canHold) event.preventDefault(); }}
+    aria-description={redo ? '다시 생성 대상이에요. 누르면 ON으로 돌아가요' : canHold ? '길게 누르면 다시 생성 대상(RE)으로 바뀌어요' : undefined}
+    className={`portfolio-brief-chip${charging ? ' is-charging' : ''}${redo ? ' is-redo' : ''}`}
+    style={{ '--hold-ms': `${HOLD_MS}ms` }}>
+    <span className="portfolio-brief-chip__switch" aria-hidden="true">{redo || charging ? 'RE' : active ? 'ON' : 'OFF'}</span>
+    <span className="font-bold">{stock.name}</span>
+    <span className="portfolio-brief-chip__meta">{stock.code}</span>
+    {stock.change !== null && <span className={`portfolio-brief-chip__meta ${signTextClass(stock.change)}`}>{rate(stock.change)}</span>}
+    {stock.weight !== null && <span className="portfolio-brief-chip__meta">비중 {Math.round(stock.weight)}%</span>}
+  </button>;
+}
+
+function BriefBlock({ stock, latest, state, accountId, open, onFlip, onClose }) {
   // A server id means the server listed this exact briefing.
   const saved = latest?.id !== undefined;
   const status = state.loading ? '브리핑을 생성하고 있어요.' : state.sync === 'saving' ? '서버에 저장 확인 중…' : '';
@@ -235,8 +291,6 @@ function BriefBlock({ stock, latest, state, accountId, busy, open, onFlip, onClo
         </p>
       </div>
       <div className="flex shrink-0 gap-1">
-        {latest && <button type="button" className="portfolio-brief-block__btn" disabled={busy} onClick={onRegenerate}
-          aria-label={`${stock.name} 브리핑 다시 생성`}>↻ 다시 생성</button>}
         {latest && <button type="button" className="portfolio-brief-block__btn" aria-expanded={open} onClick={onFlip}>{open ? '접기' : '펼치기'}</button>}
         <button type="button" className="portfolio-brief-block__btn" aria-label={`${stock.name} 브리핑 닫기`} onClick={onClose}>×</button>
       </div>
