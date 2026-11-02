@@ -173,7 +173,7 @@ test('theme tabs show a top theme in the main panel, leaders open their briefing
   await React.act(async () => document.querySelector('.trading-news-banner').click());
   const dialog = document.querySelector('[role="dialog"]');
   const tabs = () => [...dialog.querySelectorAll('[aria-label="뉴스 보기 선택"] button')];
-  assert.deepEqual(tabs().map(tab => tab.textContent.trim()), ['SK하이닉스', '▲ AI 인프라', '▼ 2차전지']);
+  assert.deepEqual(tabs().map(tab => tab.textContent.trim()), ['▼ SK하이닉스', '▲ AI 인프라', '▼ 2차전지']);
   assert.deepEqual(tabs().map(tab => tab.getAttribute('aria-pressed')), ['true', 'false', 'false']);
   await React.act(async () => tabs()[1].click());
   const panel = dialog.querySelector('.trading-news-main');
@@ -188,7 +188,7 @@ test('theme tabs show a top theme in the main panel, leaders open their briefing
   await React.act(async () => panel.querySelector('[aria-label="삼성전자 뉴스 상세 보기"]').click());
   assert.equal(dialog.querySelector('.trading-news-main h3').textContent, '삼성전자');
   assert.deepEqual(tabs().map(tab => tab.getAttribute('aria-pressed')), ['true', 'false', 'false']);
-  assert.equal(tabs()[0].textContent, '삼성전자');
+  assert.equal(tabs()[0].textContent.trim(), '▲ 삼성전자');
   const fallingHeader = [...dialog.querySelectorAll('.trading-news-themes h4 button')].find(item => item.textContent.includes('2차전지'));
   await React.act(async () => fallingHeader.click());
   assert.equal(tabs()[2].getAttribute('aria-pressed'), 'true');

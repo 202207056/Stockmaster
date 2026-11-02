@@ -59,6 +59,13 @@ function useThemes(enabled) {
   return data;
 }
 
+// ▲ up, ▼ down, — flat or unknown, matching the theme tabs.
+function Direction({ changeRate }) {
+  const value = Number(changeRate);
+  const mark = !Number.isFinite(value) || value === 0 ? '—' : value < 0 ? '▼' : '▲';
+  return <span className={signTextClass(value)} aria-hidden="true">{mark}</span>;
+}
+
 const question = changeRate => changeRate > 0 ? '왜 올랐을까?' : changeRate < 0 ? '왜 내렸을까?' : '최근 뉴스 정리';
 
 export default function TradingNewsBrief({ code }) {
@@ -67,7 +74,8 @@ export default function TradingNewsBrief({ code }) {
   const held = useHeldQuantities(accountId, isAuthenticated);
   const [open, setOpen] = useState(false);
   const [selectedCode, setSelectedCode] = useState(code);
-  const [selectedName, setSelectedName] = useState(null);
+  // Name and rate of a stock picked from a related card or theme leader.
+  const [pickedStock, setPickedStock] = useState(null);
   // null shows the selected stock; a theme id shows that theme in the main panel.
   const [themeId, setThemeId] = useState(null);
   const themes = useThemes(open);
@@ -81,17 +89,17 @@ export default function TradingNewsBrief({ code }) {
   ] : [];
   const themeList = themes ? [...themes.rising, ...themes.falling] : [];
   const theme = themeList.find(item => item.id === themeId);
-  const selectStock = (next, name) => {
+  const selectStock = (next, name, changeRate) => {
     setPicked(true);
     setThemeId(null);
     setSelectedCode(next);
-    setSelectedName(name);
+    setPickedStock({ name, changeRate });
   };
   const selectTheme = (id) => {
     setPicked(true);
     setThemeId(id);
   };
-  const stockName = selectedCode === code ? brief?.name : selectedName || selectedCode;
+  const tabStock = selectedCode === code ? { name: brief?.name, changeRate: brief?.change_rate } : { name: pickedStock?.name || selectedCode, changeRate: pickedStock?.changeRate };
   return <>
     <button type="button" className="trading-news-banner" disabled={!brief}
       onClick={() => { setPicked(false); setSelectedCode(code); setThemeId(null); setOpen(true); }} aria-haspopup="dialog" aria-expanded={open}>
@@ -103,9 +111,11 @@ export default function TradingNewsBrief({ code }) {
     </button>
     {brief && <Modal open={open} onClose={() => setOpen(false)} title="AI 뉴스" size="xl" draggable dimBackdrop={false}>
       {themeList.length > 0 && <div className="trading-news-tabs" role="group" aria-label="뉴스 보기 선택">
-        <button type="button" aria-pressed={!theme} onClick={() => selectStock(selectedCode, selectedName)}>{stockName}</button>
+        <button type="button" aria-pressed={!theme} onClick={() => selectStock(selectedCode, tabStock.name, tabStock.changeRate)}>
+          <Direction changeRate={tabStock.changeRate} /> {tabStock.name}
+        </button>
         {themeList.map(item => <button type="button" key={item.id} aria-pressed={item.id === themeId} onClick={() => selectTheme(item.id)}>
-          <span className={signTextClass(item.change_rate)} aria-hidden="true">{item.change_rate < 0 ? '▼' : '▲'}</span> {item.name}
+          <Direction changeRate={item.change_rate} /> {item.name}
         </button>)}
       </div>}
       <div className="trading-news-grid">
@@ -113,7 +123,7 @@ export default function TradingNewsBrief({ code }) {
           : <BriefDetail key={selectedCode} autoFocus={picked} code={selectedCode} initial={selectedCode === code ? brief : null} quantity={held[selectedCode]} />}
         <section className="trading-news-related" aria-label="관련 종목">
           <h3 className="trading-news-eyebrow">함께 살펴볼 관련 종목</h3>
-          {stocks.filter(stock => theme || stock.code !== selectedCode).map(stock => <button type="button" key={stock.code} className="trading-news-related-card text-left" onClick={() => selectStock(stock.code, stock.name)} aria-label={`${stock.name} 뉴스 상세 보기`}>
+          {stocks.filter(stock => theme || stock.code !== selectedCode).map(stock => <button type="button" key={stock.code} className="trading-news-related-card text-left" onClick={() => selectStock(stock.code, stock.name, stock.change_rate)} aria-label={`${stock.name} 뉴스 상세 보기`}>
             <span className="flex flex-wrap items-baseline justify-between gap-1"><span className="flex flex-wrap items-baseline gap-1.5"><span className="font-bold text-gray-900">{stock.name}</span>{held[stock.code] > 0 && <span className="text-xs text-gray-500">보유</span>}</span><span className={`text-xs font-bold ${signTextClass(stock.change_rate)}`}>{rate(stock.change_rate)}</span></span>
             <span className={`mt-3 block text-xs leading-relaxed ${stock.title ? 'text-gray-600' : 'text-gray-400'}`}>{stock.title || '관련 기사 없음 · 등락률만 표시'}</span>
           </button>)}
@@ -146,7 +156,7 @@ function ThemeDetail({ autoFocus, data, held, onStock, theme }) {
       {theme.leaders.length > 0 && <section>
         <h4>대표 종목</h4>
         <div className="trading-news-leaders">{theme.leaders.map(stock => <button type="button" key={stock.code}
-          onClick={() => onStock(stock.code, stock.name)} aria-label={`${stock.name} 뉴스 상세 보기`}>
+          onClick={() => onStock(stock.code, stock.name, stock.change_rate)} aria-label={`${stock.name} 뉴스 상세 보기`}>
           <span className="font-bold text-gray-900">{stock.name}</span>
           {held[stock.code] > 0 && <span className="text-xs text-gray-500">보유</span>}
           <span className="ml-auto text-xs text-gray-700">{comma(stock.price)}원</span>
