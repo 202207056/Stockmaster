@@ -599,3 +599,15 @@ test('article numbers become source links with a copy button; plain views drop t
   assert.deepEqual(copied, ['https://n.news.naver.com/a']);
   assert.equal(history().textContent.includes('[1]'), false);
 });
+
+test('reports from the days before the position started get their own section with links', async () => {
+  const sources = [{ title: '최근 기사', url: 'https://n.news.naver.com/r', source: '최근매체', date: null },
+    { title: '매수 무렵 기사', url: 'https://n.news.naver.com/e', source: '과거매체', date: '2026.10.19 09:00' }];
+  client.default.defaults.adapter = async config => ok(config, { ...brief(codeOf(config), 'ENTRY'),
+    entry_news_summary: ['시작 직전 신제품을 공개했습니다. [2]'], sources });
+  await render();
+  await generate();
+  const section = [...block('테스트전자').querySelectorAll('section')].find(item => item.querySelector('h4')?.textContent === '포지션 시작 무렵 보도');
+  assert.match(section.textContent, /시작 직전 신제품을 공개했습니다\./);
+  assert.equal(section.querySelector('a').getAttribute('href'), 'https://n.news.naver.com/e');
+});
