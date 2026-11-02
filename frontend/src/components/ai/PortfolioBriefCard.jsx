@@ -306,20 +306,26 @@ function BriefBlock({ stock, latest, state, accountId, open, onFlip, onClose }) 
   </section>;
 }
 
-// Every saved briefing from today back to three days ago, two small boxes per row.
+// Today back to three days ago, two small boxes per row: only each stock's last briefing of the day.
 function BriefHistory({ records, names, accountId, onRemove }) {
   const [openKey, setOpenKey] = useState(null);
-  const groups = DAY_LABELS.map((label, days) => [label, records.filter(item => daysAgo(item) === days)]).filter(([, items]) => items.length);
+  const groups = DAY_LABELS.map((label, days) => {
+    const day = records.filter(item => daysAgo(item) === days);
+    // Records are newest first, so the first one per stock is the day's last; earlier ones go with it on delete.
+    const lastOf = day.filter((item, index) => day.findIndex(other => other.symbol_code === item.symbol_code) === index);
+    return [label, lastOf.map(item => ({ item, sameDay: day.filter(other => other.symbol_code === item.symbol_code) }))];
+  }).filter(([, items]) => items.length);
   return <section className="portfolio-brief-history" aria-label="이전 브리핑">
     <h3 className="text-sm font-bold text-gray-900">이전 브리핑</h3>
     <p className="mt-1 text-xs text-gray-500">오늘부터 3일 전까지 보관하고, 그보다 오래된 브리핑은 자동으로 지워져요.</p>
     {groups.map(([label, items]) => {
-      const opened = items.find(item => recordKey(item) === openKey);
+      const opened = items.find(({ item }) => recordKey(item) === openKey)?.item;
       return <div key={label} className="mt-3">
         <h4 className="portfolio-brief-history__day">{label}</h4>
         <ul className="portfolio-brief-history__grid">
-          {items.map(item => <HistoryBox key={recordKey(item)} item={item} name={names[item.symbol_code]?.name || item.security_name || item.symbol_code}
-            open={item === opened} onFlip={() => setOpenKey(prev => prev === recordKey(item) ? null : recordKey(item))} onRemove={onRemove} />)}
+          {items.map(({ item, sameDay }) => <HistoryBox key={recordKey(item)} item={item} name={names[item.symbol_code]?.name || item.security_name || item.symbol_code}
+            open={item === opened} onFlip={() => setOpenKey(prev => prev === recordKey(item) ? null : recordKey(item))}
+            onRemove={async () => { for (const other of sameDay) await onRemove(other); }} />)}
         </ul>
         {opened && <div className="portfolio-brief-history__open">
           <BriefResult data={opened} still />
@@ -335,7 +341,7 @@ function HistoryBox({ item, name, open, onFlip, onRemove }) {
   async function confirm() {
     setStep('deleting');
     try {
-      await onRemove(item);
+      await onRemove();
     } catch {
       setStep('failed');
     }

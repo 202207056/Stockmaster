@@ -262,7 +262,8 @@ test('the main button fills stocks without a briefing today; holding a chip mark
   assert.deepEqual(urls, ['000660', '005930']);
   assert.equal(switchOf('테스트전자'), 'ON', 'RE returns to ON after regenerating');
   assert.match(block('테스트전자').textContent, /BRIEF_2/);
-  assert.match(history().textContent, /TODAY_DONE/, 'the replaced briefing stays in the history');
+  assert.doesNotMatch(history().textContent, /TODAY_DONE/, 'the history shows only the last briefing of the day per stock');
+  assert(db.items.some(item => item.headline === 'TODAY_DONE'), 'the replaced briefing is still saved');
   assert(gen().disabled);
   await hold('테스트전자', 200);
   assert.equal(chip('테스트전자').getAttribute('aria-pressed'), 'false', 'a short press only toggles');
@@ -302,6 +303,7 @@ test('fold shows only the headline; close moves a block to the tray and restore 
 test('previous briefings group by day up to three days ago, open one at a time and delete after confirming', async () => {
   client.default.defaults.adapter = async () => assert.fail('history must not generate');
   db.items = [
+    { ...brief('000660', 'TODAY_B_EARLIER'), generated_at: new Date(Date.now() - 60e3).toISOString(), id: 6 },
     { ...brief('005930', 'TODAY_A'), id: 1 }, { ...brief('000660', 'TODAY_B'), id: 2 },
     { ...brief('005930', 'ONE_DAY'), generated_at: ago(1), id: 3 },
     { ...brief('999999', 'SOLD_STOCK'), security_name: '판종목', generated_at: ago(3), id: 4 },
@@ -311,6 +313,8 @@ test('previous briefings group by day up to three days ago, open one at a time a
   assert.deepEqual(days(), ['오늘', '1일 전', '3일 전']);
   assert.doesNotMatch(container.textContent, /TOO_OLD/);
   assert.match(history().textContent, /판종목/);
+  assert.doesNotMatch(history().textContent, /TODAY_B_EARLIER/, 'only the last briefing of the day per stock');
+  assert.equal(boxes().length, 4);
   assert.match(block('테스트전자').textContent, /TODAY_A/);
   assert.match(block('테스트전자').textContent, /서버에 저장됨/);
   const todayB = () => boxes().find(item => item.textContent.includes('TODAY_B'));
@@ -329,7 +333,7 @@ test('previous briefings group by day up to three days ago, open one at a time a
   assert.match(todayB().textContent, /삭제하지 못했어요/);
   db.failDelete = false;
   await press(buttonIn(todayB(), '삭제'));
-  assert.deepEqual(db.deletes, [2]);
+  assert.deepEqual(db.deletes, [2, 6], 'the hidden earlier briefing of that day goes too');
   assert.doesNotMatch(container.textContent, /TODAY_B/);
   await press(todayA().querySelector('[aria-label="테스트전자 브리핑 삭제"]'));
   await press(buttonIn(todayA(), '삭제'));
@@ -529,7 +533,9 @@ test('browser copies show at once, the server list wins, and unsaved copies stay
   await render();
   assert.match(block('테스트전자').textContent, /SERVER_COPY/);
   assert.match(block('테스트전자').textContent, /서버에 저장됨/);
-  assert.match(history().textContent, /LOCAL_ONLY/);
+  // The unsaved copy is kept, but the newer server briefing is that day's last one, so the history shows that.
+  assert.match(localStorage.getItem(CACHE_STORAGE_KEY), /LOCAL_ONLY/);
+  assert.doesNotMatch(history().textContent, /LOCAL_ONLY/);
 });
 
 test('session change clears browser copies and malformed copies are ignored', async () => {
