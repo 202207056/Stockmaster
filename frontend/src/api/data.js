@@ -51,9 +51,13 @@ const isPortfolioBrief = (data, code) => data?.symbol_code === String(code)
   && portfolioSections.every(key => Array.isArray(data[key]) && data[key].length <= 3
     && data[key].every(item => typeof item === 'string' && item.trim()))
   && data.current_status.length > 0;
-// Guesses are optional (older briefings have none); anything malformed is dropped rather than shown.
-const withGuesses = data => ({ ...data, trend_guesses: Array.isArray(data.trend_guesses) && data.trend_guesses.length <= 2
-  && data.trend_guesses.every(item => typeof item === 'string' && item.trim()) ? data.trend_guesses : [] });
+// Guesses and sources are optional (older briefings have none); anything malformed is dropped rather than shown.
+const isSource = item => typeof item?.title === 'string' && item.title.trim()
+  && (item.url === null || item.url === undefined || (typeof item.url === 'string' && /^https?:\/\//.test(item.url)));
+const withGuesses = data => ({ ...data,
+  trend_guesses: Array.isArray(data.trend_guesses) && data.trend_guesses.length <= 2
+    && data.trend_guesses.every(item => typeof item === 'string' && item.trim()) ? data.trend_guesses : [],
+  sources: Array.isArray(data.sources) && data.sources.length <= 5 && data.sources.every(isSource) ? data.sources : [] });
 export const fetchPortfolioBrief = async (accountId, code, signal, profile = 'luna') => {
   // A manual refresh must generate a new briefing, including within the GET cache TTL.
   const data = requireObject((await api.get(`/ai/portfolio-brief/${encodeURIComponent(code)}`, {

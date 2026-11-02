@@ -577,3 +577,25 @@ test('trend guesses show in their own marked section; missing or malformed guess
   assert.equal(block('테스트전자').querySelector('.portfolio-brief-guess'), null);
   assert.match(history().textContent, /BAD_GUESS/, 'a malformed guess list is dropped, not the briefing');
 });
+
+test('article numbers become source links with a copy button; plain views drop the numbers', async () => {
+  const sources = [{ title: '공급 계약 기사', url: 'https://n.news.naver.com/a', source: '연합뉴스', date: '2026.11.02' },
+    { title: '링크 없는 기사', url: null, source: null, date: null }];
+  client.default.defaults.adapter = async config => ok(config, { ...brief(codeOf(config), '공급 계약을 맺었습니다. [1]'),
+    recent_issues: ['수요가 공급을 웃돈다고 밝혔습니다. [1][2][7]'], sources });
+  const copied = [];
+  Object.defineProperty(globalThis, 'navigator', { configurable: true, value: { clipboard: { writeText: async text => copied.push(text) } } });
+  await render();
+  await generate();
+  const head = block('테스트전자').querySelector('h3');
+  assert.equal(head.textContent.startsWith('공급 계약을 맺었습니다.연합뉴스 ↗'), true);
+  assert.equal(head.querySelector('a').getAttribute('href'), 'https://n.news.naver.com/a');
+  assert.equal(head.querySelector('a').getAttribute('target'), '_blank');
+  const issue = [...block('테스트전자').querySelectorAll('li')].find(item => item.textContent.includes('수요가'));
+  assert.equal(issue.querySelectorAll('a').length, 1, 'unknown numbers are dropped');
+  assert.match(issue.textContent, /기사$/, 'a source without a link shows as a plain label');
+  assert.doesNotMatch(block('테스트전자').textContent, /\[\d\]/);
+  await press(byLabel('연합뉴스 기사 링크 복사'));
+  assert.deepEqual(copied, ['https://n.news.naver.com/a']);
+  assert.equal(history().textContent.includes('[1]'), false);
+});

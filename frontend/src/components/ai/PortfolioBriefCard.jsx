@@ -38,6 +38,9 @@ const daysAgo = item => Math.max(0, Math.round((Date.parse(kstDate(Date.now())) 
 const kept = items => items.filter(item => daysAgo(item) <= KEEP_DAYS)
   .sort((a, b) => stamp(b) - stamp(a)).slice(0, KEEP_LIMIT);
 const historyKey = accountId => resourceKey('portfolio-brief-history', accountId, 'all');
+// "[2]" at the end of a news line points at sources[1]; plain views drop the numbers.
+const CITE = /\s*\[(\d+)\]/g;
+const plain = text => text.replace(CITE, '');
 const kstTime = new Intl.DateTimeFormat('ko-KR', { timeZone: 'Asia/Seoul', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
 
 function readRecords(accountId) {
@@ -299,7 +302,7 @@ function BriefBlock({ stock, latest, state, accountId, open, onFlip, onClose }) 
     </header>
     {state.error && <p role="alert" className="mt-2 text-sm text-gray-600">AI 브리핑을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.</p>}
     {!latest && !state.loading && !state.error && <p className="mt-2 text-sm text-gray-500">아직 브리핑이 없어요. 브리핑 생성하기를 눌러 주세요.</p>}
-    {latest && !open && <p className={`portfolio-brief-block__preview${state.loading ? ' opacity-50' : ''}`}>{latest.headline}</p>}
+    {latest && !open && <p className={`portfolio-brief-block__preview${state.loading ? ' opacity-50' : ''}`}>{plain(latest.headline)}</p>}
     {latest && open && <div className={state.loading ? 'opacity-50' : undefined}>
       <BriefResult key={latest.generated_at} data={latest} />
       {saved && <div className="mt-3"><BriefReport kind="portfolio" code={latest.symbol_code} generatedAt={latest.generated_at} accountId={accountId} /></div>}
@@ -356,7 +359,7 @@ function HistoryBox({ item, name, open, onFlip, onRemove }) {
         <button type="button" className="portfolio-brief-block__btn" onClick={() => setStep('confirm')} aria-label={`${name} 브리핑 삭제`}>×</button>
       </div>
     </div>
-    <p className="portfolio-brief-history__headline">{item.headline}</p>
+    <p className="portfolio-brief-history__headline">{plain(item.headline)}</p>
     {item.id === undefined && <p className="mt-1 text-[11px] text-gray-400">이 브라우저에만 저장됨</p>}
     {step !== 'idle' && <div className="portfolio-brief-history__confirm" role="group" aria-label="삭제 확인">
       <span>{step === 'failed' ? '삭제하지 못했어요.' : '삭제할까요?'}</span>
@@ -366,6 +369,31 @@ function HistoryBox({ item, name, open, onFlip, onRemove }) {
   </li>;
 }
 
+function Cited({ text, sources = [] }) {
+  const numbers = [...new Set([...text.matchAll(CITE)].map(match => Number(match[1])))];
+  // Two links per line are enough to check the source; more crowd the sentence.
+  const cited = numbers.map(number => sources[number - 1]).filter(Boolean).slice(0, 2);
+  return <>{plain(text)}{cited.map((source, index) => <SourceLink key={index} source={source} />)}</>;
+}
+
+// Opens the article in a new tab; the small button next to it copies the link.
+function SourceLink({ source }) {
+  const [copied, setCopied] = useState(false);
+  const label = source.source || '기사';
+  if (!source.url) return <span className="portfolio-brief-cite" title={source.title}>{label}</span>;
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(source.url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch { /* Clipboard may be blocked; the link itself still works. */ }
+  }
+  return <span className="portfolio-brief-cite-group">
+    <a className="portfolio-brief-cite" href={source.url} target="_blank" rel="noopener noreferrer" title={source.title}>{label} ↗</a>
+    <button type="button" className="portfolio-brief-cite-copy" onClick={copy} aria-label={`${label} 기사 링크 복사`}>{copied ? '복사됨' : '⧉'}</button>
+  </span>;
+}
+
 function BriefResult({ data, still = false }) {
   let line = 0;
   const nextLineStyle = () => ({ '--brief-line': line++ });
@@ -373,13 +401,13 @@ function BriefResult({ data, still = false }) {
   return <div className={still ? 'portfolio-brief-still' : 'portfolio-brief-reveal'}>
     <div className="portfolio-brief-reveal__clip">
       <div className="mt-3 space-y-5 break-words [overflow-wrap:anywhere]">
-        <h3 className="portfolio-brief-line text-base font-bold text-gray-900" style={nextLineStyle()}>{data.headline}</h3>
+        <h3 className="portfolio-brief-line text-base font-bold text-gray-900" style={nextLineStyle()}><Cited text={data.headline} sources={data.sources} /></h3>
         {sections.map(([field, title]) => data[field]?.length > 0 && <section key={field}
           className={field === 'limitations' ? 'text-xs text-gray-500' : field === 'trend_guesses' ? 'portfolio-brief-guess text-sm' : 'text-sm text-gray-700'}>
           <h4 className="portfolio-brief-line mb-2 font-bold" style={nextLineStyle()}>{title}</h4>
           {field === 'trend_guesses' && <p className="portfolio-brief-line mb-2 text-xs" style={nextLineStyle()}>
             최근 기사와 같은 시기의 가격 흐름을 나란히 보고 추정한 내용이에요. 확인된 사실이나 앞으로의 전망이 아니에요.</p>}
-          <ul className="list-disc space-y-1 pl-5 leading-relaxed">{data[field].map((text, index) => <li key={index} className="portfolio-brief-line" style={nextLineStyle()}>{text}</li>)}</ul>
+          <ul className="list-disc space-y-1 pl-5 leading-relaxed">{data[field].map((text, index) => <li key={index} className="portfolio-brief-line" style={nextLineStyle()}><Cited text={text} sources={data.sources} /></li>)}</ul>
         </section>)}
         <p className="portfolio-brief-line border-t border-gray-100 pt-3 text-xs leading-relaxed text-gray-500" style={nextLineStyle()}>{data.disclaimer}</p>
       </div>

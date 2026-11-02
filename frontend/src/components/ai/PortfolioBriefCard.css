@@ -100,3 +100,10 @@
 /* Guesses read differently from facts: a dashed amber box with its own warning line. */
 .portfolio-brief-guess { border: 1px dashed #f59e0b; border-radius: 10px; padding: 10px 12px; background: rgba(245, 158, 11, .08); color: var(--ink, #374151); }
 .portfolio-brief-guess h4, .portfolio-brief-guess p { color: #d97706; }
+
+/* Article sources after a news line: the name opens the article, the small button copies its link. */
+.portfolio-brief-cite-group { display: inline-flex; align-items: center; gap: 2px; margin-left: 6px; vertical-align: middle; white-space: nowrap; }
+.portfolio-brief-cite { display: inline-block; border: 1px solid var(--line, #e5e7eb); border-radius: 999px; padding: 0 8px; font-size: 11px; font-weight: 600; line-height: 18px; color: var(--accent-ink, #5b21b6); text-decoration: none; }
+a.portfolio-brief-cite:hover { border-color: var(--accent-ink, #5b21b6); }
+.portfolio-brief-cite-copy { border: 0; padding: 0 4px; background: transparent; font-size: 11px; color: var(--ink-muted, #6b7280); cursor: pointer; }
+.portfolio-brief-cite-copy:hover { color: var(--accent-ink, #5b21b6); }
