@@ -73,15 +73,26 @@
 .portfolio-brief-history__confirm button { border: 1px solid var(--line, #e5e7eb); border-radius: 6px; padding: 1px 8px; background: var(--surface, #fff); color: var(--ink, #334155); cursor: pointer; }
 .portfolio-brief-history__confirm button:first-of-type { border-color: var(--color-up-600, #dc2626); color: var(--color-up-600, #dc2626); }
 
-/* Hold an ON chip to switch it to RE: a soft rainbow fills the chip while held, and the RE badge keeps the rainbow. */
+/* Hold an ON chip to switch it to RE: a soft rainbow fills the chip while held, and RE keeps a flowing rainbow. */
 .portfolio-brief-chip { position: relative; isolation: isolate; overflow: hidden; -webkit-touch-callout: none; user-select: none; touch-action: manipulation; }
 .portfolio-brief-chip::before { content: ""; position: absolute; inset: 0; z-index: -1; opacity: 0; clip-path: inset(0 100% 0 0);
   background: linear-gradient(90deg, #fca5a5, #fdba74, #fde047, #86efac, #7dd3fc, #a5b4fc, #f0abfc);
   transition: clip-path .3s ease-out, opacity .3s ease-out; }
 .portfolio-brief-chip.is-charging::before { opacity: .18; clip-path: inset(0); transition: clip-path var(--hold-ms, 1000ms) linear, opacity .15s; }
-.portfolio-brief-chip.is-redo { border-color: #a5b4fc; }
+/* RE keeps moving: a soft RGB band flows slowly through the badge and the chip border.
+   The first and last stops match and the band is twice as wide, so shifting it by 200% loops seamlessly. */
+.portfolio-brief-chip.is-redo, .portfolio-brief-chip.is-charging .portfolio-brief-chip__switch, .portfolio-brief-chip.is-redo .portfolio-brief-chip__switch {
+  --re-flow: linear-gradient(90deg, #ff7a8a, #ffb86b, #ffe08a, #7ee2b8, #6cc7ff, #9a8cff, #e48cff, #ff7a8a); }
+.portfolio-brief-chip.is-redo { border-color: transparent;
+  background: linear-gradient(var(--color-brand-50, #f5f3ff), var(--color-brand-50, #f5f3ff)) padding-box, var(--re-flow) border-box;
+  background-size: 100% 100%, 200% 100%; animation: portfolio-brief-re-border 6s linear infinite; }
 .portfolio-brief-chip.is-charging .portfolio-brief-chip__switch, .portfolio-brief-chip.is-redo .portfolio-brief-chip__switch {
-  background: linear-gradient(90deg, #f87171, #fbbf24, #4ade80, #38bdf8, #a78bfa); color: #fff; text-shadow: 0 1px 1px rgba(0, 0, 0, .3); }
+  background: var(--re-flow); background-size: 200% 100%; color: #fff; text-shadow: 0 1px 2px rgba(0, 0, 0, .35);
+  animation: portfolio-brief-re-flow 4s linear infinite, portfolio-brief-re-breathe 2.4s ease-in-out infinite; }
+@keyframes portfolio-brief-re-flow { from { background-position: 0 0; } to { background-position: -200% 0; } }
+@keyframes portfolio-brief-re-border { from { background-position: 0 0, 0 0; } to { background-position: 0 0, -200% 0; } }
+@keyframes portfolio-brief-re-breathe { 50% { box-shadow: 0 0 6px rgba(154, 140, 255, .55); } }
 @media (prefers-reduced-motion: reduce) {
   .portfolio-brief-chip::before, .portfolio-brief-chip.is-charging::before { transition: none; }
+  .portfolio-brief-chip.is-redo, .portfolio-brief-chip .portfolio-brief-chip__switch { animation: none; }
 }
