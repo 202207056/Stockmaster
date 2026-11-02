@@ -44,6 +44,8 @@ const OPTIONAL = ['trend_guesses', 'entry_news_summary'];
 // "[2]" at the end of a news line points at sources[1]; plain views drop the numbers.
 const CITE = /\s*\[(\d+)\]/g;
 const plain = text => text.replace(CITE, '');
+// The guess box title already says 추정; older briefings repeated it on every line.
+const GUESS_LABEL = /^\s*추정\s*[:：]\s*/;
 const kstTime = new Intl.DateTimeFormat('ko-KR', { timeZone: 'Asia/Seoul', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
 
 function readRecords(accountId) {
@@ -412,7 +414,7 @@ function BriefResult({ data, still = false }) {
           <h4 className="portfolio-brief-line mb-2 font-bold" style={nextLineStyle()}>{title}</h4>
           {field === 'trend_guesses' && <p className="portfolio-brief-line mb-2 text-xs" style={nextLineStyle()}>
             기사와 같은 시기의 가격 흐름을 나란히 보고 추정한 내용이에요. 확인된 사실이나 앞으로의 전망이 아니에요.</p>}
-          <ul className="list-disc space-y-1 pl-5 leading-relaxed">{data[field].map((text, index) => <li key={index} className="portfolio-brief-line" style={nextLineStyle()}><Cited text={text} sources={data.sources} /></li>)}</ul>
+          <ul className="list-disc space-y-1 pl-5 leading-relaxed">{data[field].map((text, index) => <li key={index} className="portfolio-brief-line" style={nextLineStyle()}><Cited text={field === 'trend_guesses' ? text.replace(GUESS_LABEL, '') : text} sources={data.sources} /></li>)}</ul>
         </section>)}
         <p className="portfolio-brief-line border-t border-gray-100 pt-3 text-xs leading-relaxed text-gray-500" style={nextLineStyle()}>{data.disclaimer}</p>
       </div>

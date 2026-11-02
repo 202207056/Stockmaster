@@ -567,6 +567,7 @@ test('trend guesses show in their own marked section; missing or malformed guess
   assert.match(section.textContent, /추정 · 주의해서 읽어 주세요/);
   assert.match(section.textContent, /확인된 사실이나 앞으로의 전망이 아니에요/);
   assert.match(section.textContent, /실적 기대와 관련된 흐름으로 추정돼요/);
+  assert.doesNotMatch(section.querySelector('li').textContent, /^추정:/, 'the box title already says it');
   await act(async () => root.unmount());
   root = null;
   localStorage.clear();
