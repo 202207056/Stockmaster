@@ -1,0 +1,14 @@
+.brief-report__open { border: 0; padding: 0; background: transparent; color: var(--ink-muted, #6b7280); font-size: 12px; text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
+.brief-report__open:hover { color: var(--accent-ink, #5b21b6); }
+.brief-report__done { font-size: 12px; color: var(--ink-muted, #6b7280); }
+.brief-report { display: grid; gap: 8px; border: 1px solid var(--line, #e5e7eb); border-radius: 10px; padding: 12px; background: var(--surface-muted, #f8fafc); font-size: 12px; color: var(--ink, #334155); }
+.brief-report fieldset { display: grid; gap: 6px; border: 0; padding: 0; margin: 0; }
+.brief-report legend { margin-bottom: 6px; font-weight: 700; }
+.brief-report__reasons { display: flex; flex-wrap: wrap; gap: 6px 12px; }
+.brief-report__reasons label { display: inline-flex; align-items: center; gap: 4px; cursor: pointer; }
+.brief-report input[type="text"] { width: 100%; border: 1px solid var(--line, #e5e7eb); border-radius: 6px; padding: 6px 8px; background: var(--surface, #fff); color: var(--ink, #334155); }
+.brief-report [role="alert"] { color: var(--color-up-600, #dc2626); }
+.brief-report__actions { display: flex; gap: 6px; }
+.brief-report__actions button { border: 1px solid var(--line, #e5e7eb); border-radius: 6px; padding: 3px 10px; background: var(--surface, #fff); color: var(--ink, #334155); cursor: pointer; }
+.brief-report__actions button[type="submit"] { border-color: var(--accent-ink, #5b21b6); color: var(--accent-ink, #5b21b6); font-weight: 700; }
+.brief-report__actions button:disabled { cursor: not-allowed; opacity: .6; }
