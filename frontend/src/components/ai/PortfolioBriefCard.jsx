@@ -121,8 +121,8 @@ function BriefRequest({ accountId, symbol }) {
     </LearningButton>
     <p role="status" className="mt-2 text-sm text-gray-500">{status}</p>
     {state.error && <p role="alert" className="mt-3 text-sm text-gray-600">AI 브리핑을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.</p>}
-    {latest && <div className={state.loading ? 'opacity-50' : undefined}>
-      <p className="portfolio-brief-stamp mt-4">
+    {latest && <div className={`portfolio-brief-current${state.loading ? ' opacity-50' : ''}`}>
+      <p className="portfolio-brief-stamp">
         {state.sync === 'saved' && <span className="portfolio-brief-saved">✓ 서버에 저장됨</span>}
         {kstStamp(latest.generated_at)} 생성
       </p>

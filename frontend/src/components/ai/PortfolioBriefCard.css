@@ -43,3 +43,4 @@
 .portfolio-brief-previous > summary { cursor: pointer; font-size: 13px; font-weight: 600; }
 .portfolio-brief-still .portfolio-brief-line { animation: none; }
 .portfolio-brief-still { opacity: .8; }
+.portfolio-brief-current { margin-top: 16px; border: 1px solid var(--line, #e5e7eb); border-radius: 10px; padding: 14px 16px; background: var(--surface, #fff); }
