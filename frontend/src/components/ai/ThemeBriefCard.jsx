@@ -59,7 +59,8 @@ function ThemeRequest() {
   return <ThemeContent data={state.data} />;
 }
 
-export function ThemeContent({ data, showMetadata = true }) {
+// onSelect lets a host (the AI news window) show the picked theme elsewhere too.
+export function ThemeContent({ data, showMetadata = true, onSelect }) {
   const first = [...data.rising, ...data.falling].find(theme => theme.reason)?.id;
   return <LearningCard title="오늘의 테마" aside={showMetadata && <span className="text-xs text-gray-500">
     {data.source} · {asOfLabel(data.as_of)} 기준
@@ -70,7 +71,7 @@ export function ThemeContent({ data, showMetadata = true }) {
           {direction === 'rising' ? '▲ 많이 오른 테마' : '▼ 많이 내린 테마'}
         </h3>
         {data[direction].length ? <div className="space-y-2">
-          {data[direction].map(theme => <ThemeItem key={theme.id} theme={theme} initiallyExpanded={theme.id === first} />)}
+          {data[direction].map(theme => <ThemeItem key={theme.id} theme={theme} initiallyExpanded={theme.id === first} onSelect={onSelect} />)}
         </div> : <p className="rounded-lg bg-gray-50 p-4 text-sm text-gray-500">
           {direction === 'rising' ? '오늘은 많이 오른 테마가 없어요' : '오늘은 많이 내린 테마가 없어요'}
         </p>}
@@ -80,12 +81,12 @@ export function ThemeContent({ data, showMetadata = true }) {
   </LearningCard>;
 }
 
-function ThemeItem({ theme, initiallyExpanded }) {
+function ThemeItem({ theme, initiallyExpanded, onSelect }) {
   const [expanded, setExpanded] = useState(initiallyExpanded);
   const panelId = useId();
   return <article className="min-w-0 rounded-lg border border-gray-100 bg-gray-50">
     <h4><button type="button" aria-expanded={expanded} aria-controls={panelId}
-      onClick={() => setExpanded(value => !value)}
+      onClick={() => { setExpanded(value => !value); onSelect?.(theme.id); }}
       className="w-full rounded-lg p-3 text-left focus-visible:outline-2 focus-visible:outline-brand-600">
       <span className="flex items-start justify-between gap-3">
         <span className="min-w-0 break-words text-sm font-bold text-gray-800">{theme.name}</span>

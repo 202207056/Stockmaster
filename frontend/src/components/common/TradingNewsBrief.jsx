@@ -6,7 +6,7 @@ import { fetchPortfolio, fetchStockBrief, fetchThemeBrief } from '../../api/data
 import { safeExternalUrl } from '../../api/normalize';
 import { readResource, resourceKey, writeResource } from '../../api/resourceCache';
 import { useAuth } from '../../hooks/useAuth';
-import { rate, signTextClass } from '../../utils/format';
+import { comma, rate, signTextClass } from '../../utils/format';
 import { kstStamp } from '../../utils/kstStamp';
 import './TradingNewsBrief.css';
 
@@ -67,6 +67,9 @@ export default function TradingNewsBrief({ code }) {
   const held = useHeldQuantities(accountId, isAuthenticated);
   const [open, setOpen] = useState(false);
   const [selectedCode, setSelectedCode] = useState(code);
+  const [selectedName, setSelectedName] = useState(null);
+  // null shows the selected stock; a theme id shows that theme in the main panel.
+  const [themeId, setThemeId] = useState(null);
   const themes = useThemes(open);
   const [picked, setPicked] = useState(false);
   if (!isAuthenticated || (!main.data && !main.loading) || (main.data && !main.data.ai_available)) return null;
@@ -76,13 +79,22 @@ export default function TradingNewsBrief({ code }) {
     { code: brief.symbol_code, name: brief.name, change_rate: brief.change_rate, title: brief.title },
     ...brief.related,
   ] : [];
-  const selectStock = (next) => {
+  const themeList = themes ? [...themes.rising, ...themes.falling] : [];
+  const theme = themeList.find(item => item.id === themeId);
+  const selectStock = (next, name) => {
     setPicked(true);
+    setThemeId(null);
     setSelectedCode(next);
+    setSelectedName(name);
   };
+  const selectTheme = (id) => {
+    setPicked(true);
+    setThemeId(id);
+  };
+  const stockName = selectedCode === code ? brief?.name : selectedName || selectedCode;
   return <>
     <button type="button" className="trading-news-banner" disabled={!brief}
-      onClick={() => { setPicked(false); setSelectedCode(code); setOpen(true); }} aria-haspopup="dialog" aria-expanded={open}>
+      onClick={() => { setPicked(false); setSelectedCode(code); setThemeId(null); setOpen(true); }} aria-haspopup="dialog" aria-expanded={open}>
       <span className="min-w-0 flex-1">
         <span className="trading-news-banner__label"><span className="trading-news-banner__icon"><Sparkles size={14} aria-hidden="true" /></span>{brief ? question(brief.change_rate) : 'AI 뉴스'}</span>
         <span className="trading-news-banner__headline">{brief ? brief.title || '최근 확인되는 뉴스를 정리했어요' : 'AI가 뉴스를 정리하고 있어요…'}</span>
@@ -90,19 +102,68 @@ export default function TradingNewsBrief({ code }) {
       <ChevronRight size={18} className="shrink-0" aria-hidden="true" />
     </button>
     {brief && <Modal open={open} onClose={() => setOpen(false)} title="AI 뉴스" size="xl" draggable dimBackdrop={false}>
+      {themeList.length > 0 && <div className="trading-news-tabs" role="group" aria-label="뉴스 보기 선택">
+        <button type="button" aria-pressed={!theme} onClick={() => selectStock(selectedCode, selectedName)}>{stockName}</button>
+        {themeList.map(item => <button type="button" key={item.id} aria-pressed={item.id === themeId} onClick={() => selectTheme(item.id)}>
+          <span className={signTextClass(item.change_rate)} aria-hidden="true">{item.change_rate < 0 ? '▼' : '▲'}</span> {item.name}
+        </button>)}
+      </div>}
       <div className="trading-news-grid">
-        <BriefDetail key={selectedCode} autoFocus={picked} code={selectedCode} initial={selectedCode === code ? brief : null} quantity={held[selectedCode]} />
+        {theme ? <ThemeDetail key={theme.id} theme={theme} data={themes} autoFocus={picked} held={held} onStock={selectStock} />
+          : <BriefDetail key={selectedCode} autoFocus={picked} code={selectedCode} initial={selectedCode === code ? brief : null} quantity={held[selectedCode]} />}
         <section className="trading-news-related" aria-label="관련 종목">
           <h3 className="trading-news-eyebrow">함께 살펴볼 관련 종목</h3>
-          {stocks.filter(stock => stock.code !== selectedCode).map(stock => <button type="button" key={stock.code} className="trading-news-related-card text-left" onClick={() => selectStock(stock.code)} aria-label={`${stock.name} 뉴스 상세 보기`}>
+          {stocks.filter(stock => theme || stock.code !== selectedCode).map(stock => <button type="button" key={stock.code} className="trading-news-related-card text-left" onClick={() => selectStock(stock.code, stock.name)} aria-label={`${stock.name} 뉴스 상세 보기`}>
             <span className="flex flex-wrap items-baseline justify-between gap-1"><span className="flex flex-wrap items-baseline gap-1.5"><span className="font-bold text-gray-900">{stock.name}</span>{held[stock.code] > 0 && <span className="text-xs text-gray-500">보유</span>}</span><span className={`text-xs font-bold ${signTextClass(stock.change_rate)}`}>{rate(stock.change_rate)}</span></span>
             <span className={`mt-3 block text-xs leading-relaxed ${stock.title ? 'text-gray-600' : 'text-gray-400'}`}>{stock.title || '관련 기사 없음 · 등락률만 표시'}</span>
           </button>)}
         </section>
-        {themes && <aside className="trading-news-themes" aria-label="관련 테마 AI 분석"><ThemeContent data={themes} showMetadata={false} /></aside>}
+        {themes && <aside className="trading-news-themes" aria-label="관련 테마 AI 분석"><ThemeContent data={themes} showMetadata={false} onSelect={selectTheme} /></aside>}
       </div>
     </Modal>}
   </>;
+}
+
+// Today's top themes, not the themes this stock belongs to.
+function ThemeDetail({ autoFocus, data, held, onStock, theme }) {
+  const ref = useRef(null);
+  useEffect(() => {
+    if (!autoFocus) return;
+    ref.current?.focus({ preventScroll: true });
+    ref.current?.scrollIntoView?.({ block: 'nearest' });
+  }, [autoFocus]);
+  return <article ref={ref} tabIndex={-1} className="trading-news-main" aria-label={`${theme.name} 테마 상세`}>
+    <header>
+      <p className="trading-news-eyebrow">오늘의 테마</p>
+      <div className="mt-1 flex flex-wrap items-baseline gap-2">
+        <h3 className="text-xl font-extrabold text-gray-900">{theme.name}</h3>
+        <span className={`font-bold ${signTextClass(theme.change_rate)}`}>{rate(theme.change_rate)}</span>
+        <span className="text-xs text-gray-500">상승 {theme.rise_count} · 하락 {theme.fall_count} / {theme.total_count}종목</span>
+      </div>
+      {theme.reason && <div className="trading-news-summary"><p>{theme.reason}</p></div>}
+    </header>
+    <div className="trading-news-sections">
+      {theme.leaders.length > 0 && <section>
+        <h4>대표 종목</h4>
+        <div className="trading-news-leaders">{theme.leaders.map(stock => <button type="button" key={stock.code}
+          onClick={() => onStock(stock.code, stock.name)} aria-label={`${stock.name} 뉴스 상세 보기`}>
+          <span className="font-bold text-gray-900">{stock.name}</span>
+          {held[stock.code] > 0 && <span className="text-xs text-gray-500">보유</span>}
+          <span className="ml-auto text-xs text-gray-700">{comma(stock.price)}원</span>
+          <span className={`text-xs font-bold ${signTextClass(stock.change_rate)}`}>{rate(stock.change_rate)}</span>
+        </button>)}</div>
+      </section>}
+      {theme.evidence.length > 0 && <section className="trading-news-evidence">
+        <h4>근거 기사</h4>
+        <ul>{theme.evidence.slice(0, 3).map(article => {
+          const url = safeExternalUrl(article.url);
+          return <li key={article.title}>{url ? <a href={url} target="_blank" rel="noreferrer noopener">{article.title}</a> : article.title}
+            {article.source && <span> · {article.source}</span>}</li>;
+        })}</ul>
+      </section>}
+      <p className="trading-news-footnote">{data.source} · {kstStamp(data.as_of)} 기준 · {data.disclaimer}</p>
+    </div>
+  </article>;
 }
 
 function BriefDetail({ autoFocus, code, initial, quantity }) {

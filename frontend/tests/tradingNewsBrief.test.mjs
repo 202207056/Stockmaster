@@ -9,6 +9,7 @@ Object.assign(globalThis, { window: dom.window, document: dom.window.document,
   IS_REACT_ACT_ENVIRONMENT: true });
 const React = await import('react');
 const { createRoot } = await import('react-dom/client');
+const { MemoryRouter } = await import('react-router-dom');
 const server = await createServer({ server: { middlewareMode: true, hmr: false }, appType: 'custom', envFile: false });
 const { default: Brief } = await server.ssrLoadModule('/src/components/common/TradingNewsBrief.jsx');
 const { AuthContext } = await server.ssrLoadModule('/src/contexts/auth-context.js');
@@ -53,8 +54,8 @@ const auth = { isAuthenticated: true, accountId: 7, user: { user_id: 1 } };
 let root;
 async function render(value = auth) {
   root ??= createRoot(document.getElementById('root'));
-  await React.act(async () => root.render(React.createElement(AuthContext.Provider, { value },
-    React.createElement(Brief, { code: '000660' }))));
+  await React.act(async () => root.render(React.createElement(MemoryRouter, null, React.createElement(AuthContext.Provider, { value },
+    React.createElement(Brief, { code: '000660' })))));
 }
 afterEach(async () => {
   if (root) await React.act(async () => root.unmount());
@@ -159,4 +160,40 @@ test('unsafe evidence links are shown as text only', async () => {
   assert.match(document.body.textContent, /안전하지 않은 링크/);
   assert.equal(document.querySelector('.trading-news-evidence a'), null);
   await React.act(async () => document.querySelector('[aria-label="닫기"]').click());
+});
+
+test('theme tabs show a top theme in the main panel, leaders open their briefing, the theme column selects the same tab', async () => {
+  const themed = { ...themes,
+    rising: [{ ...themes.rising[0], leaders: [{ code: '005930', name: '삼성전자', price: 98000, change_rate: 1.2 }],
+      evidence: [{ title: 'AI 인프라 근거 기사', source: '한경', url: 'https://n.news.naver.com/t', published_at: null }] }],
+    falling: [{ id: '2', name: '2차전지', change_rate: -3.1, rise_count: 1, fall_count: 9, total_count: 10,
+      reason: '원자재 가격 부담이 이어졌어요.', leaders: [], evidence: [] }] };
+  serve({ '/ai/theme-brief': config => response(config, themed) });
+  await render();
+  await React.act(async () => document.querySelector('.trading-news-banner').click());
+  const dialog = document.querySelector('[role="dialog"]');
+  const tabs = () => [...dialog.querySelectorAll('[aria-label="뉴스 보기 선택"] button')];
+  assert.deepEqual(tabs().map(tab => tab.textContent.trim()), ['SK하이닉스', '▲ AI 인프라', '▼ 2차전지']);
+  assert.deepEqual(tabs().map(tab => tab.getAttribute('aria-pressed')), ['true', 'false', 'false']);
+  await React.act(async () => tabs()[1].click());
+  const panel = dialog.querySelector('.trading-news-main');
+  assert.equal(panel.getAttribute('aria-label'), 'AI 인프라 테마 상세');
+  assert.equal(document.activeElement, panel);
+  assert.match(panel.textContent, /상승 6 · 하락 2 \/ 8종목/);
+  assert.match(panel.textContent, /AI 데이터센터 협력 논의/);
+  assert.equal(panel.querySelector('.trading-news-evidence a').getAttribute('href'), 'https://n.news.naver.com/t');
+  assert.match(panel.textContent, /98,000원/);
+  assert.match(panel.querySelector('.trading-news-leaders').textContent, /보유/);
+  assert.equal(dialog.querySelectorAll('.trading-news-related-card').length, 5, 'related cards include the page stock while a theme is shown');
+  await React.act(async () => panel.querySelector('[aria-label="삼성전자 뉴스 상세 보기"]').click());
+  assert.equal(dialog.querySelector('.trading-news-main h3').textContent, '삼성전자');
+  assert.deepEqual(tabs().map(tab => tab.getAttribute('aria-pressed')), ['true', 'false', 'false']);
+  assert.equal(tabs()[0].textContent, '삼성전자');
+  const fallingHeader = [...dialog.querySelectorAll('.trading-news-themes h4 button')].find(item => item.textContent.includes('2차전지'));
+  await React.act(async () => fallingHeader.click());
+  assert.equal(tabs()[2].getAttribute('aria-pressed'), 'true');
+  assert.equal(dialog.querySelector('.trading-news-main').getAttribute('aria-label'), '2차전지 테마 상세');
+  await React.act(async () => tabs()[0].click());
+  assert.equal(dialog.querySelector('.trading-news-main h3').textContent, '삼성전자');
+  assert.equal(calls.filter(url => url === '/ai/theme-brief').length, 1);
 });

@@ -34,3 +34,11 @@
 .trading-news-evidence a { color:var(--ink); text-decoration:underline; text-underline-offset:2px; }
 .trading-news-evidence span { color:var(--ink-muted); }
 .trading-news-footnote { border-top:1px solid var(--line); padding-top:12px; font-size:11px; line-height:1.6; color:var(--ink-muted); }
+.trading-news-tabs { display:flex; gap:6px; margin-bottom:14px; overflow-x:auto; padding-bottom:2px; }
+.trading-news-tabs button { flex-shrink:0; border:1px solid var(--line); border-radius:999px; padding:5px 12px; background:var(--surface); color:var(--ink-muted); font-size:12px; font-weight:700; cursor:pointer; white-space:nowrap; }
+.trading-news-tabs button[aria-pressed="true"] { border-color:var(--accent-ink); background:var(--color-brand-50, #f5f3ff); color:var(--accent-ink); }
+.trading-news-tabs button:focus-visible { outline:2px solid var(--accent-ink); outline-offset:2px; }
+.trading-news-leaders { display:grid; gap:6px; }
+.trading-news-leaders button { display:flex; align-items:baseline; gap:8px; border:1px solid var(--line); border-radius:10px; padding:10px 12px; background:var(--surface-muted); font-size:13px; text-align:left; cursor:pointer; }
+.trading-news-leaders button:hover { border-color:var(--accent-ink); }
+.trading-news-leaders button:focus-visible { outline:2px solid var(--accent-ink); outline-offset:2px; }
