@@ -36,3 +36,10 @@
     animation: none;
   }
 }
+
+.portfolio-brief-stamp { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 12px; color: var(--ink-muted, #6b7280); }
+.portfolio-brief-saved { border-radius: 999px; padding: 2px 8px; background: var(--color-brand-50, #f5f3ff); color: var(--accent-ink, #5b21b6); font-weight: 700; }
+.portfolio-brief-previous { margin-top: 20px; border: 1px solid var(--line, #f3f4f6); border-radius: 10px; padding: 12px 16px; background: var(--surface-muted, #f9fafb); color: var(--ink-muted, #6b7280); }
+.portfolio-brief-previous > summary { cursor: pointer; font-size: 13px; font-weight: 600; }
+.portfolio-brief-still .portfolio-brief-line { animation: none; }
+.portfolio-brief-still { opacity: .8; }

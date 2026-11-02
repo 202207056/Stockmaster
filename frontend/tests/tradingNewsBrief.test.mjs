@@ -1,4 +1,4 @@
-import test, { after } from 'node:test';
+import test, { after, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { JSDOM } from 'jsdom';
 import { createServer } from 'vite';
@@ -11,75 +11,152 @@ const React = await import('react');
 const { createRoot } = await import('react-dom/client');
 const server = await createServer({ server: { middlewareMode: true, hmr: false }, appType: 'custom', envFile: false });
 const { default: Brief } = await server.ssrLoadModule('/src/components/common/TradingNewsBrief.jsx');
+const { AuthContext } = await server.ssrLoadModule('/src/contexts/auth-context.js');
 const client = await server.ssrLoadModule('/src/api/client.js');
-client.default.defaults.adapter = async () => assert.fail('Mock news must not request a backend');
 after(async () => { await server.close(); dom.window.close(); });
 
-test('banner opens an in-page mock briefing, themes toggle, Escape restores focus and scroll', async () => {
-  const root = createRoot(document.getElementById('root'));
-  try {
-    await React.act(async () => root.render(React.createElement(Brief, { code: '005930' })));
-    const banner = document.querySelector('.trading-news-banner');
-    assert.doesNotMatch(banner.textContent, /예시|AI 한줄요약/i);
-    banner.focus();
-    await React.act(async () => banner.click());
-    const dialog = document.querySelector('[role="dialog"]');
-    assert.ok(dialog);
-    assert.doesNotMatch(dialog.textContent, /예시|AI 한줄요약/i);
-    assert.ok(dialog.previousElementSibling.classList.contains('bg-transparent'));
-    dialog.getBoundingClientRect = () => {
-      const [dx, dy] = (dialog.style.transform.match(/-?\d+(?:\.\d+)?/g) || [0, 0]).map(Number);
-      return { left: 200 + dx, top: 100 + dy, width: 600, height: 400 };
-    };
-    const handle = dialog.querySelector('[aria-label="AI 뉴스 팝업 이동"]');
-    const pointer = (type, x, y) => {
-      const event = new dom.window.MouseEvent(type, { bubbles: true, button: 0, clientX: x, clientY: y });
-      Object.defineProperty(event, 'pointerId', { value: 1 });
-      handle.dispatchEvent(event);
-    };
-    await React.act(async () => { pointer('pointerdown', 250, 120); pointer('pointermove', 290, 150); pointer('pointerup', 290, 150); });
-    assert.equal(dialog.style.transform, 'translate(40px, 30px)');
-    await React.act(async () => handle.dispatchEvent(new dom.window.KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true })));
-    assert.equal(dialog.style.transform, 'translate(56px, 30px)');
-    await React.act(async () => { pointer('pointerdown', 300, 150); pointer('pointermove', -1000, -1000); pointer('pointercancel', -1000, -1000); });
-    assert.ok(dialog.getBoundingClientRect().left < 0);
-    assert.ok(dialog.getBoundingClientRect().top < 0);
-    await React.act(async () => { pointer('pointerdown', 0, 0); pointer('pointermove', 3000, 3000); pointer('pointerup', 3000, 3000); });
-    assert.ok(dialog.getBoundingClientRect().left > window.innerWidth);
-    assert.ok(dialog.getBoundingClientRect().top > window.innerHeight);
-    const movedTransform = dialog.style.transform;
-    await React.act(async () => window.dispatchEvent(new dom.window.Event('resize')));
-    assert.equal(dialog.style.transform, movedTransform);
-    assert.equal(document.body.style.overflow, 'hidden');
-    assert.equal(dialog.querySelector('.trading-news-summary p').textContent,
-      banner.querySelector('.trading-news-banner__headline').textContent);
-    assert.equal(dialog.querySelectorAll('.trading-news-sections section').length, 3);
+const peers = [
+  { code: '005930', name: '삼성전자', price: 98000, change_rate: -4.96, title: '메모리 공급 협력 논의' },
+  { code: '000990', name: 'DB하이텍', price: 51000, change_rate: 2.23, title: null },
+  { code: '042700', name: '한미반도체', price: 181300, change_rate: -2.23, title: 'HBM 장비 수요 주목' },
+  { code: '403870', name: 'HPSP', price: 30000, change_rate: -2.23, title: null },
+];
+function stockBrief(code, name, changeRate, extra = {}) {
+  return { symbol_code: code, name, price: 1000, change_rate: changeRate, as_of: '2026-10-30T15:30:00+09:00',
+    generated_at: '2026-11-02T12:40:00+09:00', ai_available: true, title: `${name} 주요 이슈`,
+    recent_issues: [`${name} 최근 이슈입니다.`], positive_factors: [`${name} 긍정 요인입니다.`], risk_factors: [`${name} 주의 요인입니다.`],
+    evidence: [{ title: `${name} 근거 기사`, source: '연합뉴스', url: 'https://n.news.naver.com/a', published_at: '2026-10-30T16:00:00+09:00' }],
+    related: [], source: '네이버 증권', disclaimer: '기사 제목을 바탕으로 한 요약이며 전망이나 투자 조언이 아닙니다.', ...extra };
+}
+const main = stockBrief('000660', 'SK하이닉스', -8.85, { title: '코스피 급락·하이닉스 8%대 하락', related: peers });
+const themes = { source: '네이버 증권', as_of: '2026-11-02T12:00:00+09:00', disclaimer: '테마 안내',
+  rising: [{ id: '1', name: 'AI 인프라', change_rate: 2.23, rise_count: 6, fall_count: 2, total_count: 8,
+    reason: 'AI 데이터센터 협력 논의가 이어졌어요.', leaders: [], evidence: [] }], falling: [] };
+const response = (config, data) => ({ config, data, status: 200, statusText: 'OK', headers: {} });
+let calls;
+function serve(overrides = {}) {
+  calls = [];
+  client.clearRequestCache();
+  client.default.defaults.adapter = async config => {
+    calls.push(config.url);
+    if (overrides[config.url]) return overrides[config.url](config);
+    if (config.url === '/ai/stock-brief/000660') return response(config, main);
+    const peer = peers.find(stock => config.url === `/ai/stock-brief/${stock.code}`);
+    if (peer) return response(config, stockBrief(peer.code, peer.name, peer.change_rate));
+    if (config.url === '/trading/portfolio') return response(config, { holdings: [
+      { symbol_code: '000660', hold_quantity: 10 }, { symbol_code: '005930', hold_quantity: 5 }, { symbol_code: '042700', hold_quantity: 2 }] });
+    if (config.url === '/ai/theme-brief') return response(config, themes);
+    throw new Error(`Unexpected ${config.url}`);
+  };
+}
+const auth = { isAuthenticated: true, accountId: 7, user: { user_id: 1 } };
+let root;
+async function render(value = auth) {
+  root ??= createRoot(document.getElementById('root'));
+  await React.act(async () => root.render(React.createElement(AuthContext.Provider, { value },
+    React.createElement(Brief, { code: '000660' }))));
+}
+afterEach(async () => {
+  if (root) await React.act(async () => root.unmount());
+  root = null;
+  localStorage.clear();
+  client.clearRequestCache?.();
+});
+
+test('banner opens the real briefing, related stocks load their own briefing, Escape restores focus and scroll', async () => {
+  serve();
+  await render();
+  const banner = document.querySelector('.trading-news-banner');
+  assert.equal(banner.querySelector('.trading-news-banner__label').textContent, '왜 내렸을까?');
+  assert.equal(banner.querySelector('.trading-news-banner__headline').textContent, main.title);
+  banner.focus();
+  await React.act(async () => banner.click());
+  const dialog = document.querySelector('[role="dialog"]');
+  assert.ok(dialog);
+  assert.ok(dialog.previousElementSibling.classList.contains('bg-transparent'));
+  dialog.getBoundingClientRect = () => {
+    const [dx, dy] = (dialog.style.transform.match(/-?\d+(?:\.\d+)?/g) || [0, 0]).map(Number);
+    return { left: 200 + dx, top: 100 + dy, width: 600, height: 400 };
+  };
+  const handle = dialog.querySelector('[aria-label="AI 뉴스 팝업 이동"]');
+  const pointer = (type, x, y) => {
+    const event = new dom.window.MouseEvent(type, { bubbles: true, button: 0, clientX: x, clientY: y });
+    Object.defineProperty(event, 'pointerId', { value: 1 });
+    handle.dispatchEvent(event);
+  };
+  await React.act(async () => { pointer('pointerdown', 250, 120); pointer('pointermove', 290, 150); pointer('pointerup', 290, 150); });
+  assert.equal(dialog.style.transform, 'translate(40px, 30px)');
+  assert.equal(document.body.style.overflow, 'hidden');
+  assert.equal(dialog.querySelector('.trading-news-summary p').textContent, main.title);
+  assert.equal(dialog.querySelectorAll('.trading-news-sections > section').length, 4);
+  assert.match(dialog.querySelector('.trading-news-main header').textContent, /10주 보유/);
+  assert.match(dialog.textContent, /SK하이닉스 근거 기사/);
+  assert.match(dialog.textContent, /11\.2\(월\) 12:40 생성/);
+  const relatedCards = [...dialog.querySelectorAll('.trading-news-related-card')];
+  assert.equal(relatedCards.length, 4);
+  assert.deepEqual(relatedCards.map(card => card.textContent.includes('보유')), [true, false, true, false]);
+  assert.match(relatedCards[1].textContent, /관련 기사 없음/);
+  for (const [name, held] of [['삼성전자', true], ['DB하이텍', false], ['한미반도체', true], ['HPSP', false], ['SK하이닉스', true]]) {
+    await React.act(async () => dialog.querySelector(`[aria-label="${name} 뉴스 상세 보기"]`).click());
+    const detail = dialog.querySelector('.trading-news-main');
+    assert.equal(detail.querySelector('h3').textContent, name);
+    assert.equal(detail.querySelector('header').textContent.includes('주 보유'), held);
+    assert.equal(document.activeElement, detail);
     assert.equal(dialog.querySelectorAll('.trading-news-related-card').length, 4);
-    const relatedCards = [...dialog.querySelectorAll('.trading-news-related-card')];
-    assert.deepEqual(relatedCards.map(card => card.textContent.includes('보유')), [true, false, true, false]);
-    for (const [name, held] of [['삼성전자', true], ['DB하이텍', false], ['한미반도체', true], ['HPSP', false], ['SK하이닉스', true]]) {
-      await React.act(async () => dialog.querySelector(`[aria-label="${name} 뉴스 상세 보기"]`).click());
-      const detail = dialog.querySelector('.trading-news-main');
-      assert.equal(detail.querySelector('h3').textContent, name);
-      assert.equal(detail.querySelectorAll('.trading-news-sections section').length, 3);
-      assert.equal(detail.querySelector('header').textContent.includes('주 보유'), held);
-      assert.equal(document.activeElement, detail);
-      assert.equal(dialog.querySelector(`[aria-label="${name} 뉴스 상세 보기"]`), null);
-      assert.equal(dialog.querySelectorAll('.trading-news-related-card').length, 4);
-      assert.equal(banner.querySelector('.trading-news-banner__headline').textContent, 'AI 인프라 관련 HBM 후속 협의');
-    }
-    assert.match(dialog.textContent, /오늘의 테마/);
-    const theme = dialog.querySelector('.trading-news-themes h4 button');
-    assert.equal(theme.getAttribute('aria-expanded'), 'true');
-    await React.act(async () => theme.click());
-    assert.equal(theme.getAttribute('aria-expanded'), 'false');
-    await React.act(async () => dialog.dispatchEvent(new dom.window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
-    assert.equal(document.querySelector('[role="dialog"]'), null);
-    assert.equal(document.body.style.overflow, '');
-    assert.equal(document.activeElement, banner);
-    await React.act(async () => banner.click());
-    assert.equal(document.querySelector('[role="dialog"]').style.transform, '');
-    await React.act(async () => document.querySelector('[aria-label="닫기"]').click());
-    assert.equal(document.querySelector('[role="dialog"]'), null);
-  } finally { await React.act(async () => root.unmount()); }
+    assert.equal(banner.querySelector('.trading-news-banner__headline').textContent, main.title);
+  }
+  assert.equal(calls.filter(url => url === '/ai/stock-brief/000660').length, 1);
+  assert.match(dialog.textContent, /오늘의 테마/);
+  assert.match(dialog.textContent, /AI 데이터센터 협력 논의/);
+  await React.act(async () => dialog.dispatchEvent(new dom.window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
+  assert.equal(document.querySelector('[role="dialog"]'), null);
+  assert.equal(document.body.style.overflow, '');
+  assert.equal(document.activeElement, banner);
+});
+
+test('guests, unavailable briefings and failures without a saved copy render nothing', async () => {
+  serve();
+  await render({ isAuthenticated: false, accountId: null, user: null });
+  assert.equal(document.querySelector('.trading-news-banner'), null);
+  assert.deepEqual(calls, []);
+  await React.act(async () => root.unmount());
+  root = null;
+  serve({ '/ai/stock-brief/000660': config => response(config, { ...main, ai_available: false, title: null }) });
+  await render();
+  assert.equal(document.querySelector('.trading-news-banner'), null);
+  await React.act(async () => root.unmount());
+  root = null;
+  localStorage.clear();
+  serve({ '/ai/stock-brief/000660': config => { throw Object.assign(new Error('PRIVATE'), { config, response: { status: 503 } }); } });
+  await render();
+  assert.equal(document.querySelector('.trading-news-banner'), null);
+  assert.doesNotMatch(document.body.textContent, /PRIVATE/);
+});
+
+test('browser copy shows at once while the server answers, and survives a failed refresh', async () => {
+  serve();
+  await render();
+  await React.act(async () => root.unmount());
+  root = null;
+  let release;
+  serve({ '/ai/stock-brief/000660': config => new Promise(resolve => { release = () => resolve(response(config, { ...main, title: '갱신된 제목' })); }) });
+  await render();
+  assert.equal(document.querySelector('.trading-news-banner__headline').textContent, main.title);
+  await React.act(async () => release());
+  assert.equal(document.querySelector('.trading-news-banner__headline').textContent, '갱신된 제목');
+  await React.act(async () => root.unmount());
+  root = null;
+  serve({ '/ai/stock-brief/000660': config => { throw Object.assign(new Error('offline'), { config }); } });
+  await render();
+  assert.equal(document.querySelector('.trading-news-banner__headline').textContent, '갱신된 제목');
+});
+
+test('unsafe evidence links are shown as text only', async () => {
+  serve({ '/ai/stock-brief/000660': config => response(config, { ...main,
+    evidence: [{ title: '안전하지 않은 링크', source: null, url: 'javascript:alert(1)', published_at: null }] }) });
+  await render();
+  await React.act(async () => document.querySelector('.trading-news-banner').click());
+  assert.match(document.body.textContent, /안전하지 않은 링크/);
+  assert.equal(document.querySelector('.trading-news-evidence a'), null);
+  await React.act(async () => document.querySelector('[aria-label="닫기"]').click());
 });

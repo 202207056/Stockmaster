@@ -18,15 +18,27 @@ const { default: Assets } = await server.ssrLoadModule('/src/pages/Assets.jsx');
 const { AuthContext } = await server.ssrLoadModule('/src/contexts/auth-context.js');
 const { fetchPortfolioBrief } = await server.ssrLoadModule('/src/api/data.js');
 const client = await server.ssrLoadModule('/src/api/client.js');
+const { CACHE_STORAGE_KEY, resourceKey } = await server.ssrLoadModule('/src/api/resourceCache.js');
 const container = document.getElementById('root');
+// Saved-copy reads never generate; tests answer them here so generation counts stay exact.
+let savedItems = () => [];
+let savedCalls = 0;
+let generationAdapter;
+Object.defineProperty(client.default.defaults, 'adapter', { configurable: true,
+  get: () => async config => {
+    if (!config.url.endsWith('/saved')) return generationAdapter(config);
+    savedCalls++;
+    return { config, data: { items: savedItems(config) }, status: 200, statusText: 'OK', headers: {} };
+  },
+  set: fn => { generationAdapter = fn; } });
 const holdings = [
   { symbol_code: '005930', security_name: '테스트전자', hold_quantity: 10, avg_price: 50000 },
   { symbol_code: '000660', security_name: '테스트반도체', hold_quantity: 2, avg_price: 80000 },
 ];
 const sectionKeys = ['current_status', 'entry_context', 'position_summary', 'recent_issues',
   'positive_factors', 'risk_factors', 'watch_points', 'limitations'];
-function brief(code = '005930', headline = '객관적인 보유 정보') {
-  return { symbol_code: code, security_name: null, headline,
+function brief(code = '005930', headline = '객관적인 보유 정보', generated = '2026-11-02T12:40:00+09:00') {
+  return { symbol_code: code, security_name: null, headline, generated_at: generated,
     ...Object.fromEntries(sectionKeys.map(key => [key, [`${key} 설명`]])),
     disclaimer: '모의투자 연습용 설명이며 투자 권유가 아닙니다.' };
 }
@@ -54,6 +66,9 @@ afterEach(async () => {
   if (root) await act(async () => root.unmount());
   root = null;
   client.clearToken();
+  localStorage.clear();
+  savedItems = () => [];
+  savedCalls = 0;
   client.default.defaults.adapter = async () => { throw new Error('Unexpected HTTP attempt'); };
 });
 
@@ -287,4 +302,89 @@ test('StrictMode reconciles removed selection without warnings, stale content or
   } finally {
     console.error = originalError;
   }
+});
+
+test('browser copies survive remount per account and stock, keep two, and never generate automatically', async () => {
+  let calls = 0;
+  client.default.defaults.adapter = async config => {
+    calls++;
+    return response(config, brief(config.url.split('/').at(-1), `SAVED_BRIEF_${calls}`, new Date(Date.now() + calls * 1000).toISOString()));
+  };
+  await render();
+  await click();
+  await act(async () => root.unmount());
+  root = null;
+  await render();
+  assert.equal(calls, 1);
+  assert.match(container.textContent, /SAVED_BRIEF_1/);
+  assert.match(container.textContent, /\d+\.\d+\(.\) \d{2}:\d{2} 생성/);
+  assert.equal(button().textContent, 'AI 브리핑 다시 보기');
+  assert.equal(container.querySelector('details'), null);
+  await click();
+  assert.match(container.querySelector('details summary').textContent, /이전 브리핑/);
+  assert.match(container.querySelector('details').textContent, /SAVED_BRIEF_1/);
+  await click();
+  assert.doesNotMatch(container.textContent, /SAVED_BRIEF_1/);
+  assert.match(container.querySelector('details').textContent, /SAVED_BRIEF_2/);
+  await select('000660');
+  assert.doesNotMatch(container.textContent, /SAVED_BRIEF_/);
+  await render({ accountId: 8 });
+  assert.doesNotMatch(container.textContent, /SAVED_BRIEF_/);
+  assert.equal(calls, 3);
+});
+
+test('server copies load on open without generating and win over an older browser copy', async () => {
+  client.default.defaults.adapter = async () => assert.fail('opening must not generate');
+  localStorage.setItem(CACHE_STORAGE_KEY, JSON.stringify([{ key: resourceKey('portfolio-brief', 7, '005930'), private: true,
+    savedAt: Date.now(), data: [brief('005930', 'OLD_BROWSER_COPY', '2026-11-01T09:00:00+09:00')] }]));
+  savedItems = config => {
+    assert.deepEqual(config.params, { account_id: 7 });
+    return [brief('005930', 'SERVER_COPY', '2026-11-02T12:40:00+09:00'), brief('005930', 'SERVER_OLDER', '2026-11-02T09:00:00+09:00')];
+  };
+  await render();
+  assert.equal(savedCalls, 1);
+  assert.match(container.textContent, /SERVER_COPY/);
+  assert.match(container.querySelector('details').textContent, /SERVER_OLDER/);
+  assert.doesNotMatch(container.textContent, /OLD_BROWSER_COPY/);
+  assert.match(container.textContent, /서버에 저장됨/);
+});
+
+test('saved mark appears only when the server returns the new briefing; failures keep the last copy', async () => {
+  const fresh = brief('005930', 'FRESH_BRIEF', '2026-11-02T13:00:00+09:00');
+  client.default.defaults.adapter = async config => response(config, fresh);
+  await render();
+  savedItems = () => [fresh];
+  await click();
+  assert.match(container.textContent, /서버에 저장됨/);
+  savedItems = () => [];
+  client.default.defaults.adapter = async config => response(config, { ...fresh, headline: 'NOT_SAVED', generated_at: '2026-11-02T13:05:00+09:00' });
+  await click();
+  assert.match(container.textContent, /NOT_SAVED/);
+  assert.doesNotMatch(container.textContent, /서버에 저장됨/);
+  assert.match(container.querySelector('[role="status"]').textContent, /생성이 완료/);
+  client.default.defaults.adapter = async config => {
+    throw Object.assign(new Error('offline'), { config, response: { status: 503 } });
+  };
+  await click();
+  assert(container.querySelector('[role="alert"]'));
+  assert.match(container.textContent, /NOT_SAVED/);
+});
+
+test('session change clears browser copies and malformed copies are ignored', async () => {
+  client.setToken('fixture-session-a');
+  client.default.defaults.adapter = async config => response(config, brief('005930', 'KEPT_BRIEF'));
+  await render();
+  await click();
+  await act(async () => root.unmount());
+  root = null;
+  client.setToken('fixture-session-b');
+  await render();
+  assert.doesNotMatch(container.textContent, /KEPT_BRIEF/);
+  await act(async () => root.unmount());
+  root = null;
+  localStorage.setItem(CACHE_STORAGE_KEY, JSON.stringify([{ key: resourceKey('portfolio-brief', 7, '005930'), private: true,
+    savedAt: Date.now(), data: [{ generated_at: '2026-11-02T12:00:00+09:00', headline: 'MALFORMED_BRIEF', disclaimer: '안내' }] }]));
+  await render();
+  assert.doesNotMatch(container.textContent, /MALFORMED_BRIEF/);
+  assert.equal(button().textContent, 'AI 브리핑 보기');
 });

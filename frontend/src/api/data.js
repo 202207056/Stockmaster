@@ -44,19 +44,42 @@ export const fetchThemeBrief = async (signal) => {
 };
 export const fetchCoach = async (symbol, signal) => requireObject(await get('/ai/coach', { symbol }, signal));
 export const fetchNewsSummary = async (code, signal) => requireObject(await get(`/ai/news-summary/${encodeURIComponent(code)}`, undefined, signal));
+const portfolioSections = ['current_status', 'entry_context', 'position_summary', 'recent_issues',
+  'positive_factors', 'risk_factors', 'watch_points', 'limitations'];
+const isPortfolioBrief = (data, code) => data?.symbol_code === String(code)
+  && ['headline', 'disclaimer'].every(key => typeof data[key] === 'string' && data[key].trim())
+  && portfolioSections.every(key => Array.isArray(data[key]) && data[key].length <= 3
+    && data[key].every(item => typeof item === 'string' && item.trim()))
+  && data.current_status.length > 0;
 export const fetchPortfolioBrief = async (accountId, code, signal, profile = 'luna') => {
   // A manual refresh must generate a new briefing, including within the GET cache TTL.
   const data = requireObject((await api.get(`/ai/portfolio-brief/${encodeURIComponent(code)}`, {
     params: { account_id: accountId, profile }, signal, cache: false,
   })).data);
-  const sections = ['current_status', 'entry_context', 'position_summary', 'recent_issues',
-    'positive_factors', 'risk_factors', 'watch_points', 'limitations'];
-  if (data.symbol_code !== String(code)
-    || !['headline', 'disclaimer'].every(key => typeof data[key] === 'string' && data[key].trim())
-    || !sections.every(key => Array.isArray(data[key]) && data[key].length <= 3
-      && data[key].every(item => typeof item === 'string' && item.trim()))
-    || !data.current_status.length) {
-    throw new Error('브리핑 응답 형식을 확인할 수 없습니다.');
+  if (!isPortfolioBrief(data, code)) throw new Error('브리핑 응답 형식을 확인할 수 없습니다.');
+  return data;
+};
+// Saved briefings are read from the server without generating a new one.
+export const fetchSavedPortfolioBriefs = async (accountId, code, signal) => {
+  const data = requireObject((await api.get(`/ai/portfolio-brief/${encodeURIComponent(code)}/saved`, {
+    params: { account_id: accountId }, signal, cache: false,
+  })).data);
+  return requireArray(data.items).filter(item => isPortfolioBrief(item, code)
+    && Number.isFinite(Date.parse(item.generated_at))).slice(0, 2);
+};
+export const fetchStockBrief = async (code, signal) => {
+  const data = requireObject(await get(`/ai/stock-brief/${encodeURIComponent(code)}`, undefined, signal));
+  const texts = list => Array.isArray(list) && list.length <= 3 && list.every(item => typeof item === 'string');
+  const nullableText = value => value === null || typeof value === 'string';
+  if (data.symbol_code !== String(code) || typeof data.name !== 'string' || !Number.isFinite(data.change_rate)
+    || !Number.isFinite(Date.parse(data.generated_at)) || !nullableText(data.title)
+    || !['recent_issues', 'positive_factors', 'risk_factors'].every(key => texts(data[key]))
+    || !Array.isArray(data.related) || data.related.length > 4
+    || !data.related.every(stock => typeof stock.code === 'string' && typeof stock.name === 'string'
+      && Number.isFinite(stock.change_rate) && nullableText(stock.title))
+    || !Array.isArray(data.evidence) || !data.evidence.every(article => typeof article.title === 'string')
+    || typeof data.disclaimer !== 'string') {
+    throw new Error('종목 브리핑 응답 형식을 확인할 수 없습니다.');
   }
   return data;
 };

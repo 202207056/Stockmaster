@@ -28,3 +28,9 @@
 .trading-news-quote-row { display:flex; flex-wrap:wrap; align-items:center; gap:12px; margin-bottom:16px; }
 .trading-news-quote-row > div { flex:1 1 260px; }
 .trading-news-quote-row > .trading-news-banner { flex:1 1 210px; min-width:0; gap:8px; padding:10px; }
+.trading-news-banner:disabled { cursor:default; opacity:.75; }
+.trading-news-pending { padding:24px 20px; font-size:13px; color:var(--ink-muted); }
+.trading-news-evidence ul { list-style:disc; }
+.trading-news-evidence a { color:var(--ink); text-decoration:underline; text-underline-offset:2px; }
+.trading-news-evidence span { color:var(--ink-muted); }
+.trading-news-footnote { border-top:1px solid var(--line); padding-top:12px; font-size:11px; line-height:1.6; color:var(--ink-muted); }
