@@ -406,7 +406,9 @@ function BriefResult({ data, still = false }) {
       <div className="mt-3 space-y-5 break-words [overflow-wrap:anywhere]">
         <h3 className="portfolio-brief-line text-base font-bold text-gray-900" style={nextLineStyle()}><Cited text={data.headline} sources={data.sources} /></h3>
         {sections.map(([field, title]) => data[field]?.length > 0 && <section key={field}
-          className={field === 'limitations' ? 'text-xs text-gray-500' : field === 'trend_guesses' ? 'portfolio-brief-guess text-sm' : 'text-sm text-gray-700'}>
+          className={field === 'limitations' ? 'text-xs text-gray-500' : field === 'trend_guesses' ? 'portfolio-brief-guess portfolio-brief-line text-sm' : 'text-sm text-gray-700'}
+          // The guess box fades in together with its heading instead of standing empty first.
+          style={field === 'trend_guesses' ? { '--brief-line': line } : undefined}>
           <h4 className="portfolio-brief-line mb-2 font-bold" style={nextLineStyle()}>{title}</h4>
           {field === 'trend_guesses' && <p className="portfolio-brief-line mb-2 text-xs" style={nextLineStyle()}>
             기사와 같은 시기의 가격 흐름을 나란히 보고 추정한 내용이에요. 확인된 사실이나 앞으로의 전망이 아니에요.</p>}
