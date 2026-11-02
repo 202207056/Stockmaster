@@ -189,6 +189,7 @@ function AccountBrief({ accountId, holdings }) {
     }
   }
 
+  const listNames = codes => codes.map(code => ranked.find(stock => stock.code === code)?.name ?? code).join('·');
   if (!holdings.length) return <p className="text-sm text-gray-500">보유종목이 생기면 AI 브리핑을 확인할 수 있어요.</p>;
   const names = Object.fromEntries(ranked.map(stock => [stock.code, stock]));
   return <>
@@ -209,8 +210,8 @@ function AccountBrief({ accountId, holdings }) {
         {run === 'busy' ? '브리핑 생성 중...' : '브리핑 생성하기'}
       </LearningButton>
       {run !== 'busy' && on.length > 0 && !pending.length && <span className="text-xs text-gray-500">켠 종목은 오늘 브리핑이 있어요. 새로 만들려면 종목의 ON을 길게 눌러 RE로 바꿔 주세요.</span>}
-      {run !== 'busy' && pending.length > 0 && (pending.length < on.length || redo.length > 0) && <span className="text-xs text-gray-500">
-        {[fresh.length && `오늘 브리핑이 없는 ${fresh.length}종목`, redo.length && `RE ${redo.length}종목`].filter(Boolean).join('과 ')}{pending.length < on.length ? '만' : '을'} 생성해요.</span>}
+      {run !== 'busy' && pending.length > 0 && <span className="text-xs text-gray-500">
+        생성할 종목: {[fresh.length && `${listNames(fresh)}(오늘 처음)`, redo.length && `${listNames(redo)}(RE)`].filter(Boolean).join(' · ')}</span>}
     </div>
     <p role="status" className="mt-2 text-sm text-gray-500">{run === 'busy' ? '브리핑을 생성하고 있어요.' : run === 'done' ? '브리핑 생성이 완료됐어요.' : ''}</p>
     <div className="space-y-3">

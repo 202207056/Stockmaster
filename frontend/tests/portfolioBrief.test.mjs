@@ -231,7 +231,7 @@ test('the main button fills stocks without a briefing today; holding a chip mark
   db.items = [{ ...brief('000660', 'YESTERDAY', ago(1)), id: 90 }, { ...brief('005930', 'TODAY_DONE'), id: 91 }];
   await render();
   await press(chip('테스트반도체'));
-  assert.match(container.textContent, /오늘 브리핑이 없는 1종목만 생성해요/);
+  assert.match(container.textContent, /생성할 종목: 테스트반도체\(오늘 처음\)/);
   await generate();
   assert.deepEqual(urls, ['000660']);
   assert(gen().disabled);
@@ -253,7 +253,7 @@ test('the main button fills stocks without a briefing today; holding a chip mark
   assert.deepEqual(urls, ['000660'], 'holding only selects; it never generates by itself');
   assert.equal(switchOf('테스트전자'), 'RE');
   assert.equal(chip('테스트전자').getAttribute('aria-pressed'), 'true', 'the hold does not also toggle the chip');
-  assert.match(container.textContent, /RE 1종목만 생성해요/);
+  assert.match(container.textContent, /생성할 종목: 테스트전자\(RE\)/);
   await press(chip('테스트전자'));
   assert.equal(switchOf('테스트전자'), 'ON', 'a tap on RE goes back to ON');
   assert(gen().disabled);
