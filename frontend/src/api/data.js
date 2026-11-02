@@ -51,13 +51,16 @@ const isPortfolioBrief = (data, code) => data?.symbol_code === String(code)
   && portfolioSections.every(key => Array.isArray(data[key]) && data[key].length <= 3
     && data[key].every(item => typeof item === 'string' && item.trim()))
   && data.current_status.length > 0;
+// Guesses are optional (older briefings have none); anything malformed is dropped rather than shown.
+const withGuesses = data => ({ ...data, trend_guesses: Array.isArray(data.trend_guesses) && data.trend_guesses.length <= 2
+  && data.trend_guesses.every(item => typeof item === 'string' && item.trim()) ? data.trend_guesses : [] });
 export const fetchPortfolioBrief = async (accountId, code, signal, profile = 'luna') => {
   // A manual refresh must generate a new briefing, including within the GET cache TTL.
   const data = requireObject((await api.get(`/ai/portfolio-brief/${encodeURIComponent(code)}`, {
     params: { account_id: accountId, profile }, signal, cache: false,
   })).data);
   if (!isPortfolioBrief(data, code)) throw new Error('브리핑 응답 형식을 확인할 수 없습니다.');
-  return data;
+  return withGuesses(data);
 };
 // Saved briefings (today back to three days ago) are read without generating anything.
 export const fetchPortfolioBriefHistory = async (accountId, signal) => {
@@ -65,7 +68,7 @@ export const fetchPortfolioBriefHistory = async (accountId, signal) => {
     params: { account_id: accountId }, signal, cache: false,
   })).data);
   return requireArray(data.items).filter(item => Number.isInteger(item?.id) && isPortfolioBrief(item, item.symbol_code)
-    && Number.isFinite(Date.parse(item.generated_at)));
+    && Number.isFinite(Date.parse(item.generated_at))).map(withGuesses);
 };
 export const deletePortfolioBrief = (accountId, id) => api.delete(`/ai/portfolio-briefs/${encodeURIComponent(id)}`, {
   params: { account_id: accountId },

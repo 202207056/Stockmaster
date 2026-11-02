@@ -96,3 +96,7 @@
   .portfolio-brief-chip::before, .portfolio-brief-chip.is-charging::before { transition: none; }
   .portfolio-brief-chip.is-redo, .portfolio-brief-chip .portfolio-brief-chip__switch { animation: none; }
 }
+
+/* Guesses read differently from facts: a dashed amber box with its own warning line. */
+.portfolio-brief-guess { border: 1px dashed #f59e0b; border-radius: 10px; padding: 10px 12px; background: rgba(245, 158, 11, .08); color: var(--ink, #374151); }
+.portfolio-brief-guess h4, .portfolio-brief-guess p { color: #d97706; }

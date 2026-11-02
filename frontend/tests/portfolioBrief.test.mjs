@@ -557,3 +557,23 @@ test('session change clears browser copies and malformed copies are ignored', as
   assert.doesNotMatch(container.textContent, /MALFORMED_BRIEF/);
   assert.match(block('테스트전자').textContent, /아직 브리핑이 없어요/);
 });
+
+test('trend guesses show in their own marked section; missing or malformed guesses show nothing', async () => {
+  const guess = '추정: 실적 보도가 나온 주에 주가도 올라, 실적 기대와 관련된 흐름으로 추정돼요.';
+  client.default.defaults.adapter = async config => ok(config, { ...brief(codeOf(config), 'WITH_GUESS'), trend_guesses: [guess] });
+  await render();
+  await generate();
+  const section = block('테스트전자').querySelector('.portfolio-brief-guess');
+  assert.match(section.textContent, /추정 · 주의해서 읽어 주세요/);
+  assert.match(section.textContent, /확인된 사실이나 앞으로의 전망이 아니에요/);
+  assert.match(section.textContent, /실적 기대와 관련된 흐름으로 추정돼요/);
+  await act(async () => root.unmount());
+  root = null;
+  localStorage.clear();
+  db.items = [{ ...brief('005930', 'OLD_SAVED'), id: 3 }, { ...brief('000660', 'BAD_GUESS'), trend_guesses: 'oops', id: 4 }];
+  await render({ holdings: [...holdings] });
+  assert.match(block('테스트전자').textContent, /OLD_SAVED/, 'briefings saved before guesses existed still show');
+  await press(flipButton('테스트전자'));
+  assert.equal(block('테스트전자').querySelector('.portfolio-brief-guess'), null);
+  assert.match(history().textContent, /BAD_GUESS/, 'a malformed guess list is dropped, not the briefing');
+});

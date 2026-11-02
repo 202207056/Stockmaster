@@ -15,6 +15,7 @@ const sections = [
   ['recent_issues', '최근 확인되는 이슈'],
   ['positive_factors', '긍정적으로 볼 수 있는 요인'],
   ['risk_factors', '주의해서 볼 요인'],
+  ['trend_guesses', '추정 · 주의해서 읽어 주세요'],
   ['watch_points', '앞으로 확인할 점'],
   ['limitations', '데이터 안내'],
 ];
@@ -44,7 +45,7 @@ function readRecords(accountId) {
   // Browser copies are optional; anything unexpected is ignored instead of rendered.
   return Array.isArray(items) ? kept(items.filter(item => stamp(item) > 0 && typeof item.symbol_code === 'string'
     && typeof item.headline === 'string' && typeof item.disclaimer === 'string'
-    && sections.every(([field]) => Array.isArray(item[field])))) : [];
+    && sections.every(([field]) => field === 'trend_guesses' || Array.isArray(item[field])))) : [];
 }
 
 // The server list wins; briefings it never confirmed stay as unsaved browser copies.
@@ -373,8 +374,11 @@ function BriefResult({ data, still = false }) {
     <div className="portfolio-brief-reveal__clip">
       <div className="mt-3 space-y-5 break-words [overflow-wrap:anywhere]">
         <h3 className="portfolio-brief-line text-base font-bold text-gray-900" style={nextLineStyle()}>{data.headline}</h3>
-        {sections.map(([field, title]) => data[field].length > 0 && <section key={field} className={field === 'limitations' ? 'text-xs text-gray-500' : 'text-sm text-gray-700'}>
+        {sections.map(([field, title]) => data[field]?.length > 0 && <section key={field}
+          className={field === 'limitations' ? 'text-xs text-gray-500' : field === 'trend_guesses' ? 'portfolio-brief-guess text-sm' : 'text-sm text-gray-700'}>
           <h4 className="portfolio-brief-line mb-2 font-bold" style={nextLineStyle()}>{title}</h4>
+          {field === 'trend_guesses' && <p className="portfolio-brief-line mb-2 text-xs" style={nextLineStyle()}>
+            최근 기사와 같은 시기의 가격 흐름을 나란히 보고 추정한 내용이에요. 확인된 사실이나 앞으로의 전망이 아니에요.</p>}
           <ul className="list-disc space-y-1 pl-5 leading-relaxed">{data[field].map((text, index) => <li key={index} className="portfolio-brief-line" style={nextLineStyle()}>{text}</li>)}</ul>
         </section>)}
         <p className="portfolio-brief-line border-t border-gray-100 pt-3 text-xs leading-relaxed text-gray-500" style={nextLineStyle()}>{data.disclaimer}</p>
