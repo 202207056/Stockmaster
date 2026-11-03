@@ -70,7 +70,7 @@ export default function Dashboard() {
           {rankings.map((col) => (
             <div key={col.key} data-site-tour={`ranking-${col.key}`}>
               <div className="mb-4">
-                <h3 className="text-base font-bold text-gray-700"><Link to={`/dashboard/rankings?type=${col.key}`} aria-label={`${col.title} 전체보기`} className="inline-flex items-center gap-2 py-1 hover:text-brand-700 focus-visible:outline-2 focus-visible:outline-brand-600">{col.title}<span aria-hidden="true" className="font-normal text-gray-500">&gt;</span></Link></h3>
+                <h3 className="text-base font-bold text-gray-700"><Link to={`/dashboard/rankings?type=${col.key}`} aria-label={`${col.title} 전체보기`} className="inline-flex items-center gap-2 py-1 focus-visible:outline-2 focus-visible:outline-brand-600">{col.title}<span aria-hidden="true" className="font-normal text-gray-500">&gt;</span></Link></h3>
               </div>
               <RemoteState resource={col.resource} requiresAuth={false} empty={!col.resource.data?.length}>
               <ol className="border-t border-gray-400 pt-2">
@@ -202,12 +202,12 @@ function SectionTitle({ children, to, hint, spacious = false }) {
   return (
     <div className={spacious ? 'mb-6' : 'mb-3'}>
       <h2 className={`flex items-center gap-2 ${spacious ? 'text-xl' : 'text-lg'} font-bold text-gray-800`}>
-        {children}
-        {to && (
-          <Link to={to} className="text-sm font-normal text-gray-400 hover:text-gray-700">
-            &gt;
+        {to ? (
+          <Link to={to} className="inline-flex items-center gap-2 focus-visible:outline-2 focus-visible:outline-brand-600">
+            {children}
+            <span aria-hidden="true" className="text-sm font-normal text-gray-400">&gt;</span>
           </Link>
-        )}
+        ) : children}
       </h2>
       {hint && <p className="mt-0.5 text-xs text-gray-400">{hint}</p>}
     </div>
