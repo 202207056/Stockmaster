@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { JSDOM } from 'jsdom';
-import { readVisiblePageText } from '../src/features/ocr/pageText.js';
-import { findDetectedTerms } from '../src/features/ocr/terms.js';
+import { readVisiblePageText } from '../src/components/ai/term-analyzer/pageText.js';
+import { findDetectedTerms } from '../src/components/ai/term-analyzer/terms.js';
 import { GLOSSARY, GLOSSARY_COUNT } from '../src/constants/glossary.js';
 
 function read(html) {

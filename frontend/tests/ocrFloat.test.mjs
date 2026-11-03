@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { anchorFromRect, BUTTON, clampRect, DEFAULT_ANCHOR, MIN_PANEL, rectFromAnchor, resizeRect } from '../src/features/ocr/floatGeometry.js';
+import { anchorFromRect, BUTTON, clampRect, DEFAULT_ANCHOR, MIN_PANEL, rectFromAnchor, resizeRect } from '../src/components/ai/term-analyzer/floatGeometry.js';
 
 const wide = { width: 1600, height: 1000 };
 const small = { width: 700, height: 500 };

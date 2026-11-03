@@ -8,7 +8,7 @@ import LoginNotice from '../components/common/LoginNotice';
 import AccountPicker from '../components/common/AccountPicker';
 import useMiniAssetsSetting from '../hooks/useMiniAssetsSetting';
 import DeleteMembership from '../components/common/DeleteMembership';
-import useTermAnalyzerSetting from '../features/ocr/useTermAnalyzerSetting';
+import useTermAnalyzerSetting from '../components/ai/term-analyzer/useTermAnalyzerSetting';
 
 /**
  * 마이페이지 (F-2 라우팅 연결)

@@ -1,4 +1,4 @@
-import api, { getToken } from '../../api/client';
+import api, { getToken } from '../../../api/client';
 import { validateDetected } from './readMarks';
 
 export const TERM_DETECT_PATH = '/ai/term-detect';

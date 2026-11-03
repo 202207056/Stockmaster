@@ -1,4 +1,4 @@
-import api, { getToken } from '../../api/client';
+import api, { getToken } from '../../../api/client';
 import { TERM_AI_PATH, TERM_AI_TIMEOUT_MS, validateTermRequest, validateTermResponse } from './termAiContract';
 
 // No runtime mock and no automatic request. Enable only after backend review/approval.

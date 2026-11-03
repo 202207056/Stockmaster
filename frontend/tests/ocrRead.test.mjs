@@ -1,10 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { GLOSSARY } from '../src/constants/glossary.js';
-import { findDetectedTerms, findTermSpans } from '../src/features/ocr/terms.js';
-import { validateDetected } from '../src/features/ocr/readMarks.js';
-import { ownerOf, readLast, writeLast } from '../src/features/ocr/lastAnalysis.js';
-import { collectPageMarks, shiftArea } from '../src/features/ocr/pageMarkRanges.js';
+import { findDetectedTerms, findTermSpans } from '../src/components/ai/term-analyzer/terms.js';
+import { validateDetected } from '../src/components/ai/term-analyzer/readMarks.js';
+import { ownerOf, readLast, writeLast } from '../src/components/ai/term-analyzer/lastAnalysis.js';
+import { collectPageMarks, shiftArea } from '../src/components/ai/term-analyzer/pageMarkRanges.js';
 import { JSDOM } from 'jsdom';
 
 test('term spans point at the words in the read paragraph', () => {
@@ -134,7 +134,7 @@ test('broken capture is discarded and unknown page terms do not survive', () => 
 });
 
 test('the analyzer stays off until it is turned on in My page', async () => {
-  const { readEnabled, ENABLED_KEY } = await import('../src/features/ocr/useTermAnalyzerSetting.js');
+  const { readEnabled, ENABLED_KEY } = await import('../src/components/ai/term-analyzer/useTermAnalyzerSetting.js');
   const store = (value) => ({ getItem: (key) => (key === ENABLED_KEY ? value : null) });
   assert.equal(readEnabled(store(null)), false);
   assert.equal(readEnabled(store('false')), false);

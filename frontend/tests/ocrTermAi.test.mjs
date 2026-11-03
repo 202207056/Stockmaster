@@ -2,13 +2,13 @@ import test, { after } from 'node:test';
 import assert from 'node:assert/strict';
 import { createServer } from 'vite';
 import { GLOSSARY } from '../src/constants/glossary.js';
-import { exactGlossaryId, validateTermRequest, validateTermResponse, privacyIssue } from '../src/features/ocr/termAiContract.js';
+import { exactGlossaryId, validateTermRequest, validateTermResponse, privacyIssue } from '../src/components/ai/term-analyzer/termAiContract.js';
 
 const payload = () => ({ term: { text: '듀레이션', glossaryId: null }, context: '채권 가격의 금리 민감도를 설명하는 화면이에요.', contextReviewed: true });
 const response = () => ({ requestId: 'test-only', source: 'gemini', cached: false, status: 'explained', definition: '모의 정의', simpleExplanation: '모의 쉬운 설명', contextExplanation: '모의 문맥 설명', example: '모의 예시', cautions: '모의 주의사항', message: '' });
 const server = await createServer({ server: { middlewareMode: true }, appType: 'custom', optimizeDeps: { noDiscovery: true, include: [] } });
 after(() => server.close());
-const { createTermExplainer } = await server.ssrLoadModule('/src/features/ocr/termAiApi.js');
+const { createTermExplainer } = await server.ssrLoadModule('/src/components/ai/term-analyzer/termAiApi.js');
 
 test('known aliases resolve locally without calling AI', () => {
   for (const [text, id] of [['매수', 'buy'], ['Trading', 'trading'], ['PER', 'per'], ['평단가', 'avg_price']]) assert.equal(exactGlossaryId(text, GLOSSARY), id);

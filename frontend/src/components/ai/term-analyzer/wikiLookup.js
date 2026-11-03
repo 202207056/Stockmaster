@@ -1,4 +1,4 @@
-import { GLOSSARY } from '../../constants/glossary.js';
+import { GLOSSARY } from '../../../constants/glossary.js';
 import { exactGlossaryId, privacyIssue } from './termAiContract.js';
 
 export const WIKI_ENDPOINT = 'https://ko.wikipedia.org/w/api.php';

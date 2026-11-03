@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { JSDOM } from 'jsdom';
-import { readVisiblePageText } from '../src/features/ocr/pageText.js';
-import { overlap, sourceRect } from '../src/features/ocr/regionImage.js';
+import { readVisiblePageText } from '../src/components/ai/term-analyzer/pageText.js';
+import { overlap, sourceRect } from '../src/components/ai/term-analyzer/regionImage.js';
 
 // Each paragraph is laid out on its own 20px row; the range rectangle follows the node being measured.
 function layout(html) {

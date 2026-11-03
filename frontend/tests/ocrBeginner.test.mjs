@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { GLOSSARY, CATEGORIES, searchGlossary } from '../src/constants/glossary.js';
-import { findDetectedTerms } from '../src/features/ocr/terms.js';
+import { findDetectedTerms } from '../src/components/ai/term-analyzer/terms.js';
 
 const basics = {
   트레이딩: 'trading', Trading: 'trading', 차트: 'chart', 매수: 'buy', 매도: 'sell',

@@ -1,5 +1,5 @@
 import { useId, useState } from 'react';
-import { GLOSSARY } from '../../constants/glossary';
+import { GLOSSARY } from '../../../constants/glossary';
 import { exactGlossaryId } from './termAiContract';
 import { WIKI_ENABLED } from './wikiLookup';
 

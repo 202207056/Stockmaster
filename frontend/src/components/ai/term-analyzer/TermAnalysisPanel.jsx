@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { CATEGORIES, GLOSSARY } from '../../constants/glossary';
+import { CATEGORIES, GLOSSARY } from '../../../constants/glossary';
 import { findDetectedTerms } from './terms';
 import { recognizeLocal } from './ocr';
 import PageMarks from './PageMarks';
@@ -11,8 +11,8 @@ import { Link, useLocation } from 'react-router-dom';
 import { aiId, BASIC_IDS, TIER_LABELS } from './readMarks';
 import RegionSelector from './RegionSelector';
 import { renderRegionImages } from './regionImage';
-import useAuth from '../../hooks/useAuth';
-import { getSessionId, getToken } from '../../api/client';
+import useAuth from '../../../hooks/useAuth';
+import { getSessionId, getToken } from '../../../api/client';
 import TermAiExplanation from './TermAiExplanation';
 import TermQuestion from './TermQuestion';
 import { readVisiblePageText } from './pageText';

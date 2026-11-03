@@ -6,7 +6,7 @@ import ProtectedRoute from './components/routing/ProtectedRoute';
 import OnboardingGate from './components/routing/OnboardingGate';
 import ApiStatusBanner from './components/system/ApiStatusBanner';
 import FloatingAssets from './components/common/FloatingAssets';
-import FloatingTermAnalyzer from './features/ocr/FloatingTermAnalyzer';
+import FloatingTermAnalyzer from './components/ai/term-analyzer/FloatingTermAnalyzer';
 
 import Landing from './pages/Landing';
 import Login from './pages/Login';

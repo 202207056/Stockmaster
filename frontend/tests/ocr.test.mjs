@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { GLOSSARY } from '../src/constants/glossary.js';
-import { findDetectedTerms, findUnknownTerms, isAnalyzerRoute, validateFile, validateDimensions } from '../src/features/ocr/terms.js';
+import { findDetectedTerms, findUnknownTerms, isAnalyzerRoute, validateFile, validateDimensions } from '../src/components/ai/term-analyzer/terms.js';
 
 test('OCR discovers investment acronyms, Korean terms and particles using existing glossary IDs', () => {
   const found = findDetectedTerms('PER 12배 PBR 0.8배 ROE 12% EPS 4500원\n시가총액 450조원 거래량은 100주 평가손익 예수금 변동성이 높습니다.', GLOSSARY);
