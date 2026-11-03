@@ -1,3 +1,4 @@
+import { comma } from '../../utils/format';
 import { useRef, useState } from 'react';
 import { Heart, MessageCircle, Repeat2, Send, ChevronRight } from 'lucide-react';
 import { toggleLike } from '../../api/data';
@@ -37,8 +38,8 @@ export default function TimelinePost({ post, authenticated, onOpen, onQuote, onC
       {post.detailUnavailable && <button type="button" onClick={onOpen} className="mt-2 text-xs text-brand-600">본문을 불러오지 못했어요. 게시글 열기</button>}
       <PostAttachments post={post} authenticated={authenticated} onChanged={onChanged} showSymbol={false} />
       <div className="community-actions" aria-label="게시글 반응">
-        <button type="button" disabled={!authenticated || busy} onClick={like} aria-pressed={liked} aria-label={`좋아요 ${post.like_count || 0}, 누르면 전환`} title="좋아요"><Heart size={20} strokeWidth={1.7} aria-hidden="true" /><span>{post.like_count || 0}</span></button>
-        <button type="button" onClick={onOpen} aria-label={`댓글 ${post.comment_count ?? post.comments?.length ?? 0}개 보기`} title="댓글"><MessageCircle size={20} strokeWidth={1.7} aria-hidden="true" /><span>{post.comment_count ?? post.comments?.length ?? 0}</span></button>
+        <button type="button" disabled={!authenticated || busy} onClick={like} aria-pressed={liked} aria-label={`좋아요 ${comma(post.like_count || 0)}, 누르면 전환`} title="좋아요"><Heart size={20} strokeWidth={1.7} aria-hidden="true" /><span>{comma(post.like_count || 0)}</span></button>
+        <button type="button" onClick={onOpen} aria-label={`댓글 ${comma(post.comment_count ?? post.comments?.length ?? 0)}개 보기`} title="댓글"><MessageCircle size={20} strokeWidth={1.7} aria-hidden="true" /><span>{comma(post.comment_count ?? post.comments?.length ?? 0)}</span></button>
         <button type="button" disabled={!authenticated} onClick={onQuote} aria-label="리포스트 인용하기" title="리포스트 (인용)"><Repeat2 size={21} strokeWidth={1.7} aria-hidden="true" /></button>
         <button type="button" onClick={share} aria-label="게시글 공유" title="공유"><Send size={19} strokeWidth={1.7} aria-hidden="true" /></button>
       </div>

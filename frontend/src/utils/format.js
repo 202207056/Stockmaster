@@ -16,7 +16,7 @@ export const num = (v) => {
 };
 
 /** 12345 -> "12,345" */
-export const comma = (v) => num(v).toLocaleString('ko-KR');
+export const comma = (v, digits) => num(v).toLocaleString('ko-KR', digits == null ? undefined : { minimumFractionDigits: digits, maximumFractionDigits: digits });
 
 /** 12345 -> "12,345원" */
 export const won = (v) => `${comma(Math.round(num(v)))}원`;
@@ -30,7 +30,7 @@ export const wonSigned = (v) => {
 /** 1.5 -> "+1.50%" */
 export const rate = (v, digits = 2) => {
   const n = num(v);
-  return `${n > 0 ? '+' : ''}${n.toFixed(digits)}%`;
+  return `${n > 0 ? '+' : ''}${comma(n, digits)}%`;
 };
 
 /** 부호 판정: 'up' | 'down' | 'flat' */
@@ -63,7 +63,7 @@ export const signMark = (v) => ({ up: '▲', down: '▼', flat: '–' })[sign(v)
 /** "▲ 1.50%" 처럼 기호 + 수익률 */
 export const rateWithMark = (v, digits = 2) => {
   const n = num(v);
-  return `${signMark(n)} ${Math.abs(n).toFixed(digits)}%`;
+  return `${signMark(n)} ${comma(Math.abs(n), digits)}%`;
 };
 
 /**
@@ -95,8 +95,8 @@ export const wonShort = (v) => {
   const n = num(v);
   const abs = Math.abs(n);
   const s = n < 0 ? '-' : '';
-  if (abs >= 1_0000_0000) return `${s}${(abs / 1_0000_0000).toFixed(2)}억`;
-  if (abs >= 1_0000) return `${s}${(abs / 1_0000).toFixed(0)}만`;
+  if (abs >= 1_0000_0000) return `${s}${comma(abs / 1_0000_0000, 2)}억`;
+  if (abs >= 1_0000) return `${s}${comma(abs / 1_0000, 0)}만`;
   return `${s}${comma(abs)}`;
 };
 

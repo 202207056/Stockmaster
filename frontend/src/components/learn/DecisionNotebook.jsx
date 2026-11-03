@@ -1,3 +1,4 @@
+import { comma } from '../../utils/format';
 import { useState } from 'react';
 import useLearning from '../../hooks/useLearning';
 import { LearningButton, LearningField, StorageNotice } from './LearningUI';
@@ -29,7 +30,7 @@ export default function DecisionNotebook({ scope, symbol, mode = '매수' }) {
   return <div className="flex flex-col gap-3">
     <p className="text-xs leading-relaxed text-gray-500">{symbol} · 현재 계좌의 종목 판단 노트입니다. 특정 주문의 당시 근거로 자동 연결되지 않습니다. 입력하지 않아도 주문할 수 있어요.</p>
     {plan.createdAt ? <><div className="rounded-lg bg-gray-50 p-3 text-sm leading-relaxed"><h3 className="font-bold">처음 남긴 기록</h3><p className="mt-2 whitespace-pre-wrap break-words">{plan.reason}</p>{[['확인한 자료', plan.evidence], ['불확실한 점', plan.uncertainty], ['다시 확인할 조건', plan.condition]].map(([label, value]) => <p key={label} className="mt-1 whitespace-pre-wrap break-words"><strong>{label}:</strong> {value || '기록 없음'}</p>)}<p className="mt-2 text-xs text-gray-500">기록 시각 {new Date(plan.createdAt).toLocaleString('ko-KR')}</p></div>
-      {revisions.length > 0 && <details className="text-sm"><summary className="cursor-pointer text-gray-600">계획 점검 이력 {revisions.length}개</summary><ol className="mt-3 space-y-3 border-l-2 border-gray-200 pl-3">{revisions.map((item, i) => <li key={`${item.createdAt}-${i}`}><p className="font-bold">{item.choice}</p><p className="whitespace-pre-wrap break-words">{item.reason}</p><p className="text-xs text-gray-500">{new Date(item.createdAt).toLocaleString('ko-KR')}</p></li>)}</ol></details>}
+      {revisions.length > 0 && <details className="text-sm"><summary className="cursor-pointer text-gray-600">계획 점검 이력 {comma(revisions.length)}개</summary><ol className="mt-3 space-y-3 border-l-2 border-gray-200 pl-3">{revisions.map((item, i) => <li key={`${item.createdAt}-${i}`}><p className="font-bold">{item.choice}</p><p className="whitespace-pre-wrap break-words">{item.reason}</p><p className="text-xs text-gray-500">{new Date(item.createdAt).toLocaleString('ko-KR')}</p></li>)}</ol></details>}
       <LearningField label={mode === '매도' ? '지금 매도하려는 이유' : '처음 생각이 달라졌나요?'}><select value={check} onChange={(e) => setCheck(e.target.value)} className={fieldClass}>{['판단 보류', '계획 유지', '계획 수정', '비중 조절', '새 정보', '계획 달성', '현금 필요'].map((choice) => <option key={choice}>{choice}</option>)}</select></LearningField>
       <LearningField label="변경 이유 또는 새로 확인한 정보"><textarea value={checkReason} onChange={(e) => setCheckReason(e.target.value)} rows={2} maxLength={300} className={fieldClass} /></LearningField>
     </> : <>

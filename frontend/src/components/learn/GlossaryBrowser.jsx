@@ -1,3 +1,4 @@
+import { comma } from '../../utils/format';
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { GLOSSARY_DESTINATIONS } from '../../constants/glossaryDestinations';
@@ -30,7 +31,7 @@ export default function GlossaryBrowser() {
       <div className="border-b border-gray-200 pb-4">
         <h2 className="text-xl font-extrabold text-gray-900">투자 용어사전</h2>
         <p className="mt-1 text-sm text-gray-500">
-          어려운 말은 하나도 없어요. 총 {GLOSSARY_COUNT}개 용어를 쉬운 말로 풀어 두었습니다.
+          어려운 말은 하나도 없어요. 총 {comma(GLOSSARY_COUNT)}개 용어를 쉬운 말로 풀어 두었습니다.
         </p>
       </div>
 
@@ -74,7 +75,7 @@ export default function GlossaryBrowser() {
               <section key={cat}>
                 <h2 className="mb-3 border-b border-gray-300 pb-2 text-base font-extrabold text-gray-800">
                   {CATEGORIES[cat]}
-                  <span className="ml-2 text-xs font-medium text-gray-400">{ids.length}개</span>
+                  <span className="ml-2 text-xs font-medium text-gray-400">{comma(ids.length)}개</span>
                 </h2>
                 <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                   {ids.map((id) => (

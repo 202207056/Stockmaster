@@ -1,3 +1,4 @@
+import { comma } from '../utils/format';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import EmptyState from '../components/common/EmptyState';
@@ -47,7 +48,7 @@ export default function Favorites() {
       </>}
     </div>}
     <div className="flex items-center justify-between gap-3 text-sm">
-      <p className="text-gray-500">{view === 'recent' ? '최근 조회한 순서 · 최대 10개' : view === 'groups' ? group?.name || '그룹을 추가해 주세요' : `관심종목 ${codes.length}개`}</p>
+      <p className="text-gray-500">{view === 'recent' ? '최근 조회한 순서 · 최대 10개' : view === 'groups' ? group?.name || '그룹을 추가해 주세요' : `관심종목 ${comma(codes.length)}개`}</p>
       {visible.length > 0 && view !== 'groups' && <button type="button" onClick={() => run(view === 'recent' ? clearRecentStocks : clearFavorites)} className="shrink-0 text-gray-500 underline">{view === 'recent' ? '조회 기록 지우기' : '관심 전체 해제'}</button>}
     </div>
     {error && <p role="alert" className="text-sm text-red-600">{error}</p>}

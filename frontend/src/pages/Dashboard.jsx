@@ -27,9 +27,9 @@ export default function Dashboard() {
   const change = useRemote(useCallback((signal) => fetchRanking('change', signal), []), true, { cacheKey: 'ranking:change', publicCache: true });
   const volume = useRemote(useCallback((signal) => fetchRanking('volume', signal), []), true, { cacheKey: 'ranking:volume', publicCache: true });
   const rankings = [
-    { key: 'amount', title: '거래대금 상위', hint: '오늘 돈이 가장 많이 몰린 종목', resource: amount },
-    { key: 'change', title: '급상승', hint: '어제보다 많이 오른 종목', resource: change },
-    { key: 'volume', title: '인기 종목', hint: '거래가 가장 활발한 종목', resource: volume },
+    { key: 'amount', title: '거래대금 상위', resource: amount },
+    { key: 'change', title: '급상승', resource: change },
+    { key: 'volume', title: '인기 종목', resource: volume },
   ];
 
   useEffect(() => {
@@ -65,16 +65,15 @@ export default function Dashboard() {
 
       {/* ── 실시간 랭킹 3열 ─────────────────────────────────────── */}
       <section>
-        <SectionTitle>실시간 랭킹</SectionTitle>
+        <SectionTitle spacious>실시간 랭킹</SectionTitle>
         <div className="grid gap-8 lg:grid-cols-3">
           {rankings.map((col) => (
             <div key={col.key} data-site-tour={`ranking-${col.key}`}>
-              <div className="mb-2">
-                <h3 className="text-sm font-bold text-gray-700">{col.title}</h3>
-                <p className="text-xs text-gray-400">{col.hint}</p>
+              <div className="mb-4">
+                <h3 className="text-base font-bold text-gray-700"><Link to={`/dashboard/rankings?type=${col.key}`} aria-label={`${col.title} 전체보기`} className="inline-flex items-center gap-2 py-1 hover:text-brand-700 focus-visible:outline-2 focus-visible:outline-brand-600">{col.title}<span aria-hidden="true" className="font-normal text-gray-500">&gt;</span></Link></h3>
               </div>
               <RemoteState resource={col.resource} requiresAuth={false} empty={!col.resource.data?.length}>
-              <ol className="border-t border-gray-400 pt-1">
+              <ol className="border-t border-gray-400 pt-2">
                 {col.resource.data?.slice(0, 5).map((item, index) => (
                   <li
                     key={`${item.symbol_code}-${index}`}
@@ -177,11 +176,11 @@ export default function Dashboard() {
                     <span className="ml-auto flex items-center gap-2">
                       <span className="flex items-center gap-0.5">
                         <Heart size={12} strokeWidth={1.75} aria-hidden="true" />
-                        {p.like_count}
+                        {comma(p.like_count)}
                       </span>
                       <span className="flex items-center gap-0.5">
                         <MessageSquare size={12} strokeWidth={1.75} aria-hidden="true" />
-                        {p.comment_count}
+                        {comma(p.comment_count)}
                       </span>
                     </span>
                   </p>
@@ -199,10 +198,10 @@ export default function Dashboard() {
 
 /* ------------------------------------------------------------------ */
 
-function SectionTitle({ children, to, hint }) {
+function SectionTitle({ children, to, hint, spacious = false }) {
   return (
-    <div className="mb-3">
-      <h2 className="flex items-center gap-2 text-lg font-bold text-gray-800">
+    <div className={spacious ? 'mb-6' : 'mb-3'}>
+      <h2 className={`flex items-center gap-2 ${spacious ? 'text-xl' : 'text-lg'} font-bold text-gray-800`}>
         {children}
         {to && (
           <Link to={to} className="text-sm font-normal text-gray-400 hover:text-gray-700">

@@ -17,6 +17,7 @@ import TradingTutorial from './pages/TradingTutorial';
 import TradingLesson from './pages/TradingLesson';
 import GuideTutorial from './pages/GuideTutorial';
 import Dashboard from './pages/Dashboard';
+import Rankings from './pages/Rankings';
 import Trading from './pages/Trading';
 import Assets from './pages/Assets';
 import Favorites from './pages/Favorites';
@@ -88,6 +89,7 @@ function AuthenticatedApp() {
             {/* 원래는 로그인 필요 — 현재 REQUIRE_AUTH=false 로 통과 */}
             <Route element={<ProtectedRoute />}>
               <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/dashboard/rankings" element={<Rankings />} />
               <Route path="/trading" element={<Trading />} />
               <Route path="/assets" element={<Assets />} />
               <Route path="/favorites" element={<Favorites />} />

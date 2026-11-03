@@ -2,7 +2,7 @@ import { useContext, useEffect, useId, useRef } from 'react';
 import { TutorialSkip } from '../learn/tutorial-context';
 import TutorialSkipButton from '../learn/TutorialSkipButton';
 import { Link } from 'react-router-dom';
-import { won } from '../../utils/format';
+import { comma, won } from '../../utils/format';
 import { estimateOrderCosts } from '../../utils/orderCosts';
 import TutorialTarget from '../learn/TutorialTarget';
 import { InlineError } from './ErrorState';
@@ -34,7 +34,7 @@ export default function OrderDialog({ order, result, busy, uncertain, error, mes
     ['주문구분', order.kind],
     ['매매구분', `${type} · ${tutorial ? '학습용 거래' : type === '시장가' ? '즉시 체결 모의거래' : '모의거래'}`],
     ['종목', `${order.name} (${order.code})`],
-    ['주문수량', `${completed ? result.quantity : order.quantity}주`],
+    ['주문수량', `${comma(completed ? result.quantity : order.quantity)}주`],
     [filled ? '체결가격' : limit ? '지정 가격' : '주문가격 (예상)', won(completed ? result.price : order.price)],
     [completed ? '거래금액' : '거래금액 (예상)', won(completed ? Number(result.price) * Number(result.quantity) : order.price * order.quantity)],
   ];

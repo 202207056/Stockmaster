@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { deletePortfolioBrief, fetchPortfolioBrief, fetchPortfolioBriefHistory } from '../../api/data';
 import { numberOrNull, quotePrice } from '../../api/normalize';
 import { readResource, resourceKey, writeResource } from '../../api/resourceCache';
-import { rate, signTextClass } from '../../utils/format';
+import { comma, rate, signTextClass } from '../../utils/format';
 import { kstStamp } from '../../utils/kstStamp';
 import { LearningButton, LearningCard } from '../learn/LearningUI';
 import BriefReport from './BriefReport';
@@ -212,7 +212,7 @@ function AccountBrief({ accountId, holdings }) {
           onToggle={() => toggle(stock.code)} onHold={() => setAgain(prev => [...prev, stock.code])} />;
       })}
     </div>
-    <p className="mt-2 text-xs text-gray-500">오늘 크게 움직인 종목과 비중이 큰 종목이 앞에 있어요. 최대 {MAX_ON}개까지 켤 수 있어요.
+    <p className="mt-2 text-xs text-gray-500">오늘 크게 움직인 종목과 비중이 큰 종목이 앞에 있어요. 최대 {comma(MAX_ON)}개까지 켤 수 있어요.
       브리핑이 있는 종목은 ON을 길게 누르면 RE로 바뀌고, 브리핑 생성하기를 누르면 다시 생성해요.</p>
     <div className="mt-4 flex flex-wrap items-center gap-3">
       <LearningButton onClick={() => generate(pending)} disabled={run === 'busy' || !pending.length}>

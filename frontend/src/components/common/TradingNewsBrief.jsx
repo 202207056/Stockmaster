@@ -149,7 +149,7 @@ function ThemeDetail({ autoFocus, data, held, onStock, theme }) {
       <div className="mt-1 flex flex-wrap items-baseline gap-2">
         <h3 className="text-xl font-extrabold text-gray-900">{theme.name}</h3>
         <span className={`font-bold ${signTextClass(theme.change_rate)}`}>{rate(theme.change_rate)}</span>
-        <span className="text-xs text-gray-500">상승 {theme.rise_count} · 하락 {theme.fall_count} / {theme.total_count}종목</span>
+        <span className="text-xs text-gray-500">상승 {comma(theme.rise_count)} · 하락 {comma(theme.fall_count)} / {comma(theme.total_count)}종목</span>
       </div>
       {theme.reason && <div className="trading-news-summary"><p>{theme.reason}</p></div>}
     </header>
@@ -194,7 +194,7 @@ function BriefDetail({ autoFocus, code, initial, quantity }) {
         <div className="flex flex-wrap items-baseline gap-2">
           <h3 className="text-xl font-extrabold text-gray-900">{brief.name}</h3>
           <span className={`font-bold ${signTextClass(brief.change_rate)}`}>{rate(brief.change_rate)}</span>
-          {quantity > 0 && <span className="text-xs text-gray-500">{quantity}주 보유</span>}
+          {quantity > 0 && <span className="text-xs text-gray-500">{comma(quantity)}주 보유</span>}
         </div>
         {brief.title && <div className="trading-news-summary"><p>{brief.title}</p></div>}
       </header>

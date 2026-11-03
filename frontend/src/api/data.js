@@ -9,7 +9,7 @@ export const fetchStock = async (code, signal) => requireObject(await get(`/stoc
 export const fetchStockLogo = async (code, signal) => requireObject(await get(`/stocks/${encodeURIComponent(code)}/logo`, undefined, signal));
 export const fetchPrice = async (code, signal, options = {}) => requireObject((await api.get(`/stocks/${encodeURIComponent(code)}/price`, { signal, ...options })).data);
 export const fetchChart = async (code, signal, period = 'D') => chartRows(await get(`/stocks/${encodeURIComponent(code)}/chart`, { period }, signal));
-export const fetchRanking = async (type, signal) => requireArray(await get(`/stocks/ranking/${type}`, { limit: 10 }, signal));
+export const fetchRanking = async (type, signal, { limit = 10 } = {}) => requireArray(await get(`/stocks/ranking/${type}`, { limit }, signal));
 export const fetchNews = async (signal) => {
   // Optional local news preview; production uses the shared backend by default.
   const newsBaseURL = import.meta.env.DEV

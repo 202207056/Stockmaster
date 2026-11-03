@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { fetchStock, fetchPrice } from '../../api/data';
 import { numberOrNull, quotePrice } from '../../api/normalize';
 import useRemote from '../../hooks/useRemote';
-import { rate, won, signTextClass } from '../../utils/format';
+import { comma, rate, won, signTextClass } from '../../utils/format';
 import { useSitePractice } from '../../contexts/site-practice';
 import StockLogo from './StockLogo';
 
@@ -29,7 +29,7 @@ export default function StockQuote({ code, variant, stock: knownStock, onSelect 
       {onSelect ? <button type="button" className={nameClass} title={name} onClick={onSelect}>{label}</button> : <Link className={nameClass} title={name} to={`/trading?code=${encodeURIComponent(code)}`}>{label}</Link>}
       <div className="shrink-0 text-right">
         <p className="tabular text-sm font-bold text-gray-800">{resource.loading && resource.data == null ? '시세 조회 중…' : resource.error && resource.data == null ? <button onClick={resource.reload} className="underline">조회 실패 · 재시도</button> : price === null ? '—' : variant === 'trading' ? Number(price).toLocaleString('ko-KR') : won(price)}</p>
-        <p className={`tabular text-xs ${changeClass}`}>{changeRate === null ? '—' : variant === 'trading' ? `${changeAmount === null ? '—' : `${changeRate > 0 ? '+' : changeRate < 0 ? '-' : ''}${Math.round(Math.abs(changeAmount))}`}(${Math.abs(changeRate).toFixed(2)}%)` : rate(changeRate)}</p>
+        <p className={`tabular text-xs ${changeClass}`}>{changeRate === null ? '—' : variant === 'trading' ? `${changeAmount === null ? '—' : `${changeRate > 0 ? '+' : changeRate < 0 ? '-' : ''}${comma(Math.round(Math.abs(changeAmount)))}`}(${comma(Math.abs(changeRate), 2)}%)` : rate(changeRate)}</p>
       </div>
     </div>;
   }

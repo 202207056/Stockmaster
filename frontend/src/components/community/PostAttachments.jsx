@@ -1,3 +1,4 @@
+import { comma } from '../../utils/format';
 import { useRef, useState } from 'react';
 import { votePost } from '../../api/data';
 import { InlineError } from '../common/ErrorState';
@@ -11,7 +12,7 @@ export function TradeCard({ trade }) {
   const date = String(trade.filled_at || trade.created_at || '').replace('T', ' ').slice(0, 16);
   return <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 text-sm">
     <div className="flex items-start justify-between gap-3"><strong className="min-w-0 break-words">{trade.name || trade.security_name || '종목명 확인 불가'}</strong><span className={`shrink-0 font-bold ${sale ? 'text-blue-500' : 'text-red-500'}`}>{trade.order_type}</span></div>
-    {sale && <p className="mt-2 font-bold text-blue-500" title="매도 당시 평균 매수가 대비 손익 · 수수료 및 세금 제외">{hasProfit ? `${amount > 0 ? '+' : amount < 0 ? '-' : ''}${Math.abs(amount).toLocaleString('ko-KR')}원(${rate.toFixed(1)}%)` : '손익 정보 없음'}</p>}
+    {sale && <p className="mt-2 font-bold text-blue-500" title="매도 당시 평균 매수가 대비 손익 · 수수료 및 세금 제외">{hasProfit ? `${amount > 0 ? '+' : amount < 0 ? '-' : ''}${Math.abs(amount).toLocaleString('ko-KR')}원(${comma(rate, 1)}%)` : '손익 정보 없음'}</p>}
     <p className="mt-2 text-gray-700">{Number(trade.quantity).toLocaleString()}주 · 주당 {Number(trade.price).toLocaleString()}원</p>
     {!sale && date && <p className="mt-1 text-xs text-gray-400">{date}</p>}
   </div>;
@@ -42,8 +43,8 @@ export default function PostAttachments({ post, onChanged, authenticated = true,
     {attachments.trade && <TradeCard trade={attachments.trade} />}
     {attachments.quote && <QuoteCard post={attachments.quote} />}
     {poll && <fieldset disabled={busy || !authenticated} className="space-y-2 rounded-xl border border-gray-200 p-4"><legend className="px-1 text-sm font-bold text-gray-900">{poll.question}</legend>
-      {poll.options.map((option, index) => { const percent = poll.total ? Math.round((poll.counts[index] / poll.total) * 100) : 0; return <button key={index} type="button" aria-pressed={poll.selected === index} onClick={() => vote(index)} className={`relative flex w-full overflow-hidden rounded-lg border px-3 py-3 text-left text-sm disabled:cursor-not-allowed ${poll.selected === index ? 'border-brand-500 font-bold text-brand-700' : 'border-gray-200 text-gray-700 hover:border-brand-300'}`}><span aria-hidden="true" className="absolute inset-y-0 left-0 bg-brand-50" style={{ width: `${percent}%` }} /><span className="relative min-w-0 flex-1 break-words">{poll.selected === index ? '✓ ' : ''}{option}</span><span className="relative ml-2 shrink-0 text-xs">{percent}% · {poll.counts[index]}표</span></button>; })}
-      <p className="text-xs text-gray-400">{poll.total}명 참여 · {poll.selected != null ? '선택을 변경할 수 있어요' : '항목을 눌러 투표해 주세요'}</p>
+      {poll.options.map((option, index) => { const percent = poll.total ? Math.round((poll.counts[index] / poll.total) * 100) : 0; return <button key={index} type="button" aria-pressed={poll.selected === index} onClick={() => vote(index)} className={`relative flex w-full overflow-hidden rounded-lg border px-3 py-3 text-left text-sm disabled:cursor-not-allowed ${poll.selected === index ? 'border-brand-500 font-bold text-brand-700' : 'border-gray-200 text-gray-700 hover:border-brand-300'}`}><span aria-hidden="true" className="absolute inset-y-0 left-0 bg-brand-50" style={{ width: `${percent}%` }} /><span className="relative min-w-0 flex-1 break-words">{poll.selected === index ? '✓ ' : ''}{option}</span><span className="relative ml-2 shrink-0 text-xs">{percent}% · {comma(poll.counts[index])}표</span></button>; })}
+      <p className="text-xs text-gray-400">{comma(poll.total)}명 참여 · {poll.selected != null ? '선택을 변경할 수 있어요' : '항목을 눌러 투표해 주세요'}</p>
     </fieldset>}
     <InlineError error={error} />
   </div>;

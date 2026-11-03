@@ -6,7 +6,7 @@ import HelpIconButton from '../components/learn/HelpIconButton';
 import { useCallback, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import useAuth from '../hooks/useAuth';
-import { won, wonSigned, signTextClass } from '../utils/format';
+import { comma, won, wonSigned, signTextClass } from '../utils/format';
 import HelpIcon from '../components/learn/HelpIcon';
 import LoginNotice from '../components/common/LoginNotice';
 import useSiteResource from '../hooks/useSiteResource';
@@ -156,7 +156,7 @@ export default function Assets() {
         <RemoteState resource={resource} authenticated={isAuthenticated}>
         {resource.data?.holdings.length ? <div className="mt-4 overflow-x-auto"><table className="w-full min-w-[600px] text-right text-sm"><thead className="bg-gray-50"><tr>{['종목', '보유수량', '평균단가', '현재가', '평가손익'].map((label) => <th key={label} className="p-3">{label}</th>)}</tr></thead><tbody>{resource.data.holdings.map((holding) => {
           const price = quotePrice(holding.quote); const average = numberOrNull(holding.avg_price); const quantity = numberOrNull(holding.hold_quantity); const pnl = price !== null && average !== null && quantity !== null ? (price - average) * quantity : null;
-          return <tr key={holding.portfolio_id ?? holding.symbol_code} className="border-b border-gray-100"><th className="p-3"><PracticeTarget id="trading-link"><Link to={practice ? practice.href('/trading', holding.symbol_code) : `/trading?code=${encodeURIComponent(holding.symbol_code)}`} onClick={() => practice?.event('trading')} className="text-brand-700">{holding.security_name || holding.symbol_code}</Link></PracticeTarget></th><td className="p-3">{quantity ?? '—'}</td><td className="p-3">{average === null ? '—' : won(average)}</td><td className="p-3">{price === null ? '시세 이용 불가' : won(price)}</td><td className={`p-3 ${signTextClass(pnl)}`}>{pnl === null ? '—' : wonSigned(pnl)}</td></tr>;
+          return <tr key={holding.portfolio_id ?? holding.symbol_code} className="border-b border-gray-100"><th className="p-3"><PracticeTarget id="trading-link"><Link to={practice ? practice.href('/trading', holding.symbol_code) : `/trading?code=${encodeURIComponent(holding.symbol_code)}`} onClick={() => practice?.event('trading')} className="text-brand-700">{holding.security_name || holding.symbol_code}</Link></PracticeTarget></th><td className="p-3">{quantity == null ? '—' : comma(quantity)}</td><td className="p-3">{average === null ? '—' : won(average)}</td><td className="p-3">{price === null ? '시세 이용 불가' : won(price)}</td><td className={`p-3 ${signTextClass(pnl)}`}>{pnl === null ? '—' : wonSigned(pnl)}</td></tr>;
         })}</tbody></table></div> : <div className="mt-4 rounded-lg border border-dashed border-gray-200 px-4 py-12 text-center">
           <p className="text-sm text-gray-400">{accountId ? '보유한 종목이 없어요.' : '계좌를 선택해 주세요.'}</p>
           <PracticeTarget id="trading-link"><Link

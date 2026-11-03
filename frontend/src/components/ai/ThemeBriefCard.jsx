@@ -93,7 +93,7 @@ function ThemeItem({ theme, initiallyExpanded, onSelect }) {
         <span className={`tabular shrink-0 text-sm font-bold ${signTextClass(theme.change_rate)}`}>{rate(theme.change_rate)}</span>
       </span>
       <span className="mt-1 flex items-center justify-between gap-2 text-xs font-normal text-gray-500">
-        <span>상승 {theme.rise_count} · 하락 {theme.fall_count} / {theme.total_count}종목</span>
+        <span>상승 {comma(theme.rise_count)} · 하락 {comma(theme.fall_count)} / {comma(theme.total_count)}종목</span>
         <span aria-hidden="true">{expanded ? '⌃' : '⌄'}</span>
       </span>
     </button></h4>

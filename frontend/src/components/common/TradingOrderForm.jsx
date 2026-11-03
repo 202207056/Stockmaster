@@ -1,3 +1,4 @@
+import NumberInput from './NumberInput';
 import { Calculator, Info, Minus, Plus, RotateCw } from 'lucide-react';
 import { useState } from 'react';
 import OrderTypeHelp from './OrderTypeHelp';
@@ -56,12 +57,12 @@ export default function TradingOrderForm({ kind, setKind, priceType, setPriceTyp
         <div className="trading-order-balance"><span>주문가능 <Info size={15} aria-hidden="true" /></span><strong>{cash === null ? '—' : won(cash)}</strong></div>
         <div data-tutorial-target="price" className="trading-order-row"><label htmlFor={fieldPrefix + "-price"}>가격</label><div className="trading-order-stepper">
           <button type="button" aria-label="가격 내리기" disabled={priceType !== '지정가' || !(Number(limitPrice) > 1)} onClick={() => setLimitPrice(String(Math.max(1, Number(limitPrice) - priceStep)))}><Minus size={16} /></button>
-          <div className="trading-order-price">{priceType === '지정가' ? <><input id={fieldPrefix + "-price"} aria-label="지정가 (원)" type="number" min="1" step="1" required value={limitPrice} onChange={event => setLimitPrice(event.target.value)} /><span>원</span></> : <output id={fieldPrefix + "-price"}>{orderPrice == null ? '가격 확인 필요' : won(orderPrice)}</output>}</div>
+          <div className="trading-order-price">{priceType === '지정가' ? <><NumberInput id={fieldPrefix + "-price"} aria-label="지정가 (원)" min="1" step="1" required value={limitPrice} onChange={event => setLimitPrice(event.target.value)} /><span>원</span></> : <output id={fieldPrefix + "-price"}>{orderPrice == null ? '가격 확인 필요' : won(orderPrice)}</output>}</div>
           <button type="button" aria-label="가격 올리기" disabled={priceType !== '지정가'} onClick={() => setLimitPrice(String(Math.max(1, Number(limitPrice) + priceStep)))}><Plus size={16} /></button>
         </div></div>
         <div data-tutorial-target="quantity" className={`trading-order-row ${tutorialStep === 'quantity' ? 'buy-highlight' : ''}`}><label htmlFor={fieldPrefix + "-quantity"}>수량</label><div className="trading-order-stepper">
           <button type="button" aria-label="수량 줄이기" disabled={Number(quantity) <= 1} onClick={() => setQuantity(String(Math.max(1, Number(quantity) - 1)))}><Minus size={16} /></button>
-          <input id={fieldPrefix + "-quantity"} aria-label="수량" type="number" min="1" max="1000000" step="1" required placeholder={kind === '매수' ? `최대 ${maximum.toLocaleString('ko-KR')}주` : '수량 입력'} value={quantity} onChange={event => setQuantity(event.target.value)} />
+          <NumberInput id={fieldPrefix + "-quantity"} aria-label="수량" min="1" max="1000000" step="1" required placeholder={kind === '매수' ? `최대 ${maximum.toLocaleString('ko-KR')}주` : '수량 입력'} value={quantity} onChange={event => setQuantity(event.target.value)} />
           <button type="button" aria-label="수량 늘리기" disabled={Number(quantity) >= 1_000_000} onClick={() => setQuantity(String(Math.min(1_000_000, Number(quantity) + 1)))}><Plus size={16} /></button>
         </div></div>
         {kind === '매수' && <><p className="trading-order-maximum">{cash === null ? '주문가능 금액 확인 필요' : `${misu ? '증거금 50%·수수료 기준' : '수수료 포함'} 최대 ${maximum.toLocaleString('ko-KR')}주`}</p><div className="trading-order-percent" role="group" aria-label="주문가능 금액 비율">{[10, 20, 50, 75, 100].map(percent => <button key={percent} type="button" disabled={cash === null || maximumFor(cash * percent / 100) < 1} onClick={() => setQuantity(String(maximumFor(cash * percent / 100)))}>{percent}%</button>)}</div></>}

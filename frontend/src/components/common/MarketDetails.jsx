@@ -1,3 +1,4 @@
+import { comma } from '../../utils/format';
 import HelpIconButton from '../learn/HelpIconButton';
 import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { RefreshCw } from 'lucide-react';
@@ -75,7 +76,7 @@ function DepthTable({ data }) {
 }
 
 function MarketTable({ tab, data }) {
-  return tab === 'orderbook' ? <DepthTable data={data} /> : <table><thead><tr>{(tab === 'trades' ? ['체결시간', '체결가', '체결량'] : ['날짜', '종가', '등락률', '거래량']).map(label => <th scope="col" key={label}>{label}</th>)}</tr></thead><tbody>{data.rows.map((row, index) => tab === 'trades' ? <tr key={`${row.time}-${index}`}><td>{row.time}</td><td className="font-semibold">{number(row.price)}</td><td>{number(row.quantity)}</td></tr> : <tr key={row.date}><td title={row.date}>{row.date.slice(2).replaceAll('-', '.')}</td><td className="font-semibold">{number(row.close)}</td><td>{row.change == null ? '—' : `${row.change > 0 ? '+' : ''}${row.change.toFixed(2)}%`}</td><td>{number(row.volume)}</td></tr>)}</tbody></table>;
+  return tab === 'orderbook' ? <DepthTable data={data} /> : <table><thead><tr>{(tab === 'trades' ? ['체결시간', '체결가', '체결량'] : ['날짜', '종가', '등락률', '거래량']).map(label => <th scope="col" key={label}>{label}</th>)}</tr></thead><tbody>{data.rows.map((row, index) => tab === 'trades' ? <tr key={`${row.time}-${index}`}><td>{row.time}</td><td className="font-semibold">{number(row.price)}</td><td>{number(row.quantity)}</td></tr> : <tr key={row.date}><td title={row.date}>{row.date.slice(2).replaceAll('-', '.')}</td><td className="font-semibold">{number(row.close)}</td><td>{row.change == null ? '—' : `${row.change > 0 ? '+' : ''}${comma(row.change, 2)}%`}</td><td>{number(row.volume)}</td></tr>)}</tbody></table>;
 }
 
 

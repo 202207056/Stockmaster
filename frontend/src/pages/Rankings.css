@@ -1,0 +1,60 @@
+.rankings-page { min-width: 0; }
+.rankings-back { display: inline-flex; align-items: center; gap: 4px; min-height: 32px; margin-bottom: 12px; color: var(--color-gray-500); font-size: 13px; }
+.rankings-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 28px; }
+.rankings-heading h1 { color: var(--color-gray-900); font-size: 24px; font-weight: 800; }
+.rankings-heading > span { flex-shrink: 0; color: var(--color-gray-500); font-size: 13px; }
+.rankings-tabs-bar { display: flex; align-items: center; gap: 12px; border-bottom: 1px solid var(--color-gray-200); }
+.rankings-tabs { display: flex; flex: 1; min-width: 0; gap: 28px; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: thin; }
+.rankings-tabs a { padding: 12px 0 16px; border-bottom: 2px solid transparent; color: var(--color-gray-500); font-size: 16px; font-weight: 700; white-space: nowrap; }
+.rankings-tabs a[aria-current="page"] { color: var(--color-brand-700); border-color: var(--color-brand-600); }
+.rankings-tabs a:hover { color: var(--color-gray-900); }
+.rankings-status { display: flex; justify-content: space-between; gap: 12px; min-height: 24px; margin-bottom: 8px; font-size: 12px; color: var(--color-gray-500); }
+.rankings-table-scroll { margin-top: 20px; overflow-x: auto; overscroll-behavior-x: contain; }
+.rankings-table { width: 100%; min-width: 900px; table-layout: fixed; border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums; }
+.rankings-col-rank { width: 48px; }
+.rankings-col-favorite { width: 44px; }
+.rankings-col-stock { width: calc(34% - 92px); }
+.rankings-col-metric { width: 18%; }
+.rankings-col-price { width: 18%; }
+.rankings-col-rate { width: 12%; }
+.rankings-table thead { background: var(--color-gray-50); }
+.rankings-table thead th { padding: 12px 16px; border-block: 1px solid var(--color-gray-200); color: var(--color-gray-500); font-size: 12px; font-weight: 500; text-align: right; white-space: nowrap; }
+.rankings-table thead th:nth-child(3) { text-align: left; }
+.rankings-table tbody td, .rankings-table tbody th { height: 66px; padding: 10px 16px; border-bottom: 1px solid var(--color-gray-200); text-align: right; white-space: nowrap; }
+.rankings-table tbody tr:hover { background: var(--color-gray-50); }
+.rankings-table .rankings-rank { width: 42px; text-align: center; color: var(--color-gray-500); }
+.rankings-table .rankings-favorite { width: 40px; padding-inline: 0; }
+.rankings-stock { display: flex; align-items: center; gap: 10px; min-width: 0; text-align: left; }
+.rankings-stock > span:last-child { min-width: 0; }
+.rankings-stock strong { display: block; overflow: hidden; text-overflow: ellipsis; font-weight: 600; color: var(--color-gray-800); }
+.rankings-stock small { display: block; margin-top: 3px; font-size: 11px; font-weight: 400; color: var(--color-gray-500); }
+.rankings-stock:hover strong { text-decoration: underline; }
+@media (max-width: 639px) {
+  .rankings-heading { align-items: flex-start; flex-direction: column; gap: 6px; margin-bottom: 20px; }
+  .rankings-heading h1 { font-size: 21px; }
+  .rankings-tabs { gap: 24px; }
+  .rankings-tabs a { font-size: 14px; }
+  .rankings-table { display: block; min-width: 0; }
+  .rankings-table colgroup { display: none; }
+  .rankings-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  .rankings-table tbody { display: block; border-top: 1px solid var(--color-gray-200); }
+  .rankings-table tbody tr { display: grid; grid-template-columns: 22px 32px minmax(0, 1fr) 104px; grid-template-rows: auto auto; align-items: center; gap: 5px 6px; padding: 16px 0; border-bottom: 1px solid var(--color-gray-200); }
+  .rankings-table tbody td, .rankings-table tbody th { height: auto; padding: 0; border: 0; min-width: 0; }
+  .rankings-table .rankings-rank { grid-column: 1; grid-row: 1 / 3; width: auto; font-size: 12px; }
+  .rankings-table .rankings-favorite { grid-column: 2; grid-row: 1 / 3; width: auto; }
+  .rankings-favorite button { width: 32px; height: 40px; }
+  .rankings-favorite svg { width: 19px; }
+  .rankings-table tbody th { grid-column: 3; grid-row: 1; }
+  .rankings-stock { min-width: 0; }
+  .rankings-stock > span:first-child, .rankings-stock small { display: none; }
+  .rankings-stock > span:last-child { min-width: 0; }
+  .rankings-stock strong { overflow: hidden; text-overflow: ellipsis; font-size: 13px; }
+  .rankings-table tbody td:nth-child(4) { grid-column: 3; grid-row: 2; text-align: left; color: var(--color-gray-500); font-size: 11px; }
+  .rankings-table tbody td:nth-child(5) { grid-column: 4; grid-row: 1; font-size: 13px; font-weight: 600; }
+  .rankings-table tbody td:nth-child(6) { grid-column: 4; grid-row: 2; font-size: 12px; }
+  .rankings-table tbody td:nth-child(7) { display: none; }
+}
+
+.rankings-refresh { display: grid; place-items: center; flex-shrink: 0; align-self: center; margin-left: auto; width: 40px; height: 40px; color: var(--color-gray-600); }
+.rankings-refresh:hover { background: var(--color-gray-50); }
+.rankings-refresh:disabled { opacity: .45; }
