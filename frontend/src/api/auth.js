@@ -11,6 +11,14 @@ export async function register({ login_id, passwd, user_name, email }) {
   return data;
 }
 
+export async function checkLoginId(login_id) {
+  const { data } = await api.get('/users/check-login-id', { params: { login_id }, cache: false });
+  if (data?.login_id !== login_id || typeof data?.available !== 'boolean') {
+    throw new Error('아이디 확인 응답을 확인해 주세요.');
+  }
+  return data;
+}
+
 /**
  * POST /api/users/login
  * 응답: { access_token, token_type }
