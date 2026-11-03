@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { TrendingUp } from 'lucide-react';
+import PopularStocks from '../common/PopularStocks';
 import Nav from './Nav';
 import StockSearch from '../common/StockSearch';
 import useAuth from '../../hooks/useAuth';
@@ -27,14 +27,7 @@ export default function Header() {
 
           <div className="hidden md:block"><StockSearch /></div>
 
-          {/* 인기 검색어 — 하나씩 순환 */}
-          <div className="hidden items-center gap-2 2xl:flex">
-            <span className="flex shrink-0 items-center gap-1 text-xs font-bold text-gray-400">
-              <TrendingUp size={14} strokeWidth={2} aria-hidden="true" />
-              인기 검색어
-            </span>
-            <div className="relative flex h-7 w-40 items-center overflow-hidden text-sm text-gray-400" aria-label="인기 검색어">준비 중</div>
-          </div>
+          <div className="hidden w-[244px] shrink-0 2xl:block"><PopularStocks /></div>
         </div>
 
         <Nav className="hidden xl:flex" />

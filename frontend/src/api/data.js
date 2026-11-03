@@ -3,6 +3,7 @@ import { chartRows, quotePrice, requireArray, requireObject } from './normalize'
 import { abortableDelay, createSharedRequest } from './sharedRequest';
 
 const get = async (path, params, signal) => (await api.get(path, { params, signal })).data;
+export const fetchPopularStocks = async signal => requireArray((await api.get('/stocks/popular-searches', { signal, cache: false })).data);
 export const fetchStocks = async (search, signal) => requireArray(await get('/stocks', { search: search || undefined }, signal));
 export const fetchStock = async (code, signal) => requireObject(await get(`/stocks/${encodeURIComponent(code)}`, undefined, signal));
 export const fetchStockLogo = async (code, signal) => requireObject(await get(`/stocks/${encodeURIComponent(code)}/logo`, undefined, signal));
