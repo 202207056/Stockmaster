@@ -8,6 +8,7 @@ import LoginNotice from '../components/common/LoginNotice';
 import AccountPicker from '../components/common/AccountPicker';
 import useMiniAssetsSetting from '../hooks/useMiniAssetsSetting';
 import DeleteMembership from '../components/common/DeleteMembership';
+import useTermAnalyzerSetting from '../features/ocr/useTermAnalyzerSetting';
 
 /**
  * 마이페이지 (F-2 라우팅 연결)
@@ -23,6 +24,7 @@ export default function MyPage() {
   const { user, account, isAuthenticated } = useAuth();
   const [tutorialsEnabled, setTutorialsEnabled] = useTutorialSetting();
   const [miniAssetsEnabled, setMiniAssetsEnabled] = useMiniAssetsSetting();
+  const [termAnalyzerEnabled, setTermAnalyzerEnabled] = useTermAnalyzerSetting();
 
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-8">
@@ -55,6 +57,24 @@ export default function MyPage() {
             className={`flex shrink-0 items-center gap-2 rounded-full px-3 py-2 text-xs font-bold transition-colors ${tutorialsEnabled ? 'bg-brand-600 text-white' : 'bg-gray-200 text-gray-600'}`}>
             {tutorialsEnabled ? 'ON' : 'OFF'}
             <span aria-hidden="true" className={`relative h-5 w-9 rounded-full ${tutorialsEnabled ? 'bg-brand-400' : 'bg-gray-400'}`}><span className={`absolute left-0 top-0.5 h-4 w-4 rounded-full bg-white transition-transform ${tutorialsEnabled ? 'translate-x-4' : 'translate-x-0.5'}`}/></span>
+          </button>
+        </div>
+      </section>
+
+      <section className="flex flex-col gap-3" aria-labelledby="lab-settings-title">
+        <h2 id="lab-settings-title" className="text-sm font-bold text-gray-500">실험 기능</h2>
+        <div className="flex items-center justify-between gap-4 rounded-xl border border-gray-200 px-4 py-4">
+          <div>
+            <p id="term-analyzer-setting-label" className="text-sm font-bold text-gray-900">AI 용어 분석 <span className="ml-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-700">실험</span></p>
+            <p id="term-analyzer-setting-description" className="mt-1 text-xs text-gray-500">화면 오른쪽 아래에 용어 분석 버튼을 표시해요. 화면의 어려운 말을 찾아 뜻을 알려 줘요. 아직 시험 중인 기능이라 결과가 틀릴 수 있어요. 설정은 이 브라우저에 저장돼요.</p>
+          </div>
+          <button type="button" role="switch" aria-checked={termAnalyzerEnabled} aria-labelledby="term-analyzer-setting-label" aria-describedby="term-analyzer-setting-description"
+            onClick={() => setTermAnalyzerEnabled(!termAnalyzerEnabled)}
+            className={`flex shrink-0 items-center gap-2 rounded-full px-3 py-2 text-xs font-bold transition-colors ${termAnalyzerEnabled ? 'bg-brand-600 text-white' : 'bg-gray-200 text-gray-600'}`}>
+            {termAnalyzerEnabled ? 'ON' : 'OFF'}
+            <span aria-hidden="true" className={`relative h-5 w-9 rounded-full ${termAnalyzerEnabled ? 'bg-brand-400' : 'bg-gray-400'}`}>
+              <span className={`absolute left-0 top-0.5 h-4 w-4 rounded-full bg-white transition-transform ${termAnalyzerEnabled ? 'translate-x-4' : 'translate-x-0.5'}`} />
+            </span>
           </button>
         </div>
       </section>

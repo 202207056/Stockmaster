@@ -6,6 +6,7 @@ import ProtectedRoute from './components/routing/ProtectedRoute';
 import OnboardingGate from './components/routing/OnboardingGate';
 import ApiStatusBanner from './components/system/ApiStatusBanner';
 import FloatingAssets from './components/common/FloatingAssets';
+import FloatingTermAnalyzer from './features/ocr/FloatingTermAnalyzer';
 
 import Landing from './pages/Landing';
 import Login from './pages/Login';
@@ -101,6 +102,7 @@ function AuthenticatedApp() {
           </Route>
         </Routes></OnboardingGate>
         <FloatingAssets />
+        <FloatingTermAnalyzer />
 
 
       {/* 콜드스타트 안내는 라우트와 무관하게 항상 떠 있어야 합니다. */}

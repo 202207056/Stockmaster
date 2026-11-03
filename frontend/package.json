@@ -4,7 +4,9 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+    "predev": "node scripts/prepare-ocr.mjs",
     "dev": "vite",
+    "prebuild": "node scripts/prepare-ocr.mjs",
     "build": "vite build",
     "lint": "eslint .",
     "test": "node --test tests/*.test.mjs",
@@ -15,7 +17,8 @@
     "lucide-react": "^1.34.0",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
-    "react-router-dom": "^7.18.2"
+    "react-router-dom": "^7.18.2",
+    "tesseract.js": "6.0.1"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
