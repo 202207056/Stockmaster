@@ -1,6 +1,21 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createSharedRequest, abortableDelay } from '../src/api/sharedRequest.js';
+import { isFreshRequest, requireFreshRequest } from '../src/api/requestCache.js';
+
+test('manual refresh bypasses cached reads and shares only with other fresh readers', async () => {
+  const signals = [];
+  const read = createSharedRequest(async signal => {
+    signals.push(signal);
+    await abortableDelay(10, signal);
+    return isFreshRequest(signal);
+  });
+  const controller = new AbortController();
+  requireFreshRequest(controller.signal);
+  const results = await Promise.all([read('account'), read('account', controller.signal), read('account', controller.signal)]);
+  assert.deepEqual(results, [false, true, true]);
+  assert.equal(signals.length, 2);
+});
 
 test('concurrent portfolio readers share a request and one cancellation leaves the other alive', async () => {
   let calls = 0; let complete; let upstream;

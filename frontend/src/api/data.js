@@ -44,6 +44,30 @@ export const fetchThemeBrief = async (signal) => {
   return data;
 };
 export const fetchCoach = async (symbol, signal) => requireObject(await get('/ai/coach', { symbol }, signal));
+export const fetchPatternBrief = async (accountId, signal) => {
+  const id = Number(accountId);
+  if (!Number.isSafeInteger(id) || id <= 0) throw new Error('계좌를 선택해 주세요.');
+  const data = requireObject((await api.post('/ai/pattern', { account_id: id, profile: 'luna' }, { signal })).data);
+  const text = value => typeof value === 'string' && value.trim().length > 0;
+  const list = (value, max, valid) => Array.isArray(value) && value.length <= max && value.every(valid);
+  const countValid = Number.isInteger(data.filled_count) && data.filled_count >= 0;
+  if (data.status === 'insufficient' && countValid && data.filled_count < 3) return data;
+  const comparison = data.style_comparison;
+  const validComparison = comparison === null || (comparison && ['matches', 'differs'].every(key =>
+    list(comparison[key], 3, item => item && text(item.code) && text(item.text)
+      && (item.note === null || (item.note && text(item.note.reason)
+        && (item.note.option === null || text(item.note.option)))))));
+  if (data.status !== undefined || !countValid || data.filled_count < 3
+    || !text(data.headline) || !text(data.disclaimer)
+    || !['preliminary', 'moderate', 'sufficient'].includes(data.data_confidence)
+    || !(data.investment_style_description === null || text(data.investment_style_description))
+    || !list(data.style_tags, 5, item => item && text(item.code) && text(item.label))
+    || !list(data.observed_patterns, 4, item => item && text(item.title) && text(item.evidence))
+    || !data.observed_patterns.length || !list(data.limitations, 10, text) || !validComparison) {
+    throw new Error('매매 패턴 회고 응답을 확인할 수 없습니다.');
+  }
+  return data;
+};
 export const fetchNewsSummary = async (code, signal) => requireObject(await get(`/ai/news-summary/${encodeURIComponent(code)}`, undefined, signal));
 const portfolioSections = ['current_status', 'entry_context', 'position_summary', 'recent_issues',
   'positive_factors', 'risk_factors', 'watch_points', 'limitations'];

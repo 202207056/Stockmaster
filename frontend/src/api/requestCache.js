@@ -3,6 +3,7 @@ import axios from 'axios';
 export const REQUEST_CACHE_TTL = 5_000;
 const freshSignals = new WeakSet();
 export function requireFreshRequest(signal) { freshSignals.add(signal); }
+export function isFreshRequest(signal) { return freshSignals.has(signal); }
 
 // All GETs through the shared client opt in, including future endpoints.
 // Short-lived memory cache never turns an expired response into a live quote.

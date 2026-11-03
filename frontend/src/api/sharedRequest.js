@@ -1,11 +1,16 @@
+import { isFreshRequest, requireFreshRequest } from './requestCache.js';
+
 // Share concurrent reads; cancelling one consumer must not cancel another's read.
 export function createSharedRequest(loader) {
   const pending = new Map();
   return (key, signal, ...args) => {
     if (signal?.aborted) return Promise.reject(new DOMException('Aborted', 'AbortError'));
+    const fresh = isFreshRequest(signal);
+    key = JSON.stringify([key, fresh]);
     let entry = pending.get(key);
     if (!entry) {
       const controller = new AbortController();
+      if (fresh) requireFreshRequest(controller.signal);
       entry = { controller, consumers: 0 };
       entry.promise = Promise.resolve().then(() => loader(controller.signal, ...args)).finally(() => {
         if (pending.get(key) === entry) pending.delete(key);
