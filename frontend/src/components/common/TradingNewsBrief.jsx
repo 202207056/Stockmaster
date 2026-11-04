@@ -3,12 +3,13 @@ import { ChevronRight, Sparkles } from 'lucide-react';
 import Modal from './Modal';
 import BriefReport from '../ai/BriefReport';
 import { ThemeContent } from '../ai/ThemeBriefCard';
-import { fetchPortfolio, fetchStockBrief, fetchThemeBrief } from '../../api/data';
+import { fetchPortfolio, fetchPortfolioBriefHistory, fetchStockBrief, fetchThemeBrief } from '../../api/data';
 import { safeExternalUrl } from '../../api/normalize';
 import { readResource, resourceKey, writeResource } from '../../api/resourceCache';
 import { useAuth } from '../../hooks/useAuth';
 import { comma, rate, signTextClass } from '../../utils/format';
 import { kstStamp } from '../../utils/kstStamp';
+import { savedNewsHeadline } from '../../utils/briefHeadline';
 import './TradingNewsBrief.css';
 
 const sections = [
@@ -34,6 +35,19 @@ function useStockBrief(code, enabled) {
     return () => controller.abort();
   }, [code, enabled, key]);
   return state;
+}
+
+function useSavedHeadline(accountId, code, enabled) {
+  const [saved, setSaved] = useState(null);
+  useEffect(() => {
+    if (!enabled || !accountId) return undefined;
+    const controller = new AbortController();
+    fetchPortfolioBriefHistory(accountId, controller.signal).then(items => {
+      if (!controller.signal.aborted) setSaved({ accountId, code, items });
+    }).catch(() => { /* The original banner remains available if history fails. */ });
+    return () => controller.abort();
+  }, [accountId, code, enabled]);
+  return savedNewsHeadline(enabled && saved?.accountId === accountId && saved?.code === code ? saved.items : [], code);
 }
 
 function useHeldQuantities(accountId, enabled) {
@@ -72,6 +86,7 @@ const question = changeRate => changeRate > 0 ? '왜 올랐을까?' : changeRate
 export default function TradingNewsBrief({ code }) {
   const { accountId, isAuthenticated } = useAuth();
   const main = useStockBrief(code, isAuthenticated);
+  const fallback = useSavedHeadline(accountId, code, isAuthenticated && main.data?.ai_available && !main.data?.title);
   const held = useHeldQuantities(accountId, isAuthenticated);
   const [open, setOpen] = useState(false);
   const [selectedCode, setSelectedCode] = useState(code);
@@ -105,8 +120,8 @@ export default function TradingNewsBrief({ code }) {
     <button type="button" className="trading-news-banner" disabled={!brief}
       onClick={() => { setPicked(false); setSelectedCode(code); setThemeId(null); setOpen(true); }} aria-haspopup="dialog" aria-expanded={open}>
       <span className="min-w-0 flex-1">
-        <span className="trading-news-banner__label"><span className="trading-news-banner__icon"><Sparkles size={14} aria-hidden="true" /></span>{brief ? question(brief.change_rate) : 'AI 뉴스'}</span>
-        <span className="trading-news-banner__headline">{brief ? brief.title || '최근 확인되는 뉴스를 정리했어요' : 'AI가 뉴스를 정리하고 있어요…'}</span>
+        <span className="trading-news-banner__label"><span className="trading-news-banner__icon"><Sparkles size={14} aria-hidden="true" /></span>{brief ? (!brief.title && fallback.short ? '최근 뉴스 정리' : question(brief.change_rate)) : 'AI 뉴스'}</span>
+        <span className="trading-news-banner__headline" title={!brief?.title && fallback.full ? fallback.full : undefined}>{brief ? brief.title || fallback.short || '최근 확인되는 뉴스를 정리했어요' : 'AI가 뉴스를 정리하고 있어요…'}</span>
       </span>
       <ChevronRight size={18} className="shrink-0" aria-hidden="true" />
     </button>

@@ -18,7 +18,6 @@ import StockLogo from '../components/common/StockLogo';
 import AssetCharts from '../components/common/AssetCharts';
 import RemoteState from '../components/common/RemoteState';
 import PortfolioBriefCard from '../components/ai/PortfolioBriefCard';
-import PatternBriefCard from '../components/ai/PatternBriefCard';
 import './Assets.css';
 
 /** Account-scoped balances, valuation and holdings; tutorial targets remain on their real controls. */
@@ -94,7 +93,7 @@ export default function Assets() {
 
       <AssetCharts key={accountId} accountId={accountId} resource={resource} practice={!!practice} />
       {!practice && isAuthenticated && accounts.length > 0 && tourOpen && <AssetsTour surfaceRef={surface} accountCount={accounts.length} onClose={() => setTourOpen(false)} />}
-      {isAuthenticated && <div className="assets-briefings"><PortfolioBriefCard accountId={accountId} holdings={holdings} practice={!!practice} /><PatternBriefCard accountId={accountId} practice={!!practice} /></div>}
+      {isAuthenticated && <div className="assets-briefings"><PortfolioBriefCard accountId={accountId} holdings={holdings} practice={!!practice} /></div>}
     </div>
   );
 }

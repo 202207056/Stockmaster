@@ -76,12 +76,18 @@ function PortfolioPie({ slices }) {
   const groups = slices.length > 4 ? [...slices.slice(0, 3), { code: 'other', name: `기타 ${slices.length - 3}종목`, value: slices.slice(3).reduce((sum, item) => sum + item.value, 0) }] : slices;
   const focused = groups.find(item => item.code === selected);
   return <div className="assets-portfolio-chart">
-    <div className="assets-donut"><svg viewBox="0 0 200 200" role="img" aria-label={`보유종목 평가금액 ${won(total)}의 종목별 비중`}>
+    <div className="assets-pie"><svg viewBox="0 0 200 200" role="img" aria-label={`보유종목 평가금액 ${won(total)}의 종목별 비중`}>
       {groups.map((item, index) => {
-        const start = groups.slice(0, index).reduce((sum, item) => sum + item.value / total * 100, 0);
-        return <circle key={item.code} cx="100" cy="100" r="78" fill="none" stroke={colors[index]} strokeWidth={selected === item.code ? 25 : 20} pathLength="100" strokeDasharray={`${item.value / total * 100} 100`} strokeDashoffset={-start} transform="rotate(-90 100 100)"><title>{item.name}: {comma(item.value / total * 100, 1)}%, {won(item.value)}</title></circle>;
+        const share = item.value / total;
+        const start = groups.slice(0, index).reduce((sum, item) => sum + item.value / total, 0) * Math.PI * 2 - Math.PI / 2;
+        const end = start + share * Math.PI * 2;
+        const title = <title>{item.name}: {comma(share * 100, 1)}%, {won(item.value)}</title>;
+        const opacity = focused && selected !== item.code ? .4 : 1;
+        return share === 1
+          ? <circle key={item.code} cx="100" cy="100" r="90" fill={colors[index]} opacity={opacity}>{title}</circle>
+          : <path key={item.code} d={`M 100 100 L ${100 + 90 * Math.cos(start)} ${100 + 90 * Math.sin(start)} A 90 90 0 ${share > .5 ? 1 : 0} 1 ${100 + 90 * Math.cos(end)} ${100 + 90 * Math.sin(end)} Z`} fill={colors[index]} opacity={opacity}>{title}</path>;
       })}
-    </svg><div className="assets-donut-label"><span>{focused?.name || '주식 평가금액'}</span><strong>{won(focused?.value ?? total)}</strong></div></div>
+    </svg><div className="assets-pie-label" aria-live="polite"><span>{focused?.name || '주식 평가금액'}</span><strong>{won(focused?.value ?? total)}</strong></div></div>
     <ul className="assets-chart-legend">{groups.map((item, index) => <li key={item.code}><button type="button" aria-pressed={selected === item.code} onClick={() => setSelected(selected === item.code ? null : item.code)}><i style={{ background: colors[index] }} /><span>{item.name}</span><strong>{comma(item.value / total * 100, 1)}%</strong><small>{won(item.value)}</small></button></li>)}</ul>
   </div>;
 }

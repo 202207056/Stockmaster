@@ -1,0 +1,15 @@
+{
+  "screen": "Stockmaster /assets",
+  "direction": "achromatic-ledger",
+  "seed": 90696419,
+  "question": "What is my selected account worth, and which holdings contribute to its result?",
+  "face": "Existing purple brand on the real cash and stock allocation strip; home typography, canvas and radii retained.",
+  "overrides": ["User requested purple and consistency with home; preserve brand palette, Pretendard, existing dark theme and shared navigation."],
+  "redraws": [],
+  "data": "Production values come from existing account and valuation APIs. Missing values stay missing. Browser fixtures are test-only and never written to application data.",
+  "preserved": ["Account selection", "Portfolio loading and retry", "Holdings and trading links", "Practice targets", "Assets tour and glossary help", "AI portfolio and pattern briefs"],
+  "validation": ["Vite production build", "ESLint for changed source and test", "11 relevant automated tests", "Browser fixtures: refresh, account switching, empty account, loading, errors, missing quotes, debt", "No horizontal overflow at 1440, 768, 390 and 320px", "Light and dark screenshot review"],
+  "fixes_after_review": ["Mobile account label wrapping", "Excess guest panel height", "Manual refresh freshness lost by shared request signal"],
+  "critique": {"design": 8, "usability": 8, "creativity": 7, "content": 8, "weighted": 7.8},
+  "limits": ["Authenticated screenshots use intercepted test responses; no live account operations performed.", "Shared navigation/footer contrast and fixed floating assets widget are existing shell behavior.", "12px metadata is retained; primary labels and financial values are larger.", "Existing production bundle size warning remains."]
+}

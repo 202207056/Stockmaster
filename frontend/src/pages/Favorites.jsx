@@ -8,6 +8,7 @@ import GroupedFavoriteButton from '../components/common/GroupedFavoriteButton';
 import FavoriteGroupForm from '../components/common/FavoriteGroupForm';
 import useFavoriteLibrary from '../hooks/useFavoriteLibrary';
 import { clearFavorites, clearRecentStocks, deleteFavoriteGroup } from '../utils/favorites';
+import './Favorites.css';
 
 export default function Favorites() {
   const { codes, groups, recent } = useFavoriteLibrary();
@@ -22,7 +23,7 @@ export default function Favorites() {
     try { action(); setError(''); }
     catch { setError('변경하지 못했습니다. 브라우저 저장 공간을 확인해 주세요.'); }
   };
-  return <div className="flex flex-col gap-6">
+  return <div className="favorites-page flex flex-col gap-6">
     <div className="border-b border-gray-200 pb-4">
       <h1 className="flex items-center text-xl font-extrabold text-gray-900">관심종목<HelpIcon termId="portfolio" label="포트폴리오 설명 보기" /></h1>
       <p className="mt-1 text-sm text-gray-500">이 목록은 이 브라우저에만 저장돼요. 다른 기기에서는 보이지 않습니다.</p>

@@ -5,8 +5,8 @@ export default function NewsAnalysisBadge({ analysis }) {
   const sentiment = sentiments[analysis?.sentiment?.label];
   const level = importance[analysis?.importance?.label];
   if (!sentiment || !level) return null;
-  return <div className="flex flex-wrap gap-2 text-xs" aria-label="AI 뉴스 분석">
-    <span className={`rounded-full px-2 py-1 ${sentiment[1]}`}>AI {sentiment[0]}</span>
+  return <span className="ml-2 inline-flex flex-wrap gap-2 whitespace-nowrap align-middle text-xs font-normal" aria-label="뉴스 분석">
+    <span className={`rounded-full px-2 py-1 ${sentiment[1]}`}>{sentiment[0]}</span>
     <span className="rounded-full bg-gray-100 px-2 py-1 text-gray-700">중요도 {level}</span>
-  </div>;
+  </span>;
 }

@@ -120,9 +120,11 @@ export default function Dashboard() {
               <li key={`${n.url}-${index}`} className="flex gap-5">
                 <NewsThumbnail url={n.image_url} />
                 <div className="flex min-w-0 flex-col justify-center gap-1.5">
-                  <h3 className="text-sm font-bold text-gray-900">{safeExternalUrl(n.url) ? <a href={safeExternalUrl(n.url)} target="_blank" rel="noopener noreferrer">{n.title}</a> : n.title}</h3>
+                  <h3 className="text-sm font-bold text-gray-900">
+                    {safeExternalUrl(n.url) ? <a href={safeExternalUrl(n.url)} target="_blank" rel="noopener noreferrer">{n.title}</a> : n.title}
+                    <NewsAnalysisBadge analysis={newsAnalysis.data?.find(article => article.article_id === String(index))} />
+                  </h3>
                   <p className="line-clamp-2 text-sm leading-relaxed text-gray-500">{n.summary}</p>
-                  <NewsAnalysisBadge analysis={newsAnalysis.data?.find(article => article.article_id === String(index))} />
                   <p className="mt-1 text-xs text-gray-400">
                     {[n.source, n.date].filter(Boolean).join(' · ')}
                   </p>

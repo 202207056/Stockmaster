@@ -1,9 +1,13 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import useAuth from '../hooks/useAuth';
 import TextField from '../components/common/TextField';
 import Spinner from '../components/common/Spinner';
 import { InlineError } from '../components/common/ErrorState';
+import { checkLoginId } from '../api/auth';
+
+const loginIdError = (id) => !id ? '아이디를 입력해 주세요.'
+  : !/^[A-Za-z0-9_]{4,20}$/.test(id) ? '영문·숫자·밑줄 4~20자로 입력해 주세요.' : null;
 
 /**
  * 회원가입 (F-11 폼)
@@ -32,20 +36,46 @@ export default function Signup() {
   const [errors, setErrors] = useState({});
   const [submitError, setSubmitError] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+  const [idCheck, setIdCheck] = useState({ status: 'idle', id: '' });
+  const checkVersion = useRef(0);
 
   const update = (key) => (e) => {
+    if (key === 'loginId') {
+      checkVersion.current += 1;
+      setIdCheck({ status: 'idle', id: '' });
+    }
     setForm((prev) => ({ ...prev, [key]: e.target.value }));
     setErrors((prev) => ({ ...prev, [key]: undefined }));
     setSubmitError(null);
+  };
+
+  const handleCheckId = async () => {
+    const id = form.loginId.trim();
+    const error = loginIdError(id);
+    setErrors((prev) => ({ ...prev, loginId: error }));
+    if (error) return;
+    const version = ++checkVersion.current;
+    setIdCheck({ status: 'checking', id });
+    try {
+      const { available } = await checkLoginId(id);
+      if (version !== checkVersion.current) return;
+      setIdCheck({ status: available ? 'available' : 'taken', id });
+      if (!available) setErrors((prev) => ({ ...prev, loginId: '이미 사용 중인 아이디입니다.' }));
+    } catch {
+      if (version !== checkVersion.current) return;
+      setIdCheck({ status: 'error', id });
+      setErrors((prev) => ({ ...prev, loginId: '아이디를 확인하지 못했어요. 다시 시도해 주세요.' }));
+    }
   };
 
   const validate = () => {
     const next = {};
     const id = form.loginId.trim();
 
-    if (!id) next.loginId = '아이디를 입력해 주세요.';
-    else if (!/^[A-Za-z0-9_]{4,20}$/.test(id))
-      next.loginId = '영문·숫자·밑줄 4~20자로 입력해 주세요.';
+    const idError = loginIdError(id);
+    if (idError) next.loginId = idError;
+    else if (idCheck.status !== 'available' || idCheck.id !== id)
+      next.loginId = idCheck.status === 'taken' ? '이미 사용 중인 아이디입니다.' : '아이디 중복확인을 해 주세요.';
 
 
     if (!form.passwd) next.passwd = '비밀번호를 입력해 주세요.';
@@ -92,15 +122,32 @@ export default function Signup() {
       <h1 className="text-2xl font-extrabold text-gray-900">회원가입</h1>
 
       <form onSubmit={handleSubmit} className="mt-8 flex flex-col gap-4" noValidate>
-        <TextField
-          label="아이디"
-          value={form.loginId}
-          onChange={update('loginId')}
-          error={errors.loginId}
-          hint="영문·숫자·밑줄 4~20자"
-          autoComplete="username"
-          placeholder="사용할 아이디"
-        />
+        <div aria-live="polite">
+          <div className="flex items-start gap-2">
+            <TextField
+              label="아이디"
+              className="min-w-0 flex-1"
+              value={form.loginId}
+              onChange={update('loginId')}
+              error={errors.loginId}
+              hint="영문·숫자·밑줄 4~20자"
+              autoComplete="username"
+              placeholder="사용할 아이디"
+              disabled={submitting}
+            />
+            <button
+              type="button"
+              onClick={handleCheckId}
+              disabled={submitting || idCheck.status === 'checking' || idCheck.status === 'available'}
+              className="mt-[26px] shrink-0 rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm font-bold text-gray-700 transition hover:bg-gray-50 focus-visible:outline-2 focus-visible:outline-brand-600 disabled:cursor-not-allowed disabled:text-gray-400"
+            >
+              {idCheck.status === 'checking' ? '확인 중...' : idCheck.status === 'available' ? '확인 완료' : '중복확인'}
+            </button>
+          </div>
+          <p role="status" aria-live="polite" className="mt-1 text-xs text-brand-700">
+            {idCheck.status === 'available' ? '사용 가능한 아이디입니다.' : idCheck.status === 'checking' ? '아이디를 확인하고 있어요.' : ''}
+          </p>
+        </div>
         <TextField
           label="비밀번호"
           type="password"
@@ -141,7 +188,7 @@ export default function Signup() {
 
         <button
           type="submit"
-          disabled={submitting}
+          disabled={submitting || idCheck.status === 'checking'}
           className="mt-2 flex items-center justify-center gap-2 rounded-lg bg-brand-600 px-6 py-3 text-sm font-bold text-white transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:bg-gray-300"
         >
           {submitting && <Spinner />}

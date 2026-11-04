@@ -1,0 +1,4 @@
+.favorites-page button:not(.help-icon-button),
+.favorites-page a {
+  border-radius: 0;
+}

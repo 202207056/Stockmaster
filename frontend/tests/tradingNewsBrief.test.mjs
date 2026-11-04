@@ -47,6 +47,7 @@ function serve(overrides = {}) {
     if (config.url === '/trading/portfolio') return response(config, { holdings: [
       { symbol_code: '000660', hold_quantity: 10 }, { symbol_code: '005930', hold_quantity: 5 }, { symbol_code: '042700', hold_quantity: 2 }] });
     if (config.url === '/ai/theme-brief') return response(config, themes);
+    if (config.url === '/ai/portfolio-briefs') return response(config, { items: [] });
     throw new Error(`Unexpected ${config.url}`);
   };
 }
@@ -208,4 +209,39 @@ test('the stock briefing can be reported with its identifiers only', async () =>
   await React.act(async () => detail.querySelector('form[aria-label="브리핑 신고"] button[type="submit"]').click());
   assert.deepEqual(body, { kind: 'stock', symbol_code: '000660', generated_at: main.generated_at, account_id: null, reason: 'wrong_fact', note: null });
   assert.match(detail.textContent, /신고가 접수됐어요/);
+});
+
+test('missing news title uses saved portfolio news without generating a briefing', async () => {
+  const saved = { id: 1, symbol_code: '000660', generated_at: new Date(Date.now() - 1000).toISOString(),
+    headline: '신규 메모리 공급 계약을 발표했습니다.[1]', disclaimer: '안내',
+    current_status: ['보유 중입니다.'], entry_context: [], position_summary: [], recent_issues: [],
+    positive_factors: [], risk_factors: [], watch_points: [], limitations: [],
+    sources: [{ title: '메모리 공급 계약', url: null }] };
+  serve({
+    '/ai/stock-brief/000660': config => response(config, { ...main, title: null }),
+    '/ai/portfolio-briefs': config => {
+      if (config.params.account_id === 8) return response(config, { items: [] });
+      assert.equal(config.params.account_id, auth.accountId);
+      return response(config, { items: [saved] });
+    },
+  });
+  await render();
+  assert.equal(document.querySelector('.trading-news-banner__headline').textContent, '신규 메모리 공급 계약을 발표했습니다.');
+  assert.equal(document.querySelector('.trading-news-banner__label').textContent, '최근 뉴스 정리');
+  assert.equal(calls.filter(url => url.startsWith('/ai/portfolio-brief/')).length, 0);
+  await render({ ...auth, accountId: 8 });
+  // Another account's response must never retain the previous account's headline.
+  assert.equal(document.querySelector('.trading-news-banner__headline').textContent, '최근 확인되는 뉴스를 정리했어요');
+});
+
+test('missing saved briefings retain the default banner and existing titles skip history', async () => {
+  serve();
+  await render();
+  assert.ok(!calls.includes('/ai/portfolio-briefs'));
+  await React.act(async () => root.unmount());
+  root = null;
+  localStorage.clear();
+  serve({ '/ai/stock-brief/000660': config => response(config, { ...main, title: null }) });
+  await render();
+  assert.equal(document.querySelector('.trading-news-banner__headline').textContent, '최근 확인되는 뉴스를 정리했어요');
 });

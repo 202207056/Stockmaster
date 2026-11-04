@@ -153,6 +153,8 @@ function flow(entry) {
 function mockFlowApi(userId) {
   client.default.defaults.adapter = async config => {
     const responses = {
+      '/users/check-login-id': { login_id: 'newuser', available: true },
+      '/users/me/favorites': { revision: 0, codes: [], groups: [] },
       '/users/register': { user_id: userId },
       '/users/login': { access_token: `flow-${userId}` },
       '/users/me': { user_id: userId, user_name: 'Tester' },
@@ -176,6 +178,7 @@ test('signup → survey result → seed → tour and completion survives reload'
       Object.getOwnPropertyDescriptor(dom.window.HTMLInputElement.prototype, 'value').set.call(input, values[index]);
       input.dispatchEvent(new dom.window.Event('input', { bubbles: true }));
     }));
+    await click('중복확인');
     await click('가입하고 시작하기');
     assert(document.querySelector('output').textContent.startsWith('/survey'));
     assert.equal(onboarding.getOnboarding(101), 'survey');

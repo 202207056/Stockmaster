@@ -31,7 +31,7 @@ export default function GlossaryBrowser() {
       <div className="border-b border-gray-200 pb-4">
         <h2 className="text-xl font-extrabold text-gray-900">투자 용어사전</h2>
         <p className="mt-1 text-sm text-gray-500">
-          어려운 말은 하나도 없어요. 총 {comma(GLOSSARY_COUNT)}개 용어를 쉬운 말로 풀어 두었습니다.
+          {comma(GLOSSARY_COUNT)}개 용어
         </p>
       </div>
 
@@ -43,7 +43,7 @@ export default function GlossaryBrowser() {
             type="search"
             value={keyword}
             onChange={(e) => setKeyword(e.target.value)}
-            placeholder="궁금한 용어를 검색해 보세요 (예: PER, 지정가, 평가손익)"
+            placeholder="용어 검색 (예: PER, 지정가)"
             className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:border-brand-500 focus:outline-none"
           />
         </label>

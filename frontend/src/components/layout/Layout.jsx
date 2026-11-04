@@ -1,5 +1,6 @@
 import { Outlet } from 'react-router-dom';
 import Header from './Header';
+import Nav from './Nav';
 import Footer from './Footer';
 import SiteTour from '../learn/SiteTour';
 import SitePractice from '../learn/SitePractice';
@@ -13,7 +14,7 @@ import SitePractice from '../learn/SitePractice';
  */
 export default function Layout() {
   return (
-    <div className="flex min-h-screen flex-col bg-white">
+    <div className="app-layout flex min-h-screen flex-col bg-white">
       <a
         href="#main"
         className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:rounded focus:bg-brand-600 focus:px-4 focus:py-2 focus:text-white"
@@ -28,6 +29,9 @@ export default function Layout() {
       </main>
 
       <Footer />
+      <div className="bottom-navigation fixed inset-x-0 bottom-0 z-30 border-t border-gray-200 bg-white md:hidden">
+        <Nav className="mobile-nav" />
+      </div>
       <SiteTour />
     </div>
   );

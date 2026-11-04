@@ -88,6 +88,31 @@ body {
   min-width: 0;
 }
 
+@media (max-width: 767px) {
+  .app-layout {
+    --mobile-nav-height: calc(64px + env(safe-area-inset-bottom, 0px));
+    padding-bottom: var(--mobile-nav-height);
+  }
+
+  .bottom-navigation {
+    padding: 6px max(8px, env(safe-area-inset-right, 0px)) calc(6px + env(safe-area-inset-bottom, 0px)) max(8px, env(safe-area-inset-left, 0px));
+  }
+
+  .bottom-navigation .mobile-nav {
+    height: 52px;
+    gap: 0;
+    justify-content: space-between;
+  }
+
+  .bottom-navigation .mobile-nav > a {
+    flex: 1 1 0;
+    min-width: 0;
+    justify-content: center;
+    padding-inline: 2px;
+    font-size: 11px;
+  }
+}
+
 @media (max-width: 639px) {
   .mobile-nav {
     gap: 0;

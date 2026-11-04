@@ -26,7 +26,7 @@ const { default: client } = await server.ssrLoadModule('/src/api/client.js');
 let apiCalls = 0;
 client.defaults.adapter = async () => { apiCalls++; throw new Error('Practice must never call the API'); };
 const container = document.getElementById('root');
-const button = label => [...container.querySelectorAll('button')].find(element => element.textContent.trim() === label);
+const button = label => [...container.querySelectorAll('button')].find(element => element.getAttribute('aria-label') === label || element.textContent.trim() === label);
 const active = () => container.querySelector('.tutorial-target-active');
 async function click(element) { assert(element, 'control exists'); assert(!element.disabled, 'control enabled'); await act(async () => element.click()); }
 async function fill(input, value) {
@@ -44,7 +44,8 @@ function tree(course) {
       React.createElement(Route, { path: '/assets', element: React.createElement(Assets) }))));
 }
 
-for (const course of TRADING_TUTORIALS) test(`site tour ${course.id}: existing pages, direct controls, no account API calls`, async () => {
+// Account selection now uses the signed-in AssetsTour instead of a practice account.
+for (const course of TRADING_TUTORIALS.filter(course => course.id !== 'account')) test(`site tour ${course.id}: existing pages, direct controls, no account API calls`, async () => {
   const root = createRoot(container);
   apiCalls = 0;
   try {
@@ -75,7 +76,7 @@ for (const course of TRADING_TUTORIALS) test(`site tour ${course.id}: existing p
             await click(active().querySelector('button'));
           }
           await click(active().querySelector('button')); assert(container.textContent.includes('주문 완료!')); break;
-        case 'closed': await click(button('확인')); break;
+        case 'closed': await click(button('다음')); break;
         case 'cancelled': await click(button('취소')); assert(!active().querySelector('table'), 'no order created by preview cancellation'); break;
         case 'history-refresh': await click(button('내역 새로고침')); break;
         case 'assets': await click(active().querySelector('a')); assert(container.querySelector('h1').textContent === '내 자산'); break;

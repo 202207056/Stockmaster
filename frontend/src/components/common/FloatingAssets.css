@@ -47,7 +47,7 @@
 .mini-assets-panel::-webkit-scrollbar { display: none; }
 
 @media (max-width: 639px) {
-  .mini-assets { left: auto; top: auto; right: 12px; bottom: max(12px, env(safe-area-inset-bottom)); }
+  .mini-assets { left: auto; top: auto; right: 12px; bottom: calc(var(--mobile-nav-height, 0px) + 12px); }
   .mini-assets.is-open { width: min(360px, calc(100vw - 24px)); }
   .mini-assets-handle { cursor: pointer; touch-action: auto; }
   .mini-assets-grip { display: none; }

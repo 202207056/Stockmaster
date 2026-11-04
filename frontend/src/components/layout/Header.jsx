@@ -16,8 +16,8 @@ export default function Header() {
 
   return (
     <header className="app-header relative z-30 border-b border-gray-200 bg-white/95 backdrop-blur md:sticky md:top-0">
-      <div className="mx-auto flex w-full max-w-page items-center justify-between gap-3 px-4 py-3 sm:px-8 sm:py-5">
-        <div className="flex items-center gap-4">
+      <div className="mx-auto flex w-full max-w-page flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-8 sm:py-5 md:flex-nowrap">
+        <div className="flex min-w-0 w-full items-center gap-3 md:w-auto md:gap-4">
           <Link to="/dashboard" className="flex shrink-0 items-center gap-2">
             <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-600 text-sm font-extrabold text-white">
               MI
@@ -25,7 +25,7 @@ export default function Header() {
             <span className="hidden text-base font-extrabold text-gray-900 sm:inline">프로젝트</span>
           </Link>
 
-          <div className="hidden md:block"><StockSearch /></div>
+          <div className="min-w-0 flex-1 md:flex-none"><StockSearch /></div>
 
           <div className="hidden w-[244px] shrink-0 2xl:block"><PopularStocks /></div>
         </div>
@@ -68,11 +68,10 @@ export default function Header() {
         </div>
       </div>
 
-      {/* 좁은 화면에서는 메뉴를 아래줄로 내려 가로 스크롤로 봅니다. */}
-      <div className="border-t border-gray-100 xl:hidden">
+      {/* 태블릿은 두 번째 줄, 모바일은 Layout의 하단 메뉴를 사용합니다. */}
+      <div className="hidden border-t border-gray-100 md:block xl:hidden">
         <Nav className="mobile-nav mx-auto w-full max-w-page overflow-x-auto px-2 py-2 sm:px-8 sm:py-3" />
       </div>
-      <div className="px-4 pb-3 md:hidden"><StockSearch /></div>
     </header>
   );
 }

@@ -54,7 +54,7 @@ export default function Trading() {
     return () => { window.removeEventListener(FAVORITES_EVENT, sync); window.removeEventListener('storage', sync); };
   }, []);
   const stocks = useSiteResource('stocks', useCallback((signal) => fetchStocks(search, signal), [search]), true, { cacheKey: JSON.stringify(['stocks', search]), publicCache: true });
-  return <div className="flex flex-col gap-6">
+  return <div className="trading-page flex flex-col gap-6">
     <div className="border-b border-gray-200 pb-4"><h1 className="text-xl font-extrabold">트레이딩</h1></div>
     <div className="grid gap-4 lg:grid-cols-4 lg:items-start">
       <aside className="trading-stock-sidebar rounded-xl border border-gray-200 p-4 lg:col-span-1">
@@ -206,7 +206,7 @@ function StockPanel({ code, favorite, onFavoriteChange }) {
     <div className={code && !practice ? 'trading-news-quote-row' : undefined}><div className="min-w-0">
     {detail.error && <InlineError error={detail.error} />}
     {code && <RemoteState resource={quote} requiresAuth={false}>
-      <div className="mb-4 flex flex-wrap items-center gap-3"><p className="text-2xl font-extrabold">{price === null ? '시세 이용 불가' : won(price)}</p><span className={`text-sm ${signTextClass(changeRate)}`} aria-label={changeRate === null ? '등락 정보 없음' : `전일 대비 ${changeRate > 0 ? '상승' : changeRate < 0 ? '하락' : '보합'}`} >{changeRate === null ? '—' : `${signMark(changeRate)} ${changeAmount === null ? '—' : comma(Math.round(changeRate < 0 ? -Math.abs(changeAmount) : Math.abs(changeAmount)))}원(${comma(changeRate, 2)}%)`}</span><button className="text-xs text-gray-500 underline" onClick={quote.reload} aria-label="시세 새로고침" title="시세 새로고침"><RefreshCw size={16} aria-hidden="true" /></button></div>
+      <div className="trading-quote-values mb-4 flex flex-wrap items-center gap-3"><p className="text-2xl font-extrabold">{price === null ? '시세 이용 불가' : won(price)}</p><span className={`text-sm ${signTextClass(changeRate)}`} aria-label={changeRate === null ? '등락 정보 없음' : `전일 대비 ${changeRate > 0 ? '상승' : changeRate < 0 ? '하락' : '보합'}`} >{changeRate === null ? '—' : `${signMark(changeRate)} ${changeAmount === null ? '—' : comma(Math.round(changeRate < 0 ? -Math.abs(changeAmount) : Math.abs(changeAmount)))}원(${comma(changeRate, 2)}%)`}</span><button className="text-xs text-gray-500 underline" onClick={quote.reload} aria-label="시세 새로고침" title="시세 새로고침"><RefreshCw size={16} aria-hidden="true" /></button></div>
     </RemoteState>}
     </div>{code && !practice && <TradingNewsBrief key={code} code={code} />}</div>
     {code ? <ChartWorkspace key={String(chartReplay)} emptyContent={<RemoteState resource={chart} requiresAuth={false} empty={!chartRows?.length} />} rows={chartRows} userId={user?.user_id} periodLabel={chart.data?.displayLabel || periodLabel} period={chartPeriod} onPeriod={setChartPeriod} replay={chartReplay} onReplayClose={closeChartReplay} allowTutorial={!practice} /> : chartReplay ? <ChartWorkspace rows={CHART_EXAMPLE} userId={user?.user_id} periodLabel="학습 예시" replay onReplayClose={closeChartReplay} demo /> : <div className="flex h-[420px] items-center justify-center rounded-lg border border-dashed border-gray-200"><p className="text-center text-sm leading-relaxed text-gray-400">조회할 종목을 선택해 주세요.</p></div>}
@@ -224,7 +224,7 @@ function StockPanel({ code, favorite, onFavoriteChange }) {
       <PracticeTarget id="amount"><div className="space-y-2 text-sm text-gray-600"><p>예상 거래금액: {total === null ? '—' : won(total)}</p>{practice ? <p>학습 예시에서는 수수료·세금을 제외합니다.</p> : <><p>예상 수수료: {costs ? won(costs.commission) : '—'} · 거래세: {costs ? won(costs.tax) : '—'}</p><p className="font-bold">예상 {kind === '매수' ? '출금액' : '입금액'}: {costs ? won(costs.settlement) : '—'}</p><p className="text-xs">모의 수수료 0.015% · 매도 거래세 0.18% · 원 단위 반올림</p></>}</div></PracticeTarget>
       {!practice && <p className="text-xs text-gray-500">{priceType === '지정가' ? '지정가는 대기 주문으로 접수됩니다. 자동 체결되지 않으며 현금·보유 수량을 차감하거나 예약하지 않습니다. 내역에서 취소할 수 있습니다.' : '시장가는 서버 현재가로 즉시 체결됩니다. 실제 체결가와 비용은 예상값과 다를 수 있습니다.'}</p>}
       <PracticeTarget id="place"><button disabled={(!practice && !ENABLE_ORDER_SUBMISSION) || !accountId || total === null || busy || uncertain || (!!practice && practice.current?.event !== 'prepare')} className="w-full rounded-lg bg-brand-600 px-5 py-3 font-bold text-white disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-500">{busy ? '주문 처리 중…' : `모의 ${kind}`}</button></PracticeTarget>
-      <InlineError error={error} />{message && <p role="status" className="text-sm text-gray-700">{message} <Link to={practice ? practice.href('/assets') : '/assets'} onClick={() => practice?.event('assets')} className="underline">내 자산 보기</Link></p>}
+      <InlineError error={error} />{message && <p role="status" className="text-sm text-gray-700">{message} <PracticeTarget id="assets-link"><Link to={practice ? practice.href('/assets') : '/assets'} onClick={() => practice?.event('assets')} className="underline">내 자산 보기</Link></PracticeTarget></p>}
     </form> : <p className="text-sm text-gray-400">로그인 후 주문 정보를 확인할 수 있어요.</p>}
     </div>
     {!practice && <TradingLearning symbol={code} side={kind} quantity={qty} price={price} cash={account?.withdrawable_cash} busy={busy || uncertain} />}

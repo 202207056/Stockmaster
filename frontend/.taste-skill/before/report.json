@@ -1,0 +1,1992 @@
+{
+ "url": "http://localhost:5173/learn",
+ "at": "2026-11-03T04:35:19.252Z",
+ "allow": [],
+ "viewports": [
+  {
+   "width": 1440,
+   "height": 900,
+   "load": "load",
+   "screens": 4,
+   "filled": [
+    1,
+    1,
+    1,
+    1
+   ],
+   "motion": {
+    "elements": 0,
+    "css": 0,
+    "transitions": 0,
+    "scripted": 0,
+    "videos": 0,
+    "playingVideos": 0
+   },
+   "metrics": {
+    "viewport": {
+     "w": 1440,
+     "h": 900
+    },
+    "page": {
+     "height": 3209,
+     "screens": 3.6,
+     "words": 504,
+     "img": 0,
+     "video": 0,
+     "canvas": 0,
+     "svg": 40,
+     "sections": 6,
+     "horizontalOverflow": 0,
+     "overflowCulprits": [],
+     "uiFragments": 0,
+     "uiAbuse": false,
+     "realPictures": 0,
+     "videoCount": 0,
+     "uiPictures": 0,
+     "pictureSamples": [],
+     "blendText": 0,
+     "sideScrollers": 0,
+     "brokenImages": [],
+     "emoji": [],
+     "videosNoPoster": 0
+    },
+    "hero": {
+     "text": "투자를 이해하는 시간",
+     "words": 3,
+     "chars": 11,
+     "lines": 1,
+     "size": 32,
+     "vw": 2.2,
+     "font": "Pretendard Variable",
+     "weight": 800,
+     "tracking": -0.04,
+     "leading": 1.5,
+     "top": 146,
+     "tag": "h1",
+     "kind": "heading",
+     "align": "left",
+     "position": "left"
+    },
+    "h1": {
+     "text": "투자를 이해하는 시간",
+     "words": 3,
+     "lines": 1,
+     "size": 32,
+     "font": "Pretendard Variable"
+    },
+    "headings": [
+     {
+      "text": "투자를 이해하는 시간",
+      "words": 3,
+      "chars": 11,
+      "lines": 1,
+      "size": 32,
+      "vw": 2.2,
+      "font": "Pretendard Variable",
+      "weight": 800,
+      "tracking": -0.045,
+      "leading": 1.5,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "left",
+      "widthRatio": 0.18,
+      "top": 146,
+      "tag": "h1",
+      "kind": "heading"
+     },
+     {
+      "text": "배우고, 직접 해보고. 나만의 투자 기준을 만들어 보세요.",
+      "words": 8,
+      "chars": 32,
+      "lines": 2,
+      "size": 30,
+      "vw": 2.1,
+      "font": "Pretendard Variable",
+      "weight": 800,
+      "tracking": -0.045,
+      "leading": 1.5,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "left",
+      "widthRatio": 0.63,
+      "top": 335,
+      "tag": "h2",
+      "kind": "heading"
+     },
+     {
+      "text": "0",
+      "words": 1,
+      "chars": 1,
+      "lines": 1,
+      "size": 40,
+      "vw": 2.8,
+      "font": "Pretendard Variable",
+      "weight": 800,
+      "tracking": -0.04,
+      "leading": 1.2,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "right",
+      "widthRatio": 0.02,
+      "top": 349,
+      "tag": "strong",
+      "kind": "heading"
+     }
+    ],
+    "headingSummary": {
+     "count": 3,
+     "maxLines": 2,
+     "over2Lines": 0,
+     "statements": 0,
+     "centered": 0,
+     "medianWords": 8,
+     "mixedFontHeadings": 0
+    },
+    "type": {
+     "families": [
+      {
+       "family": "Pretendard Variable",
+       "share": 1,
+       "mono": false
+      }
+     ],
+     "familyCount": 1,
+     "sizes": [
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      18,
+      20,
+      30,
+      32,
+      40
+     ],
+     "sizeCount": 12,
+     "notLoaded": [],
+     "body": {
+      "font": "Pretendard Variable",
+      "size": 14,
+      "leading": 2,
+      "weight": 400,
+      "tracking": 0,
+      "contrast": 7.6
+     },
+     "measureChars": 149,
+     "max": {
+      "size": 40,
+      "vw": 2.8,
+      "font": "Pretendard Variable",
+      "text": "0"
+     },
+     "monoShare": 0,
+     "monoProseShare": 0,
+     "monoFamilies": [],
+     "monoSamples": [],
+     "microLabels": 2,
+     "microLabelShare": 0.015,
+     "microSamples": [
+      "STOCKMASTER LEARNING",
+      "START HERE"
+     ],
+     "upperShare": 0.07,
+     "centerShare": 0.01,
+     "smallText": 13
+    },
+    "eyebrows": [
+     {
+      "text": "STOCKMASTER LEARNING",
+      "above": "투자를 이해하는 시간",
+      "upper": true,
+      "tracked": true,
+      "mono": false,
+      "pill": false,
+      "size": 10,
+      "top": 123
+     },
+     {
+      "text": "하루 한 수업, 5~8분",
+      "above": "배우고, 직접 해보고. 나만의 투자 기준을 만들어 보세요.",
+      "upper": false,
+      "tracked": false,
+      "mono": false,
+      "pill": false,
+      "size": 12,
+      "top": 296
+     },
+     {
+      "text": "나의 학습 여정",
+      "above": "0",
+      "upper": false,
+      "tracked": false,
+      "mono": false,
+      "pill": false,
+      "size": 12,
+      "top": 317
+     }
+    ],
+    "numbered": [
+     {
+      "text": "01",
+      "size": 12,
+      "top": 849
+     },
+     {
+      "text": "02",
+      "size": 12,
+      "top": 849
+     },
+     {
+      "text": "03",
+      "size": 12,
+      "top": 849
+     }
+    ],
+    "color": {
+     "bodyBg": "#f9fafb",
+     "bodyBgHsl": {
+      "h": 210,
+      "s": 0.2,
+      "l": 0.98
+     },
+     "dark": false,
+     "sectionBgs": [
+      {
+       "color": "#ffffff",
+       "top": 0,
+       "hsl": {
+        "h": 0,
+        "s": 0,
+        "l": 1
+       }
+      }
+     ],
+     "textColors": [
+      {
+       "color": "#6a7282",
+       "share": 0.36
+      },
+      {
+       "color": "#4a5565",
+       "share": 0.16
+      },
+      {
+       "color": "#64748b",
+       "share": 0.16
+      },
+      {
+       "color": "#4338ca",
+       "share": 0.1
+      },
+      {
+       "color": "#334155",
+       "share": 0.1
+      }
+     ],
+     "button": {
+      "bg": "#4f46e5",
+      "hsl": {
+       "h": 243,
+       "s": 0.75,
+       "l": 0.59
+      },
+      "fg": "#ffffff"
+     },
+     "lowContrast": [
+      {
+       "text": "즐겨찾기",
+       "ratio": 2.6,
+       "need": 4.5,
+       "size": 14,
+       "fg": "#99a1af",
+       "bg": "#ffffff"
+      },
+      {
+       "text": "트레이딩",
+       "ratio": 2.6,
+       "need": 4.5,
+       "size": 14,
+       "fg": "#99a1af",
+       "bg": "#ffffff"
+      },
+      {
+       "text": "내 자산",
+       "ratio": 2.6,
+       "need": 4.5,
+       "size": 14,
+       "fg": "#99a1af",
+       "bg": "#ffffff"
+      },
+      {
+       "text": "커뮤니티",
+       "ratio": 2.6,
+       "need": 4.5,
+       "size": 14,
+       "fg": "#99a1af",
+       "bg": "#ffffff"
+      },
+      {
+       "text": "© 인생한방 프로젝트",
+       "ratio": 2.6,
+       "need": 4.5,
+       "size": 12,
+       "fg": "#99a1af",
+       "bg": "#ffffff"
+      },
+      {
+       "text": "기초부터 뉴스 해석까지, 5단계 OX·객관식 퀴즈 20문항으로 확인해 보",
+       "ratio": 4.3,
+       "need": 4.5,
+       "size": 13,
+       "fg": "#64748b",
+       "bg": "#eef2ff"
+      }
+     ]
+    },
+    "buttons": {
+     "count": 4,
+     "inHero": 3,
+     "radius": 12,
+     "height": 46,
+     "withShadow": 0,
+     "withGradient": 0,
+     "mono": 0,
+     "upper": 0,
+     "heroLabels": [
+      "용어 찾아보기",
+      "첫 수업 시작하기",
+      "학습 둘러보기"
+     ]
+    },
+    "surfaces": {
+     "shadowStatic": 1,
+     "shadowOverlay": 0,
+     "shadowSamples": [
+      "div.learn-progress → rgba(49, 46, 129, 0.024) 0px 8px 30px 0px"
+     ],
+     "gradients": 1,
+     "scrims": 0,
+     "gradientSamples": [
+      "section.learn-hero → linear-gradient(115deg, rgb(238, 242, 255), rgb(248, 250, 252))"
+     ],
+     "gradientText": 0,
+     "hairlines": 6,
+     "hairlineSamples": [
+      "header.app-header.relative 1440px",
+      "p 250px",
+      "li.py-4 1045px",
+      "li.py-4 1045px",
+      "li.py-4 1045px"
+     ],
+     "outlinedBoxes": 16,
+     "dashed": 0,
+     "blurred": 1,
+     "roundedBoxes": 17,
+     "boxRadius": 16,
+     "squareMedia": 0,
+     "roundedMedia": 0,
+     "mediaRadius": 0,
+     "textShadow": 0,
+     "cardRows": [
+      {
+       "count": 5,
+       "iconTopped": false,
+       "rounded": true,
+       "top": 603
+      },
+      {
+       "count": 3,
+       "iconTopped": true,
+       "rounded": true,
+       "top": 824
+      },
+      {
+       "count": 6,
+       "iconTopped": false,
+       "rounded": true,
+       "top": 1197
+      }
+     ]
+    },
+    "heroMedia": [],
+    "nav": {
+     "links": 9,
+     "fixed": true,
+     "height": 91,
+     "floatingPill": false,
+     "blur": true
+    },
+    "fontsLoaded": [
+     "pretendard variable"
+    ]
+   },
+   "layout": {
+    "viewport": {
+     "w": 1440,
+     "h": 900
+    },
+    "pageH": 3209,
+    "margins": {
+     "left": 52,
+     "right": 68
+    },
+    "sections": [
+     {
+      "sel": "main#main.mx-auto.min-w-0",
+      "tag": "main",
+      "top": 91,
+      "height": 2869,
+      "words": 445,
+      "media": 0,
+      "middle": 0,
+      "heading": {
+       "text": "투자를 이해하는 시간",
+       "size": 32,
+       "tag": "h1"
+      },
+      "left": 52,
+      "right": 75,
+      "textLeft": 52,
+      "textRight": 75,
+      "fullBleed": false,
+      "footer": false,
+      "hero": true,
+      "continues": false,
+      "pinned": true
+     },
+     {
+      "sel": "footer.mt-auto.border-t",
+      "tag": "footer",
+      "top": 2960,
+      "height": 249,
+      "words": 36,
+      "media": 0,
+      "middle": 854,
+      "heading": null,
+      "left": 52,
+      "right": 52,
+      "textLeft": 52,
+      "textRight": 60,
+      "fullBleed": false,
+      "footer": true,
+      "hero": false,
+      "continues": false,
+      "pinned": false
+     }
+    ],
+    "gaps": [],
+    "h1s": [
+     {
+      "text": "투자를 이해하는 시간",
+      "size": 32,
+      "top": 146,
+      "firstScreen": true
+     }
+    ],
+    "edgeText": [],
+    "edges": [
+     {
+      "x": 315,
+      "n": 7
+     },
+     {
+      "x": 337,
+      "n": 6
+     },
+     {
+      "x": 866,
+      "n": 3
+     },
+     {
+      "x": 93,
+      "n": 2
+     },
+     {
+      "x": 52,
+      "n": 1
+     },
+     {
+      "x": 692,
+      "n": 1
+     },
+     {
+      "x": 1045,
+      "n": 1
+     }
+    ],
+    "leftBlocks": 21,
+    "bodySize": 14,
+    "stage": false,
+    "explains": false,
+    "slivers": [],
+    "voidShare": 0.2,
+    "voidBox": {
+     "x": 480,
+     "y": 120,
+     "w": 540,
+     "h": 480
+    }
+   },
+   "app": {
+    "viewport": {
+     "w": 1440,
+     "h": 900
+    },
+    "dark": false,
+    "ground": "#f9fafb",
+    "sidebar": null,
+    "topbar": {
+     "h": 91
+    },
+    "canvas": {
+     "left": 52,
+     "right": 68
+    },
+    "hero": {
+     "text": "투자를 이해하는 시간",
+     "words": 3,
+     "chars": 11,
+     "lines": 1,
+     "size": 32,
+     "vw": 2.2,
+     "font": "Pretendard Variable",
+     "weight": 800,
+     "tracking": -0.04,
+     "leading": 1.5,
+     "top": 146,
+     "tag": "h1",
+     "kind": "heading",
+     "align": "left",
+     "position": "left"
+    },
+    "charts": 0,
+    "layout": {
+     "panels": 10,
+     "firstScreen": 5,
+     "ragged": [],
+     "voids": []
+    },
+    "tiles": 0,
+    "panels": {
+     "count": 18,
+     "radii": [
+      [
+       16,
+       8
+      ],
+      [
+       12,
+       7
+      ],
+      [
+       24,
+       1
+      ],
+      [
+       18,
+       1
+      ],
+      [
+       0,
+       1
+      ]
+     ],
+     "heavyBorders": 0,
+     "borderSamples": [],
+     "heavyShadows": 1,
+     "softShadows": 0,
+     "shadowSamples": [
+      "rgba(49, 46, 129, 0.024) 0px 8px 30px 0px"
+     ],
+     "glass": 0
+    },
+    "chips": {
+     "count": 0,
+     "hues": 0,
+     "samples": []
+    },
+    "numbers": {
+     "cells": 0,
+     "leftAligned": 0,
+     "figures": 4,
+     "tabularShare": 0.75,
+     "kpiMax": 12
+    },
+    "rows": null,
+    "chartHues": 0,
+    "placeholders": [],
+    "type": {
+     "under13": 0.21,
+     "tiny": 2,
+     "tinySamples": [
+      "STOCKMASTER LEARNING 10px",
+      "START HERE 10px"
+     ],
+     "sizes": [
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      18,
+      20,
+      30,
+      32
+     ]
+    },
+    "title": {
+     "text": "투자를 이해하는 시간",
+     "size": 32,
+     "top": 146
+    },
+    "colourShare": 0.011
+   },
+   "consoleErrors": []
+  },
+  {
+   "width": 768,
+   "height": 1024,
+   "load": "load",
+   "screens": 4,
+   "filled": [
+    0.98,
+    1,
+    1,
+    0.97
+   ],
+   "motion": {
+    "elements": 0,
+    "css": 0,
+    "transitions": 0,
+    "scripted": 0,
+    "videos": 0,
+    "playingVideos": 0
+   },
+   "metrics": {
+    "viewport": {
+     "w": 768,
+     "h": 1024
+    },
+    "page": {
+     "height": 3554,
+     "screens": 3.5,
+     "words": 504,
+     "img": 0,
+     "video": 0,
+     "canvas": 0,
+     "svg": 40,
+     "sections": 6,
+     "horizontalOverflow": 0,
+     "overflowCulprits": [],
+     "uiFragments": 0,
+     "uiAbuse": false,
+     "realPictures": 0,
+     "videoCount": 0,
+     "uiPictures": 0,
+     "pictureSamples": [],
+     "blendText": 0,
+     "sideScrollers": 0,
+     "brokenImages": [],
+     "emoji": [],
+     "videosNoPoster": 0
+    },
+    "hero": {
+     "text": "투자를 이해하는 시간",
+     "words": 3,
+     "chars": 11,
+     "lines": 1,
+     "size": 24,
+     "vw": 3.1,
+     "font": "Pretendard Variable",
+     "weight": 800,
+     "tracking": -0.05,
+     "leading": 1.5,
+     "top": 215,
+     "tag": "h1",
+     "kind": "heading",
+     "align": "left",
+     "position": "left"
+    },
+    "h1": {
+     "text": "투자를 이해하는 시간",
+     "words": 3,
+     "lines": 1,
+     "size": 24,
+     "font": "Pretendard Variable"
+    },
+    "headings": [
+     {
+      "text": "0",
+      "words": 1,
+      "chars": 1,
+      "lines": 1,
+      "size": 40,
+      "vw": 5.2,
+      "font": "Pretendard Variable",
+      "weight": 800,
+      "tracking": -0.04,
+      "leading": 1.2,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "right",
+      "widthRatio": 0.03,
+      "top": 398,
+      "tag": "strong",
+      "kind": "heading"
+     }
+    ],
+    "headingSummary": {
+     "count": 1,
+     "maxLines": 1,
+     "over2Lines": 0,
+     "statements": 0,
+     "centered": 0,
+     "medianWords": null,
+     "mixedFontHeadings": 0
+    },
+    "type": {
+     "families": [
+      {
+       "family": "Pretendard Variable",
+       "share": 1,
+       "mono": false
+      }
+     ],
+     "familyCount": 1,
+     "sizes": [
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      18,
+      20,
+      22,
+      24,
+      40
+     ],
+     "sizeCount": 12,
+     "notLoaded": [],
+     "body": {
+      "font": "Pretendard Variable",
+      "size": 14,
+      "leading": 2,
+      "weight": 400,
+      "tracking": 0,
+      "contrast": 7.6
+     },
+     "measureChars": 64,
+     "max": {
+      "size": 40,
+      "vw": 5.2,
+      "font": "Pretendard Variable",
+      "text": "0"
+     },
+     "monoShare": 0,
+     "monoProseShare": 0,
+     "monoFamilies": [],
+     "monoSamples": [],
+     "microLabels": 2,
+     "microLabelShare": 0.015,
+     "microSamples": [
+      "STOCKMASTER LEARNING",
+      "START HERE"
+     ],
+     "upperShare": 0.07,
+     "centerShare": 0.01,
+     "smallText": 13
+    },
+    "eyebrows": [
+     {
+      "text": "나의 학습 여정",
+      "above": "0",
+      "upper": false,
+      "tracked": false,
+      "mono": false,
+      "pill": false,
+      "size": 12,
+      "top": 366
+     }
+    ],
+    "numbered": [
+     {
+      "text": "01",
+      "size": 12,
+      "top": 907
+     },
+     {
+      "text": "02",
+      "size": 12,
+      "top": 907
+     },
+     {
+      "text": "03",
+      "size": 12,
+      "top": 907
+     }
+    ],
+    "color": {
+     "bodyBg": "#f9fafb",
+     "bodyBgHsl": {
+      "h": 210,
+      "s": 0.2,
+      "l": 0.98
+     },
+     "dark": false,
+     "sectionBgs": [
+      {
+       "color": "#ffffff",
+       "top": 0,
+       "hsl": {
+        "h": 0,
+        "s": 0,
+        "l": 1
+       }
+      }
+     ],
+     "textColors": [
+      {
+       "color": "#6a7282",
+       "share": 0.36
+      },
+      {
+       "color": "#4a5565",
+       "share": 0.16
+      },
+      {
+       "color": "#64748b",
+       "share": 0.16
+      },
+      {
+       "color": "#4338ca",
+       "share": 0.1
+      },
+      {
+       "color": "#334155",
+       "share": 0.1
+      }
+     ],
+     "button": {
+      "bg": "#4f46e5",
+      "hsl": {
+       "h": 243,
+       "s": 0.75,
+       "l": 0.59
+      },
+      "fg": "#ffffff"
+     },
+     "lowContrast": [
+      {
+       "text": "즐겨찾기",
+       "ratio": 2.6,
+       "need": 4.5,
+       "size": 14,
+       "fg": "#99a1af",
+       "bg": "#ffffff"
+      },
+      {
+       "text": "트레이딩",
+       "ratio": 2.6,
+       "need": 4.5,
+       "size": 14,
+       "fg": "#99a1af",
+       "bg": "#ffffff"
+      },
+      {
+       "text": "내 자산",
+       "ratio": 2.6,
+       "need": 4.5,
+       "size": 14,
+       "fg": "#99a1af",
+       "bg": "#ffffff"
+      },
+      {
+       "text": "커뮤니티",
+       "ratio": 2.6,
+       "need": 4.5,
+       "size": 14,
+       "fg": "#99a1af",
+       "bg": "#ffffff"
+      },
+      {
+       "text": "© 인생한방 프로젝트",
+       "ratio": 2.6,
+       "need": 4.5,
+       "size": 12,
+       "fg": "#99a1af",
+       "bg": "#ffffff"
+      },
+      {
+       "text": "기초부터 뉴스 해석까지, 5단계 OX·객관식 퀴즈 20문항으로 확인해 보",
+       "ratio": 4.3,
+       "need": 4.5,
+       "size": 13,
+       "fg": "#64748b",
+       "bg": "#eef2ff"
+      }
+     ]
+    },
+    "buttons": {
+     "count": 4,
+     "inHero": 3,
+     "radius": 12,
+     "height": 46,
+     "withShadow": 0,
+     "withGradient": 0,
+     "mono": 0,
+     "upper": 0,
+     "heroLabels": [
+      "용어 찾아보기",
+      "첫 수업 시작하기",
+      "학습 둘러보기"
+     ]
+    },
+    "surfaces": {
+     "shadowStatic": 1,
+     "shadowOverlay": 0,
+     "shadowSamples": [
+      "div.learn-progress → rgba(49, 46, 129, 0.024) 0px 8px 30px 0px"
+     ],
+     "gradients": 1,
+     "scrims": 0,
+     "gradientSamples": [
+      "section.learn-hero → linear-gradient(115deg, rgb(238, 242, 255), rgb(248, 250, 252))"
+     ],
+     "gradientText": 0,
+     "hairlines": 6,
+     "hairlineSamples": [
+      "header.app-header.relative 768px",
+      "div.hidden.border-t 768px",
+      "li.py-4 450px",
+      "li.py-4 450px",
+      "li.py-4 450px"
+     ],
+     "outlinedBoxes": 13,
+     "dashed": 0,
+     "blurred": 1,
+     "roundedBoxes": 14,
+     "boxRadius": 12,
+     "squareMedia": 0,
+     "roundedMedia": 0,
+     "mediaRadius": 0,
+     "textShadow": 0,
+     "cardRows": [
+      {
+       "count": 5,
+       "iconTopped": false,
+       "rounded": true,
+       "top": 644
+      },
+      {
+       "count": 6,
+       "iconTopped": false,
+       "rounded": true,
+       "top": 1299
+      }
+     ]
+    },
+    "heroMedia": [],
+    "nav": {
+     "links": 9,
+     "fixed": true,
+     "height": 160,
+     "floatingPill": false,
+     "blur": true
+    },
+    "fontsLoaded": [
+     "pretendard variable"
+    ]
+   },
+   "layout": {
+    "viewport": {
+     "w": 768,
+     "h": 1024
+    },
+    "pageH": 3554,
+    "margins": {
+     "left": 32,
+     "right": 46
+    },
+    "sections": [
+     {
+      "sel": "header.app-header.relative",
+      "tag": "header",
+      "top": 0,
+      "height": 160,
+      "words": 10,
+      "media": 0,
+      "middle": 250,
+      "heading": null,
+      "left": 42,
+      "right": 48,
+      "textLeft": 42,
+      "textRight": 48,
+      "fullBleed": false,
+      "footer": false,
+      "hero": true,
+      "continues": false,
+      "pinned": true
+     },
+     {
+      "sel": "main#main.mx-auto.min-w-0",
+      "tag": "main",
+      "top": 160,
+      "height": 3145,
+      "words": 445,
+      "media": 0,
+      "middle": 0,
+      "heading": {
+       "text": "투자를 이해하는 시간",
+       "size": 24,
+       "tag": "h1"
+      },
+      "left": 32,
+      "right": 46,
+      "textLeft": 32,
+      "textRight": 46,
+      "fullBleed": false,
+      "footer": false,
+      "hero": true,
+      "continues": false,
+      "pinned": true
+     },
+     {
+      "sel": "footer.mt-auto.border-t",
+      "tag": "footer",
+      "top": 3305,
+      "height": 249,
+      "words": 36,
+      "media": 0,
+      "middle": 222,
+      "heading": null,
+      "left": 32,
+      "right": 32,
+      "textLeft": 32,
+      "textRight": 40,
+      "fullBleed": false,
+      "footer": true,
+      "hero": false,
+      "continues": false,
+      "pinned": false
+     }
+    ],
+    "gaps": [],
+    "h1s": [
+     {
+      "text": "투자를 이해하는 시간",
+      "size": 24,
+      "top": 215,
+      "firstScreen": true
+     }
+    ],
+    "edgeText": [],
+    "edges": [
+     {
+      "x": 258,
+      "n": 7
+     },
+     {
+      "x": 275,
+      "n": 6
+     },
+     {
+      "x": 511,
+      "n": 3
+     },
+     {
+      "x": 61,
+      "n": 2
+     },
+     {
+      "x": 32,
+      "n": 1
+     },
+     {
+      "x": 430,
+      "n": 1
+     },
+     {
+      "x": 586,
+      "n": 1
+     }
+    ],
+    "leftBlocks": 21,
+    "bodySize": 14,
+    "stage": false,
+    "explains": false,
+    "slivers": [],
+    "voidShare": 0,
+    "voidBox": null
+   },
+   "app": {
+    "viewport": {
+     "w": 768,
+     "h": 1024
+    },
+    "dark": false,
+    "ground": "#f9fafb",
+    "sidebar": null,
+    "topbar": {
+     "h": 84
+    },
+    "canvas": {
+     "left": 32,
+     "right": 48
+    },
+    "hero": {
+     "text": "투자를 이해하는 시간",
+     "words": 3,
+     "chars": 11,
+     "lines": 1,
+     "size": 24,
+     "vw": 3.1,
+     "font": "Pretendard Variable",
+     "weight": 800,
+     "tracking": -0.05,
+     "leading": 1.5,
+     "top": 215,
+     "tag": "h1",
+     "kind": "heading",
+     "align": "left",
+     "position": "left"
+    },
+    "charts": 0,
+    "layout": {
+     "panels": 10,
+     "firstScreen": 5,
+     "ragged": [],
+     "voids": []
+    },
+    "tiles": 0,
+    "panels": {
+     "count": 18,
+     "radii": [
+      [
+       16,
+       8
+      ],
+      [
+       12,
+       7
+      ],
+      [
+       24,
+       1
+      ],
+      [
+       18,
+       1
+      ],
+      [
+       0,
+       1
+      ]
+     ],
+     "heavyBorders": 0,
+     "borderSamples": [],
+     "heavyShadows": 1,
+     "softShadows": 0,
+     "shadowSamples": [
+      "rgba(49, 46, 129, 0.024) 0px 8px 30px 0px"
+     ],
+     "glass": 0
+    },
+    "chips": {
+     "count": 0,
+     "hues": 0,
+     "samples": []
+    },
+    "numbers": {
+     "cells": 0,
+     "leftAligned": 0,
+     "figures": 4,
+     "tabularShare": 0.75,
+     "kpiMax": 12
+    },
+    "rows": null,
+    "chartHues": 0,
+    "placeholders": [],
+    "type": {
+     "under13": 0.21,
+     "tiny": 2,
+     "tinySamples": [
+      "STOCKMASTER LEARNING 10px",
+      "START HERE 10px"
+     ],
+     "sizes": [
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      18,
+      20,
+      22,
+      24
+     ]
+    },
+    "title": {
+     "text": "투자를 이해하는 시간",
+     "size": 24,
+     "top": 215
+    },
+    "colourShare": 0.018
+   },
+   "consoleErrors": []
+  },
+  {
+   "width": 390,
+   "height": 844,
+   "load": "load",
+   "screens": 6,
+   "filled": [
+    1,
+    0.94,
+    1,
+    1,
+    1,
+    1
+   ],
+   "motion": {
+    "elements": 0,
+    "css": 0,
+    "transitions": 0,
+    "scripted": 0,
+    "videos": 0,
+    "playingVideos": 0
+   },
+   "metrics": {
+    "viewport": {
+     "w": 390,
+     "h": 844
+    },
+    "page": {
+     "height": 4644,
+     "screens": 5.5,
+     "words": 490,
+     "img": 0,
+     "video": 0,
+     "canvas": 0,
+     "svg": 40,
+     "sections": 6,
+     "horizontalOverflow": 0,
+     "overflowCulprits": [],
+     "uiFragments": 0,
+     "uiAbuse": false,
+     "realPictures": 0,
+     "videoCount": 0,
+     "uiPictures": 0,
+     "pictureSamples": [],
+     "blendText": 0,
+     "sideScrollers": 1,
+     "brokenImages": [],
+     "emoji": [],
+     "videosNoPoster": 0
+    },
+    "hero": {
+     "text": "투자를 이해하는 시간",
+     "words": 3,
+     "chars": 11,
+     "lines": 1,
+     "size": 24,
+     "vw": 6.2,
+     "font": "Pretendard Variable",
+     "weight": 800,
+     "tracking": -0.05,
+     "leading": 1.5,
+     "top": 168,
+     "tag": "h1",
+     "kind": "heading",
+     "align": "left",
+     "position": "left"
+    },
+    "h1": {
+     "text": "투자를 이해하는 시간",
+     "words": 3,
+     "lines": 1,
+     "size": 24,
+     "font": "Pretendard Variable"
+    },
+    "headings": [
+     {
+      "text": "투자를 이해하는 시간",
+      "words": 3,
+      "chars": 11,
+      "lines": 1,
+      "size": 24,
+      "vw": 6.2,
+      "font": "Pretendard Variable",
+      "weight": 800,
+      "tracking": -0.045,
+      "leading": 1.5,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "left",
+      "widthRatio": 0.56,
+      "top": 168,
+      "tag": "h1",
+      "kind": "heading"
+     },
+     {
+      "text": "배우고, 직접 해보고. 나만의 투자 기준을 만들어 보세요.",
+      "words": 8,
+      "chars": 32,
+      "lines": 2,
+      "size": 23,
+      "vw": 5.9,
+      "font": "Pretendard Variable",
+      "weight": 800,
+      "tracking": -0.045,
+      "leading": 1.5,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "center",
+      "widthRatio": 0.79,
+      "top": 319,
+      "tag": "h2",
+      "kind": "heading"
+     },
+     {
+      "text": "0",
+      "words": 1,
+      "chars": 1,
+      "lines": 1,
+      "size": 40,
+      "vw": 10.3,
+      "font": "Pretendard Variable",
+      "weight": 800,
+      "tracking": -0.04,
+      "leading": 1.2,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "left",
+      "widthRatio": 0.07,
+      "top": 593,
+      "tag": "strong",
+      "kind": "heading"
+     }
+    ],
+    "headingSummary": {
+     "count": 3,
+     "maxLines": 2,
+     "over2Lines": 0,
+     "statements": 0,
+     "centered": 0,
+     "medianWords": 8,
+     "mixedFontHeadings": 0
+    },
+    "type": {
+     "families": [
+      {
+       "family": "Pretendard Variable",
+       "share": 1,
+       "mono": false
+      }
+     ],
+     "familyCount": 1,
+     "sizes": [
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      18,
+      20,
+      23,
+      24,
+      40
+     ],
+     "sizeCount": 12,
+     "notLoaded": [],
+     "body": {
+      "font": "Pretendard Variable",
+      "size": 14,
+      "leading": 2,
+      "weight": 400,
+      "tracking": 0,
+      "contrast": 7.6
+     },
+     "measureChars": 45,
+     "max": {
+      "size": 40,
+      "vw": 10.3,
+      "font": "Pretendard Variable",
+      "text": "0"
+     },
+     "monoShare": 0,
+     "monoProseShare": 0,
+     "monoFamilies": [],
+     "monoSamples": [],
+     "microLabels": 2,
+     "microLabelShare": 0.016,
+     "microSamples": [
+      "STOCKMASTER LEARNING",
+      "START HERE"
+     ],
+     "upperShare": 0.07,
+     "centerShare": 0.01,
+     "smallText": 12
+    },
+    "eyebrows": [
+     {
+      "text": "STOCKMASTER LEARNING",
+      "above": "투자를 이해하는 시간",
+      "upper": true,
+      "tracked": true,
+      "mono": false,
+      "pill": false,
+      "size": 10,
+      "top": 145
+     },
+     {
+      "text": "나의 학습 여정",
+      "above": "0",
+      "upper": false,
+      "tracked": false,
+      "mono": false,
+      "pill": false,
+      "size": 12,
+      "top": 561
+     }
+    ],
+    "numbered": [
+     {
+      "text": "01",
+      "size": 12,
+      "top": 1224
+     },
+     {
+      "text": "02",
+      "size": 12,
+      "top": 1358
+     },
+     {
+      "text": "03",
+      "size": 12,
+      "top": 1492
+     }
+    ],
+    "color": {
+     "bodyBg": "#f9fafb",
+     "bodyBgHsl": {
+      "h": 210,
+      "s": 0.2,
+      "l": 0.98
+     },
+     "dark": false,
+     "sectionBgs": [
+      {
+       "color": "#ffffff",
+       "top": 0,
+       "hsl": {
+        "h": 0,
+        "s": 0,
+        "l": 1
+       }
+      }
+     ],
+     "textColors": [
+      {
+       "color": "#6a7282",
+       "share": 0.37
+      },
+      {
+       "color": "#4a5565",
+       "share": 0.16
+      },
+      {
+       "color": "#64748b",
+       "share": 0.14
+      },
+      {
+       "color": "#4338ca",
+       "share": 0.1
+      },
+      {
+       "color": "#334155",
+       "share": 0.09
+      }
+     ],
+     "button": {
+      "bg": "#4f46e5",
+      "hsl": {
+       "h": 243,
+       "s": 0.75,
+       "l": 0.59
+      },
+      "fg": "#ffffff"
+     },
+     "lowContrast": [
+      {
+       "text": "© 인생한방 프로젝트",
+       "ratio": 2.6,
+       "need": 4.5,
+       "size": 12,
+       "fg": "#99a1af",
+       "bg": "#ffffff"
+      },
+      {
+       "text": "즐겨찾기",
+       "ratio": 2.6,
+       "need": 4.5,
+       "size": 11,
+       "fg": "#99a1af",
+       "bg": "#ffffff"
+      },
+      {
+       "text": "트레이딩",
+       "ratio": 2.6,
+       "need": 4.5,
+       "size": 11,
+       "fg": "#99a1af",
+       "bg": "#ffffff"
+      },
+      {
+       "text": "내 자산",
+       "ratio": 2.6,
+       "need": 4.5,
+       "size": 11,
+       "fg": "#99a1af",
+       "bg": "#ffffff"
+      },
+      {
+       "text": "커뮤니티",
+       "ratio": 2.6,
+       "need": 4.5,
+       "size": 11,
+       "fg": "#99a1af",
+       "bg": "#ffffff"
+      },
+      {
+       "text": "기초부터 뉴스 해석까지, 5단계 OX·객관식 퀴즈 20문항으로 확인해 보",
+       "ratio": 4.3,
+       "need": 4.5,
+       "size": 13,
+       "fg": "#64748b",
+       "bg": "#eef2ff"
+      }
+     ]
+    },
+    "buttons": {
+     "count": 9,
+     "inHero": 8,
+     "radius": 10,
+     "height": 40,
+     "withShadow": 0,
+     "withGradient": 0,
+     "mono": 0,
+     "upper": 0,
+     "heroLabels": [
+      "첫 수업 시작하기",
+      "학습 둘러보기",
+      "투자 기초 과정",
+      "단계별 주식 퀴즈",
+      "투자 비중 실험"
+     ]
+    },
+    "surfaces": {
+     "shadowStatic": 1,
+     "shadowOverlay": 0,
+     "shadowSamples": [
+      "div.learn-progress → rgba(49, 46, 129, 0.024) 0px 8px 30px 0px"
+     ],
+     "gradients": 1,
+     "scrims": 0,
+     "gradientSamples": [
+      "section.learn-hero → linear-gradient(115deg, rgb(238, 242, 255), rgb(248, 250, 252))"
+     ],
+     "gradientText": 0,
+     "hairlines": 7,
+     "hairlineSamples": [
+      "header.app-header.relative 390px",
+      "p 266px",
+      "li.py-4 316px",
+      "li.py-4 316px",
+      "li.py-4 316px"
+     ],
+     "outlinedBoxes": 16,
+     "dashed": 0,
+     "blurred": 1,
+     "roundedBoxes": 17,
+     "boxRadius": 16,
+     "squareMedia": 0,
+     "roundedMedia": 0,
+     "mediaRadius": 0,
+     "textShadow": 0,
+     "cardRows": [
+      {
+       "count": 3,
+       "iconTopped": true,
+       "rounded": true,
+       "top": 1169
+      },
+      {
+       "count": 6,
+       "iconTopped": false,
+       "rounded": true,
+       "top": 1795
+      }
+     ]
+    },
+    "heroMedia": [],
+    "nav": {
+     "links": 3,
+     "fixed": false,
+     "height": 125,
+     "floatingPill": false,
+     "blur": true
+    },
+    "fontsLoaded": [
+     "pretendard variable"
+    ]
+   },
+   "layout": {
+    "viewport": {
+     "w": 390,
+     "h": 844
+    },
+    "pageH": 4644,
+    "margins": {
+     "left": 16,
+     "right": 16
+    },
+    "sections": [
+     {
+      "sel": "header.app-header.relative",
+      "tag": "header",
+      "top": 0,
+      "height": 125,
+      "words": 3,
+      "media": 0,
+      "middle": 12,
+      "heading": null,
+      "left": 16,
+      "right": 16,
+      "textLeft": 16,
+      "textRight": 289,
+      "fullBleed": false,
+      "footer": false,
+      "hero": true,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "main#main.mx-auto.min-w-0",
+      "tag": "main",
+      "top": 125,
+      "height": 4154,
+      "words": 419,
+      "media": 0,
+      "middle": 0,
+      "heading": {
+       "text": "투자를 이해하는 시간",
+       "size": 24,
+       "tag": "h1"
+      },
+      "left": 16,
+      "right": 16,
+      "textLeft": 16,
+      "textRight": 16,
+      "fullBleed": false,
+      "footer": false,
+      "hero": true,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "footer.mt-auto.border-t",
+      "tag": "footer",
+      "top": 4279,
+      "height": 302,
+      "words": 36,
+      "media": 0,
+      "middle": 0,
+      "heading": null,
+      "left": 16,
+      "right": 16,
+      "textLeft": 16,
+      "textRight": 19,
+      "fullBleed": false,
+      "footer": true,
+      "hero": false,
+      "continues": false,
+      "pinned": false
+     }
+    ],
+    "gaps": [],
+    "h1s": [
+     {
+      "text": "투자를 이해하는 시간",
+      "size": 24,
+      "top": 168,
+      "firstScreen": true
+     }
+    ],
+    "edgeText": [],
+    "edges": [
+     {
+      "x": 36,
+      "n": 9
+     },
+     {
+      "x": 58,
+      "n": 8
+     },
+     {
+      "x": 105,
+      "n": 3
+     },
+     {
+      "x": 16,
+      "n": 1
+     }
+    ],
+    "leftBlocks": 21,
+    "bodySize": 14,
+    "stage": false,
+    "explains": false,
+    "slivers": [],
+    "voidShare": 0,
+    "voidBox": null
+   },
+   "app": {
+    "viewport": {
+     "w": 390,
+     "h": 844
+    },
+    "dark": false,
+    "ground": "#f9fafb",
+    "sidebar": null,
+    "topbar": null,
+    "canvas": {
+     "left": 16,
+     "right": -444
+    },
+    "hero": {
+     "text": "투자를 이해하는 시간",
+     "words": 3,
+     "chars": 11,
+     "lines": 1,
+     "size": 24,
+     "vw": 6.2,
+     "font": "Pretendard Variable",
+     "weight": 800,
+     "tracking": -0.05,
+     "leading": 1.5,
+     "top": 168,
+     "tag": "h1",
+     "kind": "heading",
+     "align": "left",
+     "position": "left"
+    },
+    "charts": 0,
+    "layout": {
+     "panels": 9,
+     "firstScreen": 1,
+     "ragged": [],
+     "voids": []
+    },
+    "tiles": 0,
+    "panels": {
+     "count": 17,
+     "radii": [
+      [
+       16,
+       8
+      ],
+      [
+       12,
+       7
+      ],
+      [
+       18,
+       2
+      ]
+     ],
+     "heavyBorders": 0,
+     "borderSamples": [],
+     "heavyShadows": 1,
+     "softShadows": 0,
+     "shadowSamples": [
+      "rgba(49, 46, 129, 0.024) 0px 8px 30px 0px"
+     ],
+     "glass": 0
+    },
+    "chips": {
+     "count": 0,
+     "hues": 0,
+     "samples": []
+    },
+    "numbers": {
+     "cells": 0,
+     "leftAligned": 0,
+     "figures": 4,
+     "tabularShare": 0.75,
+     "kpiMax": 12
+    },
+    "rows": null,
+    "chartHues": 0,
+    "placeholders": [],
+    "type": {
+     "under13": 0.28,
+     "tiny": 3,
+     "tinySamples": [
+      "STOCKMASTER LEARNING 10px",
+      "용어 찾아보기 0px",
+      "START HERE 10px"
+     ],
+     "sizes": [
+      0,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      18,
+      20,
+      23,
+      24
+     ]
+    },
+    "title": {
+     "text": "투자를 이해하는 시간",
+     "size": 24,
+     "top": 168
+    },
+    "colourShare": 0.033
+   },
+   "consoleErrors": []
+  }
+ ],
+ "findings": [
+  {
+   "level": "WARN",
+   "id": "micro-label",
+   "width": 1440,
+   "message": "2 tiny uppercase letter-spaced label(s): \"STOCKMASTER LEARNING\", \"START HERE\"",
+   "fix": "Prefer sentence case at body size.",
+   "alsoAt": [
+    768,
+    390
+   ]
+  },
+  {
+   "level": "FAIL",
+   "id": "gradient",
+   "width": 1440,
+   "message": "1 gradient fill(s): section.learn-hero → linear-gradient(115deg, rgb(238, 242, 255), rgb(248, 250, 252))",
+   "fix": "Use a flat colour or a real image. The only gradient allowed by default is a neutral scrim over a photo for legibility.",
+   "alsoAt": [
+    768,
+    390
+   ]
+  },
+  {
+   "level": "FAIL",
+   "id": "palette-purple",
+   "width": 1440,
+   "message": "Indigo / violet (text #4338ca).",
+   "fix": "Use the accent from the drawn palette.",
+   "alsoAt": [
+    768,
+    390
+   ]
+  },
+  {
+   "level": "WARN",
+   "id": "contrast",
+   "width": 1440,
+   "message": "Low-contrast text: \"즐겨찾기\" 2.6:1 needs 4.5:1; \"트레이딩\" 2.6:1 needs 4.5:1; \"내 자산\" 2.6:1 needs 4.5:1; \"커뮤니티\" 2.6:1 needs 4.5:1",
+   "fix": "Darken or lighten the text colour.",
+   "alsoAt": [
+    768,
+    390
+   ]
+  },
+  {
+   "level": "WARN",
+   "id": "dev-server",
+   "width": 1440,
+   "message": "This page is served by a development server (Vite, webpack or Next in dev mode).",
+   "fix": "Run the last gate on the production build too (vite build && vite preview, next build && next start, or the built index.html): minifiers and bundlers change the CSS a visitor receives.",
+   "alsoAt": [
+    768,
+    390
+   ]
+  },
+  {
+   "level": "FAIL",
+   "id": "heavy-shadow",
+   "width": 1440,
+   "message": "1 panel shadow(s) heavy enough to read as floating: rgba(49, 46, 129, 0.024) 0px 8px 30px 0px",
+   "fix": "Panels sit on the ground: separate them with a fill one step from the ground or a quiet 1px border. A shadow, if any, is under 8% black with a small blur. Real overlays (menus, dialogs, popovers) may float.",
+   "alsoAt": [
+    768,
+    390
+   ]
+  },
+  {
+   "level": "FAIL",
+   "id": "tiny-text",
+   "width": 390,
+   "message": "3 text blocks under 11px: STOCKMASTER LEARNING 10px, 용어 찾아보기 0px, START HERE 10px.",
+   "fix": "Nothing below 11px; secondary text 12px, data 13–14px."
+  }
+ ],
+ "images": [
+  {
+   "viewport": "desktop",
+   "width": 1440,
+   "fold": "D:\\pros\\Stockmaster\\frontend\\.taste-skill\\before\\desktop-fold.jpg",
+   "pages": [
+    "D:\\pros\\Stockmaster\\frontend\\.taste-skill\\before\\desktop-page-01.jpg"
+   ],
+   "film": []
+  },
+  {
+   "viewport": "tablet",
+   "width": 768,
+   "fold": "D:\\pros\\Stockmaster\\frontend\\.taste-skill\\before\\tablet-fold.jpg",
+   "pages": [
+    "D:\\pros\\Stockmaster\\frontend\\.taste-skill\\before\\tablet-page-01.jpg"
+   ],
+   "film": []
+  },
+  {
+   "viewport": "mobile",
+   "width": 390,
+   "fold": "D:\\pros\\Stockmaster\\frontend\\.taste-skill\\before\\mobile-fold.jpg",
+   "pages": [
+    "D:\\pros\\Stockmaster\\frontend\\.taste-skill\\before\\mobile-page-01.jpg"
+   ],
+   "film": []
+  }
+ ]
+}

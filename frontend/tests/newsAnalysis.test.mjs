@@ -45,14 +45,15 @@ test('analysis requires login, sends auth, renders badges and keeps news after f
     assert.equal(calls, 0);
     client.setToken('test');
     await render(true);
-    assert.match(container.textContent, /AI 호재/);
+    assert.match(container.textContent, /호재/);
+    assert.doesNotMatch(container.textContent, /AI 호재/);
     assert.match(container.textContent, /중요도 높음/);
     await render(false);
-    assert.doesNotMatch(container.textContent, /AI 호재/);
+    assert.doesNotMatch(container.textContent, /호재/);
     fail = true;
     await render(true);
     assert.match(container.textContent, /실적 발표/);
     assert.match(container.textContent, /분석 실패/);
-    assert.doesNotMatch(container.textContent, /AI 호재/);
+    assert.doesNotMatch(container.textContent, /호재/);
   } finally { await React.act(async () => root.unmount()); }
 });

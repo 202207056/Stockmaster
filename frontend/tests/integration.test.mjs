@@ -181,14 +181,30 @@ test('chart adapter forwards supported periods and defaults to daily', async () 
 
 test('favorites remain separate for guests and different users', async () => {
   const favorites = await server.ssrLoadModule('/src/utils/favorites.js');
+  const libraries = new Map();
+  client.default.defaults.adapter = async config => {
+    assert.equal(config.url, '/users/me/favorites');
+    const key = config.headers.Authorization;
+    if (config.method === 'put') {
+      const payload = JSON.parse(config.data);
+      libraries.set(key, { ...payload, revision: payload.revision + 1 });
+    }
+    return { data: libraries.get(key) || { revision: 0, codes: [], groups: [] }, status: 200, statusText: 'OK', headers: {}, config };
+  };
   favorites.setFavoritesOwner(null);
   favorites.addFavorite('GUEST');
+  client.setToken('user-one');
   favorites.setFavoritesOwner(1);
+  await favorites.syncFavorites();
   assert.deepEqual(favorites.getFavorites(), []);
-  favorites.addFavorite('USER_ONE');
+  await favorites.addFavorite('USER_ONE');
+  client.setToken('user-two');
   favorites.setFavoritesOwner(2);
+  await favorites.syncFavorites();
   assert.deepEqual(favorites.getFavorites(), []);
+  client.setToken('user-one');
   favorites.setFavoritesOwner(1);
+  await favorites.syncFavorites();
   assert.deepEqual(favorites.getFavorites(), ['USER_ONE']);
   favorites.setFavoritesOwner(null);
   assert.deepEqual(favorites.getFavorites(), ['GUEST']);
@@ -200,19 +216,18 @@ test('learning home prioritizes curriculum with a secondary quiz and optional gl
   const render = (url) => renderToString(React.createElement(AuthContext.Provider, { value: { user: null, isAuthenticated: false } }, React.createElement(MemoryRouter, { initialEntries: [url] }, React.createElement(Learn))));
   const home = render('/learn?tab=courses');
   const landing = render('/learn');
-  assert(landing.includes('거래·계좌 실습 튜토리얼'));
-  assert(landing.includes('/trading?practice=buy') && landing.includes('/assets?practice=account'));
+  assert(landing.includes('투자 기초 과정'));
+  assert(landing.includes('/trading?practice=buy') && render('/learn?tab=practice').includes('/assets?practice=account'));
   assert(!landing.includes('/learn/tutorial/futures'));
-  assert(landing.includes('예비 연습 · 기존 튜토리얼') && landing.includes('/learn/trading-tutorial'));
-  assert(!home.includes('보유 비중 비교하기') && home.includes('문장 속 개념 찾기'));
-  assert(home.indexOf('투자 기초 과정') < home.indexOf('문장 속 개념 찾기'));
-  assert(home.includes('권장 순서:'));
+  assert(landing.includes('퀴즈와 실습') && landing.includes('/learn?tab=quiz'));
+  assert(home.includes('/learn?tab=courses&amp;lesson=A1') && home.includes('학습하기'));
+  assert(home.includes('완료'));
   assert(!home.includes('용어 카드'));
-  assert(render('/learn?tab=glossary').includes('투자 용어사전'));
+  assert(render('/learn?tab=glossary').includes('용어'));
   assert(render('/learn?tab=courses&lesson=unknown').includes('수업을 찾을 수 없어요'));
-  assert(home.includes('기본 투자 가이드') && home.includes('주가 변화와 정보 해석'));
+  assert(home.includes('주문과 계좌 이해') && home.includes('뉴스와 정보 판단'));
   assert(render('/learn?tab=allocation').includes('두 계좌의 총자산 각각 100만원'));
-  assert(render('/learn?tab=price').includes('자동 분석하는 기능은 아직 제공하지 않습니다'));
+  assert(render('/learn?tab=price').includes('핵심 개념'));
 });
 
 test('every lesson opens with a sourced explanation before practice, including saved progress', async () => {
