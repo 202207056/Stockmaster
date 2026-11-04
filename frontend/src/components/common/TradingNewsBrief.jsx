@@ -164,20 +164,30 @@ function StockConnections({ children, enabled }) {
     const measure = () => {
       const bounds = root.getBoundingClientRect();
       const source = main.getBoundingClientRect();
+      const title = main.querySelector('h3');
+      const heading = title?.getBoundingClientRect() || source;
       const targets = cards.map(card => card.getBoundingClientRect());
       const stacked = targets[0].top >= source.bottom;
       const x = stacked ? 12 : (source.right + targets[0].left) / 2 - bounds.left;
-      const y = stacked ? source.bottom - bounds.top : source.top + source.height / 2 - bounds.top;
+      const y = heading.top + heading.height / 2 - bounds.top;
       const centers = targets.map(target => target.top + target.height / 2 - bounds.top);
-      const startX = stacked ? x : source.right - bounds.left;
+      const startX = (stacked ? source.left : source.right) - bounds.left;
       setPath(`M ${startX} ${y} H ${x} M ${x} ${Math.min(y, ...centers)} V ${Math.max(y, ...centers)} ` +
         targets.map((target, index) => `M ${x} ${centers[index]} H ${target.left - bounds.left}`).join(' '));
     };
     measure();
     const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(measure);
     [root, main, ...cards].forEach(element => observer?.observe(element));
+    const dialog = root.closest('[role="dialog"]');
+    dialog?.addEventListener('animationend', measure);
+    root.addEventListener('transitionend', measure);
     window.addEventListener('resize', measure);
-    return () => { observer?.disconnect(); window.removeEventListener('resize', measure); };
+    return () => {
+      observer?.disconnect();
+      dialog?.removeEventListener('animationend', measure);
+      root.removeEventListener('transitionend', measure);
+      window.removeEventListener('resize', measure);
+    };
   }, [children, enabled]);
   return <div ref={ref} className={`trading-news-connections${enabled ? ' is-connected' : ''}`}>
     {enabled && <svg className="trading-news-connector" aria-hidden="true" focusable="false"><path d={path} /></svg>}
