@@ -125,7 +125,7 @@ export default function TradingNewsBrief({ code }) {
       </span>
       <ChevronRight size={18} className="shrink-0" aria-hidden="true" />
     </button>
-    {brief && <Modal open={open} onClose={() => setOpen(false)} title="AI 뉴스" size="xl" draggable dimBackdrop={false}>
+    {brief && <Modal open={open} onClose={() => setOpen(false)} title="AI 뉴스" size="xl" draggable resizable dimBackdrop={false}>
       {themeList.length > 0 && <div className="trading-news-tabs" role="group" aria-label="뉴스 보기 선택">
         <button type="button" aria-pressed={!theme} onClick={() => selectStock(selectedCode, tabStock.name, tabStock.changeRate)}>
           <Direction changeRate={tabStock.changeRate} /> {tabStock.name}
@@ -135,6 +135,7 @@ export default function TradingNewsBrief({ code }) {
         </button>)}
       </div>}
       <div className="trading-news-grid">
+        <StockConnections enabled={!theme}>
         {theme ? <ThemeDetail key={theme.id} theme={theme} data={themes} autoFocus={picked} held={held} onStock={selectStock} />
           : <BriefDetail key={selectedCode} autoFocus={picked} code={selectedCode} initial={selectedCode === code ? brief : null} quantity={held[selectedCode]} />}
         <section className="trading-news-related" aria-label="관련 종목">
@@ -144,10 +145,44 @@ export default function TradingNewsBrief({ code }) {
             <span className={`mt-3 block text-xs leading-relaxed ${stock.title ? 'text-gray-600' : 'text-gray-400'}`}>{stock.title || '관련 기사 없음 · 등락률만 표시'}</span>
           </button>)}
         </section>
+        </StockConnections>
         {themes && <aside className="trading-news-themes" aria-label="관련 테마 AI 분석"><ThemeContent data={themes} showMetadata={false} onSelect={selectTheme} /></aside>}
       </div>
     </Modal>}
   </>;
+}
+
+function StockConnections({ children, enabled }) {
+  const ref = useRef(null);
+  const [path, setPath] = useState('');
+  useEffect(() => {
+    if (!enabled) return undefined;
+    const root = ref.current;
+    const main = root.querySelector('.trading-news-main');
+    const cards = [...root.querySelectorAll('.trading-news-related-card')];
+    if (!main || !cards.length) return undefined;
+    const measure = () => {
+      const bounds = root.getBoundingClientRect();
+      const source = main.getBoundingClientRect();
+      const targets = cards.map(card => card.getBoundingClientRect());
+      const stacked = targets[0].top >= source.bottom;
+      const x = stacked ? 12 : (source.right + targets[0].left) / 2 - bounds.left;
+      const y = stacked ? source.bottom - bounds.top : source.top + source.height / 2 - bounds.top;
+      const centers = targets.map(target => target.top + target.height / 2 - bounds.top);
+      const startX = stacked ? x : source.right - bounds.left;
+      setPath(`M ${startX} ${y} H ${x} M ${x} ${Math.min(y, ...centers)} V ${Math.max(y, ...centers)} ` +
+        targets.map((target, index) => `M ${x} ${centers[index]} H ${target.left - bounds.left}`).join(' '));
+    };
+    measure();
+    const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(measure);
+    [root, main, ...cards].forEach(element => observer?.observe(element));
+    window.addEventListener('resize', measure);
+    return () => { observer?.disconnect(); window.removeEventListener('resize', measure); };
+  }, [children, enabled]);
+  return <div ref={ref} className={`trading-news-connections${enabled ? ' is-connected' : ''}`}>
+    {enabled && <svg className="trading-news-connector" aria-hidden="true" focusable="false"><path d={path} /></svg>}
+    {children}
+  </div>;
 }
 
 // Today's top themes, not the themes this stock belongs to.
