@@ -46,7 +46,7 @@
 .assets-section-title { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
 .assets-section-title h2 { display: flex; align-items: center; font-size: 18px; font-weight: 700; }
 .assets-section-title > span { color: var(--assets-muted); font-size: 12px; }
-.assets-total { flex: 1; display: flex; align-items: center; padding-block: 24px; font-size: clamp(26px, 2.5vw, 36px); font-weight: 750; letter-spacing: -.025em; line-height: 1.4; overflow-wrap: anywhere; }
+.assets-total { flex: 1; display: flex; align-items: center; padding-block: 16px 32px; font-size: clamp(26px, 2.5vw, 36px); font-weight: 750; letter-spacing: -.025em; line-height: 1.4; overflow-wrap: anywhere; }
 .assets-pending { font-size: 18px; font-weight: 500; color: var(--assets-muted); letter-spacing: 0; }
 .assets-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .assets-stats > div { min-width: 0; padding-inline: 20px; border-left: 1px solid var(--assets-rule); }
