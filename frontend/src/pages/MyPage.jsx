@@ -66,9 +66,10 @@ export default function MyPage() {
         <div className="flex items-center justify-between gap-4 rounded-xl border border-gray-200 px-4 py-4">
           <div>
             <p id="term-analyzer-setting-label" className="text-sm font-bold text-gray-900">AI 용어 분석 <span className="ml-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-700">실험</span></p>
-            <p id="term-analyzer-setting-description" className="mt-1 text-xs text-gray-500">화면 오른쪽 아래에 용어 분석 버튼을 표시해요. 화면의 어려운 말을 찾아 뜻을 알려 줘요. 아직 시험 중인 기능이라 결과가 틀릴 수 있어요. 설정은 이 브라우저에 저장돼요.</p>
+            <p id="term-analyzer-setting-description" className="mt-1 text-xs text-gray-500">화면에 용어 분석 버튼을 표시해요. 화면의 어려운 말을 찾거나 궁금한 말을 검색해 뜻을 알려 줘요. 설정은 이 브라우저에 저장돼요.</p>
+            <p id="term-analyzer-setting-warning" className="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800">⚠ 풀이는 AI가 만들어 틀릴 수 있어요. 투자 판단의 근거로 쓰지 마세요.</p>
           </div>
-          <button type="button" role="switch" aria-checked={termAnalyzerEnabled} aria-labelledby="term-analyzer-setting-label" aria-describedby="term-analyzer-setting-description"
+          <button type="button" role="switch" aria-checked={termAnalyzerEnabled} aria-labelledby="term-analyzer-setting-label" aria-describedby="term-analyzer-setting-description term-analyzer-setting-warning"
             onClick={() => setTermAnalyzerEnabled(!termAnalyzerEnabled)}
             className={`flex shrink-0 items-center gap-2 rounded-full px-3 py-2 text-xs font-bold transition-colors ${termAnalyzerEnabled ? 'bg-brand-600 text-white' : 'bg-gray-200 text-gray-600'}`}>
             {termAnalyzerEnabled ? 'ON' : 'OFF'}

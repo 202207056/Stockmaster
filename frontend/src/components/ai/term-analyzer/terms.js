@@ -84,3 +84,12 @@ export function isAnalyzerRoute(pathname, search = '') {
   return ['/dashboard', '/trading', '/assets', '/favorites', '/community', '/learn', '/learn/charts', '/mypage'].includes(pathname)
     && !params.has('tour') && !params.has('practice');
 }
+
+const searchKey = (value) => value.normalize('NFKC').trim().replace(/\s+/gu, ' ').toUpperCase();
+
+// The dictionary entry whose name or alias is exactly the searched word, so it needs no AI call.
+export function exactGlossaryId(text, glossary) {
+  const word = searchKey(text);
+  return Object.keys(glossary).find((id) => searchKey(glossary[id].term) === word
+    || termAliases(glossary[id]).some((alias) => searchKey(alias) === word)) ?? null;
+}

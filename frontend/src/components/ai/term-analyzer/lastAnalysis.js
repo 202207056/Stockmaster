@@ -46,7 +46,8 @@ export function writeLast(owner, value, storage = globalThis.sessionStorage) {
     storage.setItem(KEY, JSON.stringify({
       owner, at: value.at, source: value.source, text: value.text.slice(0, MAX_TEXT), pageTerms: value.pageTerms, tab: value.tab,
       terms: value.terms.map(({ term, tier, meaning, basic, code, basis, facts }) => ({ term, tier, meaning, basic, symbol_code: code, basis,
-        ...(facts && { listing: facts.listing, index: facts.index, sector: facts.sector, size: facts.size, listing_checked: facts.checked }) })),
+        ...(facts && { listing: facts.listing, index: facts.index, sector: facts.sector, size: facts.size, group: facts.group, parent: facts.parent,
+          listing_checked: facts.checked }) })),
       capture: capture && { kind: capture.kind, path: capture.path, area: capture.area, scrollX: capture.scrollX, scrollY: capture.scrollY },
     }));
   } catch { /* Storage is optional. */ }
