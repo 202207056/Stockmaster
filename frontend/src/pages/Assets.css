@@ -123,3 +123,22 @@
   .assets-table td { font-size: 14px; }
   .assets-briefings > section { padding: 20px; }
 }
+.assets-date-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 16px; }
+.assets-date-controls label { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; font-size: 13px; color: var(--assets-muted); }
+.assets-date-controls input { min-width: 0; max-width: 100%; min-height: 40px; border: 1px solid var(--assets-rule); border-radius: 6px; padding: 7px 10px; background: var(--surface, #fff); color: var(--color-gray-800); font: inherit; }
+.assets-date-controls button { min-height: 40px; padding: 6px 12px; border-radius: 6px; background: var(--color-gray-100); font-size: 13px; }
+.assets-date-controls :disabled { opacity: .45; cursor: not-allowed; }
+.assets-date-controls :focus-visible { outline: 2px solid var(--color-brand-500); outline-offset: 3px; }
+.assets-flow-comparison { margin-top: 20px; padding: 16px; background: var(--color-gray-50); border-radius: 8px; }
+.assets-flow-comparison > p:first-child { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: baseline; font-size: 13px; line-height: 1.7; }
+.assets-flow-comparison strong { font-size: 20px; font-variant-numeric: tabular-nums; }
+.assets-flow-comparison dl { display: flex; flex-wrap: wrap; gap: 8px 24px; margin-top: 10px; font-size: 12px; }
+.assets-flow-comparison dl > div { display: flex; gap: 8px; }
+.assets-flow-comparison dt { color: var(--assets-muted); }
+.assets-flow-comparison dd { font-variant-numeric: tabular-nums; }
+.assets-flow-comparison .assets-chart-note { line-height: 1.7; }
+.assets-date-controls[hidden] { display: none; }
+.assets-range-options { display: flex; flex-wrap: wrap; gap: 4px; }
+.assets-range-options button { min-height: 40px; padding: 8px 12px; border-radius: 6px; color: var(--assets-muted); font-size: 13px; }
+.assets-range-options button[aria-pressed=true] { background: var(--color-gray-100); color: var(--color-gray-900); font-weight: 600; }
+.assets-range-options button:focus-visible { outline: 2px solid var(--color-brand-500); outline-offset: 2px; }

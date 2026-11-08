@@ -1,9 +1,8 @@
 import { useCallback, useState } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
 import useAuth from '../../hooks/useAuth';
 import useRemote from '../../hooks/useRemote';
-import { fetchAssetWeek } from '../../api/assetHistory';
-import { portfolioSlices } from '../../utils/assetCharts';
+import { fetchAssetRange } from '../../api/assetHistory';
+import { assetComparison, assetWeekOffset, assetWeekStart, koreaDate, portfolioSlices } from '../../utils/assetCharts';
 import { comma, won } from '../../utils/format';
 
 const timeLabel = time => new Date(time).toLocaleDateString('ko-KR', { month: 'numeric', day: 'numeric', timeZone: 'UTC' });
@@ -11,19 +10,32 @@ const colors = ['var(--color-brand-600)', '#8877c5', '#b8acd8', '#9ca3af'];
 
 export default function AssetCharts({ accountId, resource, practice }) {
   const { isAuthenticated } = useAuth();
-  const [weekOffset, setWeekOffset] = useState(0);
+  const today = koreaDate();
+  const weekStart = new Date(Date.parse(`${today}T00:00:00Z`) - 6 * 86400000).toISOString().slice(0, 10);
+  const [customRange, setCustomRange] = useState(false);
+  const [selectedStart, setStartDate] = useState(weekStart);
+  const [selectedEnd, setEndDate] = useState(today);
+  const startDate = customRange ? selectedStart : weekStart;
+  const endDate = customRange ? selectedEnd : today;
+  const earliest = new Date(assetWeekStart(today) - 520 * 7 * 86400000).toISOString().slice(0, 10);
   const enabled = !practice && isAuthenticated && !!accountId;
-  const history = useRemote(useCallback(signal => fetchAssetWeek(accountId, weekOffset, signal), [accountId, weekOffset]), enabled,
-    { cacheKey: JSON.stringify(['asset-history', accountId, weekOffset]) });
+  const history = useRemote(useCallback(signal => fetchAssetRange(accountId, startDate, endDate, signal), [accountId, startDate, endDate]), enabled,
+    { cacheKey: JSON.stringify(['asset-range', accountId, startDate, endDate]) });
   const slices = resource.data ? portfolioSlices(resource.data.holdings) : null;
+  const ready = !history.loading && !history.stale && !history.error;
+  const last = ready ? assetComparison(history.data?.rows, endDate, 0, history.data?.previous) : null;
+  const comparison = last ? assetComparison(history.data?.rows, startDate, last.previous, history.data?.previous) : null;
   return <div className="assets-charts">
     <section className="assets-chart-panel">
-      <div className="assets-section-title"><h2>보유자산 흐름</h2><div className="assets-week-picker">
-        <button type="button" aria-label="이전 주" disabled={!enabled || weekOffset >= 520} onClick={() => setWeekOffset(value => value + 1)}><ChevronLeft size={16} /></button>
-        <span>{history.data ? `${timeLabel(history.data.start)} ~ ${timeLabel(history.data.end)}` : weekOffset === 0 ? '이번 주' : `${weekOffset}주 전`}</span>
-        <button type="button" aria-label="다음 주" disabled={!enabled || weekOffset === 0} onClick={() => setWeekOffset(value => value - 1)}><ChevronRight size={16} /></button>
-      </div></div>
-      {history.data ? <AssetFlow key={`${accountId}:${weekOffset}`} points={history.data.rows} start={history.data.start} end={history.data.end} /> : <div className="assets-chart-empty">{!enabled ? practice ? '연습 계좌는 이력을 저장하지 않습니다.' : '계좌를 선택하면 이력이 표시됩니다.' : history.loading ? '자산 이력을 불러오는 중…' : '자산 이력을 불러오지 못했습니다.'}</div>}
+      <div className="assets-section-title"><h2>보유자산 흐름</h2><div className="assets-range-options" role="group" aria-label="자산 조회 기간"><button type="button" aria-pressed={!customRange} onClick={() => setCustomRange(false)}>최근 일주일</button><button type="button" aria-pressed={customRange} aria-expanded={customRange} aria-controls="asset-custom-range" onClick={() => setCustomRange(true)}>기간 직접 선택</button></div></div>
+      <div id="asset-custom-range" className="assets-date-controls" hidden={!customRange}>
+        <label htmlFor="asset-start-date">시작 날짜 <input id="asset-start-date" type="date" value={startDate} min={earliest} max={endDate} disabled={!enabled} onChange={event => { const value = event.target.value; if (assetWeekOffset(value, today) !== null && value <= endDate) setStartDate(value); }} /></label>
+        <label htmlFor="asset-end-date">끝 날짜 <input id="asset-end-date" type="date" value={endDate} min={startDate} max={today} disabled={!enabled} onChange={event => { const value = event.target.value; if (assetWeekOffset(value, today) !== null && value >= startDate) setEndDate(value); }} /></label>
+      </div>
+      {enabled && <div className="assets-flow-comparison" role="status">
+        {comparison ? <p title={`${comparison.date} ~ ${last.date} 저장 기록 기준`}><strong className={comparison.difference > 0 ? 'text-up-600' : comparison.difference < 0 ? 'text-down-600' : ''}>보유자산 {won(Math.abs(comparison.difference))} {comparison.difference > 0 ? '늘었음' : comparison.difference < 0 ? '줄었음' : '변동 없음'}</strong></p> : <p className="assets-chart-note">{history.loading ? '변동 내역을 불러오는 중…' : !ready ? '변동 내역을 불러오지 못했습니다.' : '비교할 과거 자산 기록이 없습니다.'}</p>}
+      </div>}
+      {history.data ? <AssetFlow key={`${accountId}:${startDate}:${endDate}`} points={history.data.rows} start={history.data.start} end={history.data.end} /> : <div className="assets-chart-empty">{!enabled ? practice ? '연습 계좌는 이력을 저장하지 않습니다.' : '계좌를 선택하면 이력이 표시됩니다.' : history.loading ? '자산 이력을 불러오는 중…' : '자산 이력을 불러오지 못했습니다.'}</div>}
       {enabled && (history.error || history.data?.saveFailed) && <p className="assets-chart-note">{history.data?.saveFailed ? '오늘의 자산을 저장하지 못했습니다.' : '이력 조회에 실패했습니다.'} <button type="button" disabled={history.loading} onClick={history.reload}>다시 시도</button></p>}
     </section>
     <section className="assets-chart-panel">
@@ -32,16 +44,17 @@ export default function AssetCharts({ accountId, resource, practice }) {
     </section>
   </div>;
 }
-
 function AssetFlow({ points, start, end }) {
   const [selected, setSelected] = useState(null);
-  if (!points.length) return <div className="assets-chart-empty">이 주에 저장된 자산 이력이 없습니다.</div>;
-  const active = points[Math.min(selected ?? points.length - 1, points.length - 1)];
+  if (!points.length) return <div className="assets-chart-empty">이 기간에 저장된 자산 이력이 없습니다.</div>;
+
+  const defaultIndex = points.length - 1;
+  const active = points[Math.min(selected ?? defaultIndex, points.length - 1)];
   const values = points.map(point => point.value);
   const low = Math.min(...values), high = Math.max(...values);
   const pad = Math.max((high - low) * .15, Math.abs(high) * .005, 1);
   const min = low - pad, max = high + pad;
-  const x = point => 110 + (point.time - start) / (end - start) * 480;
+  const x = point => end === start ? 350 : 110 + (point.time - start) / (end - start) * 480;
   const y = value => 190 - (value - min) / (max - min) * 154;
   const selectPointer = event => {
     const bounds = event.currentTarget.getBoundingClientRect();
@@ -55,14 +68,14 @@ function AssetFlow({ points, start, end }) {
     <svg className="assets-flow" viewBox="0 0 620 230" role="img" tabIndex={0}
       aria-label={`총자산 조회 기록 ${points.length}개. 좌우 방향키로 확인`}
       onPointerMove={selectPointer} onPointerLeave={() => setSelected(null)} onBlur={() => setSelected(null)}
-      onKeyDown={event => { if (['ArrowLeft', 'ArrowRight'].includes(event.key)) { event.preventDefault(); setSelected(Math.max(0, Math.min(points.length - 1, (selected ?? points.length - 1) + (event.key === 'ArrowLeft' ? -1 : 1)))); } }}>
+      onKeyDown={event => { if (['ArrowLeft', 'ArrowRight'].includes(event.key)) { event.preventDefault(); setSelected(Math.max(0, Math.min(points.length - 1, (selected ?? defaultIndex) + (event.key === 'ArrowLeft' ? -1 : 1)))); } }}>
       {[max, (max + min) / 2, min].map((value, index) => <g key={index}><line x1="110" x2="590" y1={y(value)} y2={y(value)} className="assets-flow-grid" /><text x="100" y={y(value) + 4} textAnchor="end">{comma(value / 10000, 1)}만</text></g>)}
       {points.map((point, index) => <g key={point.time}>
         {index > 0 && point.time - points[index - 1].time === 86400000 && <line x1={x(points[index - 1])} y1={y(points[index - 1].value)} x2={x(point)} y2={y(point.value)} stroke="var(--color-brand-600)" strokeWidth="3" />}
         <circle cx={x(point)} cy={y(point.value)} r="3" fill="var(--color-brand-600)" />
       </g>)}
       <circle cx={x(active)} cy={y(active.value)} r="5" fill="var(--color-brand-600)" />
-      {['월', '화', '수', '목', '금', '토', '일'].map((day, index) => <text key={day} x={110 + index * 80} y="220" textAnchor="middle">{day}</text>)}
+      {Array.from({ length: Math.min(5, Math.round((end - start) / 86400000) + 1) }, (_, index) => { const count = Math.min(5, Math.round((end - start) / 86400000) + 1); const time = start + Math.round(index * (end - start) / Math.max(1, count - 1) / 86400000) * 86400000; return <text key={time} x={x({ time })} y="220" textAnchor="middle">{timeLabel(time)}</text>; })}
     </svg>
     {points.length === 1 && <p className="assets-chart-note">하루 마지막으로 저장된 자산 기준</p>}
   </>;

@@ -267,13 +267,13 @@ test('failed account refresh retries without creating a duplicate account', asyn
   client.default.defaults.adapter = async config => {
     calls++;
     assert.equal(config.url, '/trading/accounts');
-    assert.equal(JSON.parse(config.data).initial_balance, 1000000);
+    assert.equal(JSON.parse(config.data).initial_balance, 11000000);
     return { data: { account_id: 8 }, status: 200, statusText: 'OK', headers: {}, config };
   };
   const auth = { isAuthenticated: true, accounts: [], refresh: async () => { throw new Error('Refresh unavailable'); }, selectAccount: () => {} };
   try {
     await React.act(async () => root.render(h(MemoryRouter, { initialEntries: ['/seed-money'] }, h(AuthContext.Provider, { value: auth }, h(SeedMoney)), h(Location))));
-    await click('1,000,000원');
+    await click('+1,000,000원');
     await click('설정하기');
     await click('설정하기');
     assert.equal(calls, 1);
