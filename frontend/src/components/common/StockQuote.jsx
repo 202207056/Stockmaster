@@ -21,10 +21,10 @@ export default function StockQuote({ code, variant, stock: knownStock, onSelect 
     const name = knownStock?.name || resource.data?.stock.name || (practice ? '예시전자' : null);
     const changeRate = numberOrNull(quote?.change_rate);
     const changeAmount = numberOrNull(quote?.change_amount);
-    const changeClass = variant === 'trading' ? signTextClass(changeRate) : changeRate > 0 ? 'text-blue-600' : changeRate < 0 ? 'text-red-600' : 'text-gray-500';
+    const changeClass = signTextClass(changeRate);
     const nameClass = 'min-w-0 flex-1 truncate text-left text-sm font-bold text-gray-800 hover:underline';
     const label = name || (resource.loading ? '조회 중…' : '종목명 이용 불가');
-    return <div className="flex w-full min-w-0 items-center gap-3">
+    return <div className="stock-quote-row flex w-full min-w-0 items-center gap-3">
       <StockLogo code={code} name={name || '·'} />
       {onSelect ? <button type="button" className={nameClass} title={name} onClick={onSelect}>{label}</button> : <Link className={nameClass} title={name} to={`/trading?code=${encodeURIComponent(code)}`}>{label}</Link>}
       <div className="shrink-0 text-right">

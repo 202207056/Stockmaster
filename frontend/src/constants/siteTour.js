@@ -19,6 +19,13 @@ export const SITE_TOUR_STEPS = [
   { path: '/learn', target: 'page', title: '학습', text: '투자 기초, 차트와 주문 튜토리얼을 살펴보세요. 실제 화면의 강조 표시와 안내를 따라 하나씩 연습할 수 있어요. 둘러보기를 마치면 홈으로 돌아가요.' },
 ];
 
+// Keep related guidance together in the full-site tour.
+SITE_TOUR_STEPS.splice(SITE_TOUR_STEPS.findIndex(step => step.path === '/trading') + 1, 0,
+  { path: '/trading', target: 'ai-news', title: 'AI 뉴스', text: '종목을 선택한 뒤 AI 뉴스 배너를 눌러 보세요. 최근 이슈와 긍정·주의 요인, 근거 기사를 함께 살펴볼 수 있어요. 관련 종목과 테마를 누르면 다른 관점의 분석으로 이어져요. 창 안의 이용 안내에서 사용법을 확인해 보세요.' });
+SITE_TOUR_STEPS.splice(SITE_TOUR_STEPS.findIndex(step => step.path === '/assets') + 1, 0,
+  { path: '/assets', target: 'asset-flow', title: '보유자산 흐름', text: '최근 일주일 또는 직접 선택한 기간의 자산 변화를 확인해 보세요. 그래프에 마우스를 올리거나 좌우 방향키를 누르면 날짜별 자산과 변동률이 표시돼요.' },
+  { path: '/assets', target: 'asset-portfolio', title: '보유종목 포트폴리오', text: '보유 주식의 평가금액 비중을 종목별로 비교해 보세요. 범례의 종목을 누르면 해당 종목의 비중과 금액이 강조돼요. 현금은 이 차트에 포함되지 않아요.' });
+
 export function siteTourIndex(value) {
   if (!/^\d+$/.test(value || '')) return -1;
   const index = Number(value);

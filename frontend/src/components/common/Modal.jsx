@@ -35,7 +35,12 @@ export default function Modal({
   const movePanel = useCallback((dx, dy) => {
     const panel = panelRef.current;
     if (!panel) return;
-    offset.current = { x: offset.current.x + dx, y: offset.current.y + dy };
+    const rect = panel.getBoundingClientRect();
+    const width = window.innerWidth;
+    const height = Math.min(window.innerHeight, window.visualViewport?.height ?? window.innerHeight);
+    const x = Math.max(8, Math.min(rect.left + dx, width - rect.width - 8));
+    const y = Math.max(8, Math.min(rect.top + dy, height - rect.height - 8));
+    offset.current = { x: offset.current.x + x - rect.left, y: offset.current.y + y - rect.top };
     panel.style.transform = `translate(${offset.current.x}px, ${offset.current.y}px)`;
   }, []);
 
@@ -43,10 +48,15 @@ export default function Modal({
     if (!open || !draggable) return;
     offset.current = { x: 0, y: 0 };
     panelRef.current.style.transform = '';
+    const fit = () => movePanel(0, 0);
+    window.addEventListener('resize', fit);
+    window.visualViewport?.addEventListener('resize', fit);
     return () => {
       gesture.current = null;
+      window.removeEventListener('resize', fit);
+      window.visualViewport?.removeEventListener('resize', fit);
     };
-  }, [open, draggable]);
+  }, [open, draggable, movePanel]);
 
   const startDrag = (event) => {
     if (event.button !== 0 || event.isPrimary === false) return;

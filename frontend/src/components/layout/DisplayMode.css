@@ -1,0 +1,5 @@
+.display-shell { height: 100dvh; display: flex; flex-direction: column; background: var(--surface, #fff); }
+.display-viewport { flex: 1; min-height: 0; overflow: auto; background: var(--theme-f1f5f9, #f1f5f9); }
+.display-frame { display: block; border: 0; height: 100%; background: var(--surface, #fff); margin-inline: auto; }
+.display-shell[data-mode="desktop"] .display-frame { width: 100%; min-width: 1280px; }
+.display-shell[data-mode="mobile"] .display-frame { width: 100%; max-width: 430px; }

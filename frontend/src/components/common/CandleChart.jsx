@@ -7,7 +7,7 @@ import CandleWalkthroughMarks from '../learn/CandleWalkthroughMarks';
 const label = row => row.label || row.date;
 const rowKey = row => row.key || row.date;
 
-export default function CandleChart({ rows: sourceRows, type = 'line', periodLabel = '일', scale = 'linear', boxSize = 100, maPeriod = 0, showVolume = false, onExplain, showPriceTable = true, candleStep }) {
+export default function CandleChart({ rows: sourceRows, type = 'line', periodLabel = '일', scale = 'linear', boxSize = 100, maPeriod = 0, showVolume = false, onExplain, showPriceTable = true, candleStep, compact = false }) {
   const [hoverIndex, setHoverIndex] = useState(null);
   const clipId = useId().replaceAll(':', '');
   if (!sourceRows?.length) return null;
@@ -28,7 +28,9 @@ export default function CandleChart({ rows: sourceRows, type = 'line', periodLab
   const padding = Math.max((max - min) * .08, log ? .001 : 1);
   const bottom = min - padding, top = max + padding;
   const y = price => 260 - (transform(price) - bottom) / (top - bottom) * 230;
-  const step = 580 / rows.length;
+  const plotWidth = compact ? 250 : 580;
+  const plotRight = 20 + plotWidth;
+  const step = plotWidth / rows.length;
   const active = hoverIndex === null ? null : rows[hoverIndex];
   const activeX = 20 + step * (hoverIndex + .5);
   const points = rows.map((row, i) => `${20 + step * (i + .5)},${y(row.close)}`).join(' ');
@@ -43,7 +45,7 @@ export default function CandleChart({ rows: sourceRows, type = 'line', periodLab
     if (!matrix) return;
     const point = svg.createSVGPoint(); point.x = event.clientX; point.y = event.clientY;
     const local = point.matrixTransform(matrix.inverse());
-    setHoverIndex(local.x >= 20 && local.x <= 600 && local.y >= 30 && local.y <= plotBottom ? chartHoverIndex(local.x, rows.length) : null);
+    setHoverIndex(local.x >= 20 && local.x <= plotRight && local.y >= 30 && local.y <= plotBottom ? chartHoverIndex(20 + (local.x - 20) * 580 / plotWidth, rows.length) : null);
   };
   const onChartKeyDown = event => {
     if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') { event.preventDefault(); setHoverIndex(index => Math.max(0, Math.min(rows.length - 1, (index ?? 0) + (event.key === 'ArrowRight' ? 1 : -1)))); }
@@ -51,28 +53,28 @@ export default function CandleChart({ rows: sourceRows, type = 'line', periodLab
   };
   return <div>
     <div className="chart-illustrated-plot">
-    <svg viewBox="0 0 720 300" role="img" tabIndex={0} onPointerMove={onPointerMove} onPointerLeave={() => setHoverIndex(null)} onBlur={() => setHoverIndex(null)} onFocus={() => setHoverIndex(0)} onKeyDown={onChartKeyDown} aria-label={`${label(rows[0])}부터 ${label(rows.at(-1))}까지 ${periodLabel} 기간 ${type === 'line' ? '종가 꺾은선' : chartName} 차트. 좌우 방향키로 날짜와 가격 확인`} className="w-full rounded-lg bg-gray-50">
+    <svg viewBox={`0 0 ${compact ? 360 : 720} 300`} role="img" tabIndex={0} onPointerDown={onPointerMove} onPointerMove={onPointerMove} onPointerLeave={event => { if (event.pointerType !== 'touch') setHoverIndex(null); }} onBlur={() => setHoverIndex(null)} onFocus={() => setHoverIndex(0)} onKeyDown={onChartKeyDown} aria-label={`${label(rows[0])}부터 ${label(rows.at(-1))}까지 ${periodLabel} 기간 ${type === 'line' ? '종가 꺾은선' : chartName} 차트. 좌우 방향키로 날짜와 가격 확인`} className="w-full rounded-lg bg-gray-50">
       {volumeVisible && <g aria-label="시간별 거래량">
         <text x="20" y="18" fontSize="11" fill="var(--theme-6b7280, #6b7280)">거래량 (주)</text>
-        <text x="600" y="18" textAnchor="end" fontSize="11" fill="var(--theme-6b7280, #6b7280)">{label(volumeRow)} · {hasVolume(volumeRow) ? `${volumeRow.volume.toLocaleString()}주` : '데이터 없음'}</text>
+        <text x={plotRight} y="18" textAnchor="end" fontSize="11" fill="var(--theme-6b7280, #6b7280)">{label(volumeRow)} · {hasVolume(volumeRow) ? `${volumeRow.volume.toLocaleString()}주` : '데이터 없음'}</text>
         {rows.some(hasVolume) ? <>
           {rows.map((row, i) => hasVolume(row) ? <rect key={rowKey(row)} x={20 + step * (i + .5) - volumeWidth / 2} y={volumeY(row.volume)} width={volumeWidth} height={plotBottom - volumeY(row.volume)} fillOpacity={0.4} fill={row.close >= row.open ? '#dc2626' : '#2563eb'}><title>{`${label(row)} 거래량 ${row.volume.toLocaleString()}주`}</title></rect> : null)}
         </> : <text x="20" y="250" fontSize="11" fill="var(--theme-6b7280, #6b7280)">거래량 데이터가 제공되지 않았습니다.</text>}
       </g>}
-      {[0, 1, 2, 3].map(i => { const price = inverse(bottom + (top - bottom) * i / 3); return <g key={i}><line x1="20" x2="605" y1={y(price)} y2={y(price)} stroke="var(--theme-e5e7eb, #e5e7eb)" /><text x="615" y={y(price) + 4} fontSize="11" fill="var(--theme-6b7280, #6b7280)">{won(price)}</text></g>; })}
+      {[0, 1, 2, 3].map(i => { const price = inverse(bottom + (top - bottom) * i / 3); return <g key={i}><line x1="20" x2={plotRight + 5} y1={y(price)} y2={y(price)} stroke="var(--theme-e5e7eb, #e5e7eb)" /><text x={plotRight + 15} y={y(price) + 4} fontSize="11" fill="var(--theme-6b7280, #6b7280)">{won(price)}</text></g>; })}
       {lineType ? <>
         {type === 'area' && <polygon fillOpacity={volumeVisible ? 0.25 : 1} points={`20,260 ${points} ${20 + step * (rows.length - .5)},260`} fill="var(--theme-dbeafe, #dbeafe)" />}
         {type === 'baseline' && <>
-          <defs><clipPath id={clipId + 'up'}><rect x="20" y="0" width="580" height={baseY} /></clipPath><clipPath id={clipId + 'down'}><rect x="20" y={baseY} width="580" height="300" /></clipPath></defs>
-          <polygon fillOpacity={volumeVisible ? 0.25 : 1} points={`20,${baseY} ${points} 600,${baseY}`} fill="var(--theme-fecaca, #fecaca)" clipPath={`url(#${clipId}up)`} />
-          <polygon fillOpacity={volumeVisible ? 0.25 : 1} points={`20,${baseY} ${points} 600,${baseY}`} fill="var(--theme-bfdbfe, #bfdbfe)" clipPath={`url(#${clipId}down)`} />
-          <line x1="20" x2="600" y1={baseY} y2={baseY} stroke="var(--theme-64748b, #64748b)" strokeDasharray="4 3" />
+          <defs><clipPath id={clipId + 'up'}><rect x="20" y="0" width={plotWidth} height={baseY} /></clipPath><clipPath id={clipId + 'down'}><rect x="20" y={baseY} width={plotWidth} height="300" /></clipPath></defs>
+          <polygon fillOpacity={volumeVisible ? 0.25 : 1} points={`20,${baseY} ${points} ${plotRight},${baseY}`} fill="var(--theme-fecaca, #fecaca)" clipPath={`url(#${clipId}up)`} />
+          <polygon fillOpacity={volumeVisible ? 0.25 : 1} points={`20,${baseY} ${points} ${plotRight},${baseY}`} fill="var(--theme-bfdbfe, #bfdbfe)" clipPath={`url(#${clipId}down)`} />
+          <line x1="20" x2={plotRight} y1={baseY} y2={baseY} stroke="var(--theme-64748b, #64748b)" strokeDasharray="4 3" />
         </>}
-        {rows.length > 1 ? <polyline points={points} fill="none" stroke="#2563eb" strokeWidth="2" strokeLinejoin="round" /> : <text x="310" y="140" textAnchor="middle" fontSize="12" fill="var(--theme-6b7280, #6b7280)">꺾은선을 표시할 데이터가 부족합니다.</text>}
+        {rows.length > 1 ? <polyline points={points} fill="none" stroke="#2563eb" strokeWidth="2" strokeLinejoin="round" /> : <text x={20 + plotWidth / 2} y="140" textAnchor="middle" fontSize="12" fill="var(--theme-6b7280, #6b7280)">꺾은선을 표시할 데이터가 부족합니다.</text>}
       </> : rows.map((row, i) => { const x = 20 + step * (i + .5), color = row.close >= row.open ? '#dc2626' : '#2563eb'; return <g key={rowKey(row)}><title>{`${label(row)} 시가 ${won(row.open)}, 고가 ${won(row.high)}, 저가 ${won(row.low)}, 종가 ${won(row.close)}`}</title><line x1={x} x2={x} y1={y(row.high)} y2={y(row.low)} stroke={color} />{type === 'bar' ? <><line x1={x - step * .3} x2={x} y1={y(row.open)} y2={y(row.open)} stroke={color} /><line x1={x} x2={x + step * .3} y1={y(row.close)} y2={y(row.close)} stroke={color} /></> : <rect x={x - step * .3} y={Math.min(y(row.open), y(row.close))} width={Math.max(step * .6, 1)} height={Math.max(Math.abs(y(row.open) - y(row.close)), 1)} fill={color} />}</g>; })}
       {average.some(value => value !== null) && <polyline aria-label={`${maPeriod}기간 이동평균`} points={average.map((value, i) => value === null ? null : `${20 + step * (i + .5)},${y(value)}`).filter(Boolean).join(' ')} fill="none" stroke="#a855f7" strokeWidth="2" />}
-      <text x="20" y={plotBottom + 27} fontSize="11" fill="var(--theme-6b7280, #6b7280)">{label(rows[0])}</text><text x="600" y={plotBottom + 27} textAnchor="end" fontSize="11" fill="var(--theme-6b7280, #6b7280)">{label(rows.at(-1))}</text>
-      {active && !onExplain && <g pointerEvents="none"><line x1={activeX} x2={activeX} y1="30" y2={plotBottom} stroke="#94a3b8" strokeDasharray="4 4" /><g transform={`translate(${Math.max(20, Math.min(activeX - 95, 410))},34)`}><rect width="190" height="52" rx="6" fill="#111827" /><text x="12" y="20" fontSize="12" fill="white">{label(active)}</text><text x="12" y="39" fontSize="13" fill="white">{synthetic ? '합성 값' : '종가'} {won(active.close)}</text></g></g>}
+      <text x="20" y={plotBottom + 27} fontSize="11" fill="var(--theme-6b7280, #6b7280)">{label(rows[0])}</text><text x={plotRight} y={plotBottom + 27} textAnchor="end" fontSize="11" fill="var(--theme-6b7280, #6b7280)">{label(rows.at(-1))}</text>
+      {active && !onExplain && <g pointerEvents="none"><line x1={activeX} x2={activeX} y1="30" y2={plotBottom} stroke="#94a3b8" strokeDasharray="4 4" /><g transform={`translate(${Math.max(20, Math.min(activeX - 95, plotRight - 190))},34)`}><rect width="190" height="52" rx="6" fill="#111827" /><text x="12" y="20" fontSize="12" fill="white">{label(active)}</text><text x="12" y="39" fontSize="13" fill="white">{synthetic ? '합성 값' : '종가'} {won(active.close)}</text></g></g>}
     </svg>
     {candleStep !== undefined ? <CandleWalkthroughMarks rows={rows} step={step} y={y} index={candleStep}/> : onExplain && <ChartLessonMarks type={type} rows={rows} step={step} y={y} onExplain={onExplain}/>}
     </div>

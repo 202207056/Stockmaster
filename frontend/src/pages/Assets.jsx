@@ -19,10 +19,14 @@ import AssetCharts from '../components/common/AssetCharts';
 import RemoteState from '../components/common/RemoteState';
 import PortfolioBriefCard from '../components/ai/PortfolioBriefCard';
 import './Assets.css';
+import useMobileLayout from '../hooks/useMobileLayout';
+import MobileSectionNav from '../components/common/MobileSectionNav';
 
 /** Account-scoped balances, valuation and holdings; tutorial targets remain on their real controls. */
 export default function Assets() {
   const practice = useSitePractice();
+  const mobile = useMobileLayout() && !practice;
+  const [mobileSection, setMobileSection] = useState('holdings');
   const surface = useRef(null);
   const [tutorialsEnabled] = useTutorialSetting();
   const [params] = useSearchParams();
@@ -63,7 +67,8 @@ export default function Assets() {
           </dl>
         </section></PracticeTarget>
 
-        <PracticeTarget id="asset-investment"><section data-assets-tour="investment" className="assets-investment">
+        {mobile && <MobileSectionNav label="자산 보기" items={[["holdings", "보유종목"], ["detail", "잔고 상세"], ["analysis", "자산 분석"]]} value={mobileSection} onChange={setMobileSection} />}
+        <PracticeTarget id="asset-investment"><section hidden={mobile && mobileSection !== 'detail' && !tourOpen && !params.has('tour')} data-assets-tour="investment" className="assets-investment">
           <div className="assets-section-title"><h2>내 투자 <HelpIcon termId="portfolio" /></h2></div>
           <dl className="assets-investment-list">
             <InvestmentRow label="매입금액" term="buy_amount" value={totals?.cost != null ? won(totals.cost) : null} pending={pending} />
@@ -74,7 +79,7 @@ export default function Assets() {
         </section></PracticeTarget>
       </div>
 
-      <PracticeTarget id="asset-holdings"><section data-assets-tour="holdings" className="assets-holdings">
+      <PracticeTarget id="asset-holdings"><section hidden={mobile && mobileSection !== 'holdings' && !tourOpen && !params.has('tour')} data-assets-tour="holdings" className="assets-holdings">
         <div className="assets-section-title"><h2>보유종목 <HelpIcon termId="hold_quantity" />{resource.data && <span className="assets-count">{comma(holdings.length)}종목</span>}</h2><PracticeTarget id="trading-link"><Link to={tradingHref} onClick={() => practice?.event('trading')} className="assets-trading-link">트레이딩 <ArrowUpRight size={16} aria-hidden="true" /></Link></PracticeTarget></div>
         {isAuthenticated || hasCachedSession ? <RemoteState resource={resource} authenticated={isAuthenticated}>
           {holdings.length ? <div className="assets-table-wrap"><table className="assets-table"><caption className="sr-only">보유종목별 수량, 평균단가, 현재가와 평가손익</caption><thead><tr>{['종목', '보유수량', '평균단가', '현재가', '평가손익'].map(label => <th scope="col" key={label}>{label}</th>)}</tr></thead><tbody>{holdings.map(holding => {
@@ -91,9 +96,9 @@ export default function Assets() {
         </RemoteState> : <div className="assets-empty"><p>보유종목은 로그인 후 확인할 수 있어요.</p></div>}
       </section></PracticeTarget>
 
-      <AssetCharts key={accountId} accountId={accountId} resource={resource} practice={!!practice} />
+      <div className="mts-analysis-panel" hidden={mobile && mobileSection !== 'analysis'}><AssetCharts key={accountId} accountId={accountId} resource={resource} practice={!!practice} /></div>
       {!practice && isAuthenticated && accounts.length > 0 && tourOpen && <AssetsTour surfaceRef={surface} accountCount={accounts.length} onClose={() => setTourOpen(false)} />}
-      {isAuthenticated && <div className="assets-briefings"><PortfolioBriefCard accountId={accountId} holdings={holdings} practice={!!practice} /></div>}
+      {isAuthenticated && <div hidden={mobile && mobileSection !== 'analysis'} className="assets-briefings"><PortfolioBriefCard accountId={accountId} holdings={holdings} practice={!!practice} /></div>}
     </div>
   );
 }

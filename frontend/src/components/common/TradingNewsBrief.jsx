@@ -89,6 +89,7 @@ export default function TradingNewsBrief({ code }) {
   const fallback = useSavedHeadline(accountId, code, isAuthenticated && main.data?.ai_available && !main.data?.title);
   const held = useHeldQuantities(accountId, isAuthenticated);
   const [open, setOpen] = useState(false);
+  const [guide, setGuide] = useState(-1);
   const [selectedCode, setSelectedCode] = useState(code);
   // Name and rate of a stock picked from a related card or theme leader.
   const [pickedStock, setPickedStock] = useState(null);
@@ -117,7 +118,7 @@ export default function TradingNewsBrief({ code }) {
   };
   const tabStock = selectedCode === code ? { name: brief?.name, changeRate: brief?.change_rate } : { name: pickedStock?.name || selectedCode, changeRate: pickedStock?.changeRate };
   return <>
-    <button type="button" className="trading-news-banner" disabled={!brief}
+    <button type="button" className="trading-news-banner" data-site-tour="ai-news" disabled={!brief}
       onClick={() => { setPicked(false); setSelectedCode(code); setThemeId(null); setOpen(true); }} aria-haspopup="dialog" aria-expanded={open}>
       <span className="min-w-0 flex-1">
         <span className="trading-news-banner__label"><span className="trading-news-banner__icon"><Sparkles size={14} aria-hidden="true" /></span>{brief ? (!brief.title && fallback.short ? '최근 뉴스 정리' : question(brief.change_rate)) : 'AI 뉴스'}</span>
@@ -126,6 +127,16 @@ export default function TradingNewsBrief({ code }) {
       <ChevronRight size={18} className="shrink-0" aria-hidden="true" />
     </button>
     {brief && <Modal open={open} onClose={() => setOpen(false)} title="AI 뉴스" size="xl" draggable resizable dimBackdrop={false}>
+      <div className="mb-3 flex justify-end"><button type="button" className="text-sm font-semibold text-brand-700" aria-expanded={guide >= 0} onClick={() => setGuide(guide < 0 ? 0 : -1)}>AI 뉴스 이용 안내</button></div>
+      {guide >= 0 && <section className="mb-4 rounded-lg border border-brand-200 bg-brand-50 p-4" aria-label="AI 뉴스 이용 안내" aria-live="polite">
+        <strong className="text-sm text-brand-700">{['종목의 이슈와 근거 기사', '관련 종목으로 넓혀 보기', '테마별 흐름 비교'][guide]}</strong>
+        <p className="mt-1 text-sm leading-relaxed text-gray-600">{[
+          '최근 이슈, 긍정적으로 볼 요인과 주의할 요인을 함께 읽어 보세요. 근거 기사가 있으면 원문을 확인하고, 생성 시점도 살펴보세요.',
+          '함께 살펴볼 관련 종목 카드를 누르면 해당 종목의 뉴스 상세로 바뀌어요. 보유 표시와 등락률도 함께 확인할 수 있어요.',
+          '관련 테마가 제공되면 테마를 눌러 상승·하락 흐름과 대표 종목을 비교해 보세요. 분석은 참고 자료이며 투자 판단은 직접 확인한 정보를 바탕으로 해 주세요.',
+        ][guide]}</p>
+        <div className="mt-3 flex gap-3">{guide > 0 && <button type="button" className="text-sm text-gray-600" onClick={() => setGuide(guide - 1)}>이전</button>}<button type="button" className="tutorial-action" onClick={() => setGuide(guide === 2 ? -1 : guide + 1)}>{guide === 2 ? '안내 마치기' : '다음'}</button><button type="button" className="text-sm text-gray-500" onClick={() => setGuide(-1)}>닫기</button></div>
+      </section>}
       {themeList.length > 0 && <div className="trading-news-tabs" role="group" aria-label="뉴스 보기 선택">
         <button type="button" aria-pressed={!theme} onClick={() => selectStock(selectedCode, tabStock.name, tabStock.changeRate)}>
           <Direction changeRate={tabStock.changeRate} /> {tabStock.name}

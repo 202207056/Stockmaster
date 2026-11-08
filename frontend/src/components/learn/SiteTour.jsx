@@ -5,6 +5,7 @@ import { getOnboarding, setOnboarding } from '../../utils/onboarding';
 import { SITE_TOUR_STEPS, siteTourIndex } from '../../constants/siteTour';
 import TutorialSkipButton from './TutorialSkipButton';
 import TutorialPointer from './TutorialPointer';
+import WelcomeMascot from './WelcomeMascot';
 import '../../pages/TradingTutorial.css';
 import './AssetsTour.css';
 import './SiteTour.css';
@@ -16,6 +17,9 @@ export default function SiteTour() {
   const index = siteTourIndex(params.get('tour'));
   return index >= 0 && SITE_TOUR_STEPS[index].path === pathname ? <TourStep index={index} /> : null;
 }
+
+const welcomeTitle = '‘모의투자 프로젝트’는 투자를 처음 접하는, 혹은 투자를 연습하고 싶은 주린이들을 위한 프로젝트입니다!';
+const welcomeText = '시작하기 전, 우리 플랫폼의 구조에 대해 먼저 알아가 볼까요?';
 
 function Welcome() {
   const dialog = useRef(null);
@@ -34,14 +38,19 @@ function Welcome() {
     element.showModal();
     return () => element.close();
   }, []);
-  return <dialog ref={dialog} className="site-tour-welcome" aria-labelledby="site-welcome-title" aria-describedby="site-welcome-text" onCancel={event => { event.preventDefault(); skip(); }}>
-    <h2 id="site-welcome-title">‘모의투자 프로젝트’는 투자를 처음 접하는, 혹은 투자를 연습하고 싶은 주린이들을 위한 프로젝트입니다!</h2>
-    <p id="site-welcome-text">시작하기 전, 우리 플랫폼의 구조에 대해 먼저 알아가 볼까요?</p>
-    <div className="mt-6 flex gap-3"><button type="button" autoFocus className="tutorial-action" onClick={start}>시작하기</button><button type="button" className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-600" onClick={skip}>건너뛰기</button></div>
+  return <dialog ref={dialog} className="site-tour-intro" aria-labelledby="site-welcome-title" aria-describedby="site-welcome-text" onCancel={event => { event.preventDefault(); skip(); }}>
+    <WelcomeMascot>
+    <div className="site-tour-welcome">
+    <h2 id="site-welcome-title">{welcomeTitle}</h2>
+    <p id="site-welcome-text">{welcomeText}</p>
+    <div className="site-tour-welcome-actions mt-6 flex gap-3"><button type="button" className="tutorial-action" onClick={start}>시작하기</button><button type="button" className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-600" onClick={skip}>건너뛰기</button></div>
+    </div>
+    </WelcomeMascot>
   </dialog>;
 }
 
 function TourStep({ index }) {
+  const [params] = useSearchParams();
   const { user } = useAuth();
   const navigate = useNavigate();
   const note = useRef(null);
@@ -54,7 +63,8 @@ function TourStep({ index }) {
   const close = () => finish(path);
   const move = nextIndex => {
     if (getOnboarding(user?.user_id)?.startsWith('tour:')) setOnboarding(user.user_id, `tour:${nextIndex}`);
-    navigate(`${SITE_TOUR_STEPS[nextIndex].path}?tour=${nextIndex}`, { replace: true });
+    const destination = SITE_TOUR_STEPS[nextIndex].path;
+    navigate(`${destination}?tour=${nextIndex}${destination === '/trading' && params.get('code') ? `&code=${encodeURIComponent(params.get('code'))}` : ''}`, { replace: true });
   };
   const next = () => index === SITE_TOUR_STEPS.length - 1 ? finish('/dashboard') : move(index + 1);
 
@@ -80,7 +90,7 @@ function TourStep({ index }) {
     const candidates = [...document.querySelectorAll(selector)];
     const previousFocus = document.activeElement;
     let highlighted;
-    const findTarget = () => candidates.find(element => element.getBoundingClientRect().width > 0);
+    const findTarget = () => [...document.querySelectorAll(selector)].find(element => element.getBoundingClientRect().width > 0);
     const initial = findTarget();
     if (initial && !menuDescription) {
       const rect = initial.getBoundingClientRect();
@@ -117,7 +127,12 @@ function TourStep({ index }) {
       let left = width - box.width - 12;
       let top = minTop;
       if (rect) {
-        if (menuDescription) {
+        if (targetId === 'asset-flow' || targetId === 'asset-portfolio') {
+          // Keep the explanation above the charts so neither sibling is covered.
+          left = rect.left;
+          top = Math.max(minTop, rect.top - box.height - 12);
+        }
+        else if (menuDescription) {
           left = rect.left + rect.width / 2 - box.width / 2;
           top = Math.max(12, rect.bottom + 12);
           popup.style.maxHeight = `${Math.max(0, height - top - 12)}px`;

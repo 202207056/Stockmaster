@@ -10,6 +10,9 @@ import { rate, signTextClass, won, wonSigned } from '../../utils/format';
 import StockLogo from './StockLogo';
 import AccountPicker from './AccountPicker';
 import './FloatingAssets.css';
+import { floatingViewport, raiseFloatingPanel } from '../../utils/floatingViewport';
+import useMobileLayout from '../../hooks/useMobileLayout';
+import MobileEdgeTab from './MobileEdgeTab';
 
 const POSITION_KEY = 'stockmaster:mini-assets-position';
 function initialPosition() {
@@ -29,6 +32,7 @@ export default function FloatingAssets() {
 }
 
 function FloatingAssetsPanel() {
+  const mobile = useMobileLayout();
   const [open, setOpen] = useState(false);
   const [position, setPosition] = useState(initialPosition);
   const root = useRef(null);
@@ -41,13 +45,16 @@ function FloatingAssetsPanel() {
   const totals = portfolioTotals(resource.data);
 
   const clamp = useCallback((point) => {
+    const view = floatingViewport();
+    root.current?.style.setProperty('--mini-assets-max-height', `${Math.max(44, Math.min(view.height * .6, view.height - 64))}px`);
     const rect = root.current?.getBoundingClientRect();
     return {
-      x: Math.max(8, Math.min(point.x, window.innerWidth - (rect?.width ?? 120) - 8)),
-      y: Math.max(8, Math.min(point.y, window.innerHeight - (rect?.height ?? 48) - 8)),
+      x: Math.max(8, Math.min(point.x, view.width - (rect?.width ?? 120) - 8)),
+      y: Math.max(8, Math.min(point.y, view.height - (rect?.height ?? 48) - 8)),
     };
   }, []);
   useLayoutEffect(() => {
+    if (!root.current) return;
     const fit = () => setPosition((previous) => {
       const next = clamp(previous);
       return next.x === previous.x && next.y === previous.y ? previous : next;
@@ -55,9 +62,10 @@ function FloatingAssetsPanel() {
     const observer = new ResizeObserver(fit);
     observer.observe(root.current);
     window.addEventListener('resize', fit);
+    window.visualViewport?.addEventListener('resize', fit);
     fit();
-    return () => { observer.disconnect(); window.removeEventListener('resize', fit); };
-  }, [clamp]);
+    return () => { observer.disconnect(); window.removeEventListener('resize', fit); window.visualViewport?.removeEventListener('resize', fit); };
+  }, [clamp, mobile, open]);
   useEffect(() => {
     try { localStorage.setItem(POSITION_KEY, JSON.stringify(position)); } catch { /* Optional persistence. */ }
   }, [position]);
@@ -75,8 +83,7 @@ function FloatingAssetsPanel() {
   }, [open, isAuthenticated, accountId, reload, resource.loading, resource.data]);
 
   const startDrag = (event) => {
-    if (window.matchMedia('(max-width: 639px)').matches) return;
-    if (event.button !== 0 || !event.isPrimary) return;
+    if (event.button !== 0 || event.isPrimary === false) return;
     suppressClick.current = false;
     gesture.current = { id: event.pointerId, x: event.clientX, y: event.clientY, position, moved: false };
     event.currentTarget.setPointerCapture(event.pointerId);
@@ -92,12 +99,14 @@ function FloatingAssetsPanel() {
     }
   };
   const endDrag = () => { gesture.current = null; };
-  const close = () => { setOpen(false); trigger.current?.focus(); };
+  const close = () => { setOpen(false); requestAnimationFrame(() => trigger.current?.focus({ preventScroll: true })); };
   const pending = resource.loading ? '조회 중…' : '—';
   const amount = (value) => value == null ? pending : won(value);
   const percentage = totals?.cost > 0 && totals?.unrealized != null ? rate(totals.unrealized / totals.cost * 100) : null;
 
-  return <aside ref={root} className={`mini-assets ${open ? 'is-open' : ''}`} style={{ '--mini-assets-left': `${position.x}px`, '--mini-assets-top': `${position.y}px` }} aria-label="미니 내 자산" onKeyDown={(event) => {
+  if (mobile && !open) return <MobileEdgeTab storageKey="stockmaster:mobile-assets-edge" label="내 자산" defaultY={180} buttonRef={trigger} controls="mini-assets-panel" onOpen={() => setOpen(true)}><Wallet size={17} aria-hidden="true" /></MobileEdgeTab>;
+
+  return <aside ref={root} onPointerDownCapture={event => raiseFloatingPanel(event.currentTarget)} className={`mini-assets ${open ? 'is-open' : ''}`} style={{ '--mini-assets-left': `${position.x}px`, '--mini-assets-top': `${position.y}px` }} aria-label="미니 내 자산" onKeyDown={(event) => {
     if (event.key === 'Escape' && open) { event.stopPropagation(); close(); }
   }}>
     <div className="mini-assets-header">
@@ -107,7 +116,7 @@ function FloatingAssetsPanel() {
         onClick={(event) => { if (event.detail !== 0 && suppressClick.current) { suppressClick.current = false; return; } setOpen((value) => !value); }}
         onKeyDown={(event) => {
           const offsets = { ArrowLeft: [-16, 0], ArrowRight: [16, 0], ArrowUp: [0, -16], ArrowDown: [0, 16] };
-          if (offsets[event.key] && !window.matchMedia('(max-width: 639px)').matches) { event.preventDefault(); const [dx, dy] = offsets[event.key]; setPosition((previous) => clamp({ x: previous.x + dx, y: previous.y + dy })); }
+          if (offsets[event.key]) { event.preventDefault(); const [dx, dy] = offsets[event.key]; setPosition((previous) => clamp({ x: previous.x + dx, y: previous.y + dy })); }
         }}>
         <Wallet size={17} /><span>내 자산</span><GripVertical size={16} className="mini-assets-grip" />
       </button>

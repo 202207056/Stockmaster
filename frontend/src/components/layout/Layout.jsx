@@ -1,6 +1,6 @@
 import { Outlet } from 'react-router-dom';
 import Header from './Header';
-import Nav from './Nav';
+import MobileNav from './MobileNav';
 import Footer from './Footer';
 import SiteTour from '../learn/SiteTour';
 import SitePractice from '../learn/SitePractice';
@@ -30,7 +30,7 @@ export default function Layout() {
 
       <Footer />
       <div className="bottom-navigation fixed inset-x-0 bottom-0 z-30 border-t border-gray-200 bg-white md:hidden">
-        <Nav className="mobile-nav" />
+        <MobileNav />
       </div>
       <SiteTour />
     </div>

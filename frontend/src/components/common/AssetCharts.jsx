@@ -26,7 +26,7 @@ export default function AssetCharts({ accountId, resource, practice }) {
   const last = ready ? assetComparison(history.data?.rows, endDate, 0, history.data?.previous) : null;
   const comparison = last ? assetComparison(history.data?.rows, startDate, last.previous, history.data?.previous) : null;
   return <div className="assets-charts">
-    <section className="assets-chart-panel">
+    <section className="assets-chart-panel" data-assets-tour="flow" data-site-tour="asset-flow">
       <div className="assets-section-title"><h2>보유자산 흐름</h2><div className="assets-range-options" role="group" aria-label="자산 조회 기간"><button type="button" aria-pressed={!customRange} onClick={() => setCustomRange(false)}>최근 일주일</button><button type="button" aria-pressed={customRange} aria-expanded={customRange} aria-controls="asset-custom-range" onClick={() => setCustomRange(true)}>기간 직접 선택</button></div></div>
       <div id="asset-custom-range" className="assets-date-controls" hidden={!customRange}>
         <label htmlFor="asset-start-date">시작 날짜 <input id="asset-start-date" type="date" value={startDate} min={earliest} max={endDate} disabled={!enabled} onChange={event => { const value = event.target.value; if (assetWeekOffset(value, today) !== null && value <= endDate) setStartDate(value); }} /></label>
@@ -38,7 +38,7 @@ export default function AssetCharts({ accountId, resource, practice }) {
       {history.data ? <AssetFlow key={`${accountId}:${startDate}:${endDate}`} points={history.data.rows} start={history.data.start} end={history.data.end} previous={history.data.previous} /> : <div className="assets-chart-empty">{!enabled ? practice ? '연습 계좌는 이력을 저장하지 않습니다.' : '계좌를 선택하면 이력이 표시됩니다.' : history.loading ? '자산 이력을 불러오는 중…' : '자산 이력을 불러오지 못했습니다.'}</div>}
       {enabled && (history.error || history.data?.saveFailed) && <p className="assets-chart-note">{history.data?.saveFailed ? '오늘의 자산을 저장하지 못했습니다.' : '이력 조회에 실패했습니다.'} <button type="button" disabled={history.loading} onClick={history.reload}>다시 시도</button></p>}
     </section>
-    <section className="assets-chart-panel">
+    <section className="assets-chart-panel" data-assets-tour="portfolio" data-site-tour="asset-portfolio">
       <div className="assets-section-title"><h2>보유종목 포트폴리오</h2><span>평가금액 비중</span></div>
       <PortfolioPie slices={slices} />
     </section>

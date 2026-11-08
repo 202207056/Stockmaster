@@ -9,6 +9,10 @@ const steps = [
   ['investment', '내 투자', '매입금액은 보유 주식을 사는 데 든 금액, 평가금액은 현재 시세로 계산한 금액입니다. 평가손익은 두 금액의 차이이며, 이 화면에서는 수수료·세금을 제외합니다.'],
   ['holdings', '보유종목', '선택한 계좌의 보유수량·평균단가·현재가·평가손익을 확인합니다. 보유종목이 없으면 빈 목록이 표시됩니다. 종목명을 누르면 해당 종목의 트레이딩 화면으로 이동합니다.'],
 ];
+steps.push(
+  ['flow', '보유자산 흐름', '최근 일주일의 자산 변화를 확인해 보세요. 기간 직접 선택으로 조회 범위를 바꾸고, 그래프에 마우스를 올리거나 좌우 방향키를 누르면 날짜별 자산과 변동률을 확인할 수 있어요.'],
+  ['portfolio', '보유종목 포트폴리오', '보유 주식의 평가금액이 종목별로 얼마나 나뉘어 있는지 보여줘요. 범례에서 종목을 누르면 해당 비중과 금액이 강조되고, 다시 누르면 전체를 볼 수 있어요.'],
+);
 export default function AssetsTour({ surfaceRef, accountCount, onClose }) {
   const [step,setStep] = useState(0);
   const note = useRef(null), pointer = useRef(null);
@@ -16,6 +20,7 @@ export default function AssetsTour({ surfaceRef, accountCount, onClose }) {
   useEffect(()=>{
     const target=surfaceRef.current.querySelector('[data-assets-tour="'+targetId+'"]');
     if(!target) return;
+    target.scrollIntoView?.({block:'center', behavior:'instant'});
     target.classList.add('assets-tour-target');
     const position=()=>{
       const rect=target.getBoundingClientRect(), popup=note.current;

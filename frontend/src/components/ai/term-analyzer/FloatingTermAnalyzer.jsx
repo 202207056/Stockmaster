@@ -9,11 +9,12 @@ import './ocr.css';
 import { WIKI_ENABLED } from './wikiLookup';
 import { useNewsTermSelection } from './termSelection';
 import useTermAnalyzerSetting from './useTermAnalyzerSetting';
+import { floatingViewport, raiseFloatingPanel } from '../../../utils/floatingViewport';
+import MobileEdgeTab from '../../common/MobileEdgeTab';
 
 const AnalysisPanel = lazy(() => import('./TermAnalysisPanel'));
 function overlaySnapshot() {
-  return !!document.querySelector('dialog[open]:not([data-ocr-editor]):not([data-term-confirm]), [aria-modal="true"]:not([data-ocr-editor]):not([data-term-confirm]), .tutorial-skip-button')
-    || (window.innerWidth < 640 && !!document.querySelector('.mini-assets.is-open'));
+  return !!document.querySelector('dialog[open]:not([data-ocr-editor]):not([data-term-confirm]), [aria-modal="true"]:not([data-ocr-editor]):not([data-term-confirm]), .tutorial-skip-button');
 }
 function subscribeOverlays(listener) {
   const observer = new MutationObserver(listener);
@@ -39,8 +40,7 @@ const MARKS_KEY = 'stockmaster:term-analyzer-marks';
 const OPEN_KEY = 'stockmaster:term-analyzer-open';
 const EDGES = ['n', 's', 'e', 'w', 'ne', 'nw', 'se', 'sw'];
 const readMinimized = () => { try { return localStorage.getItem(MINIMIZED_KEY) === 'true'; } catch { return false; } };
-const isMobile = () => window.matchMedia?.('(max-width: 639px)').matches ?? false;
-const viewport = () => ({ width: window.innerWidth, height: window.innerHeight });
+const viewport = floatingViewport;
 const placed = (rect) => ({ left: `${rect.x}px`, top: `${rect.y}px`, width: `${rect.w}px`, height: `${rect.h}px` });
 // The panel hugs its content up to the chosen height and grows away from the anchored corner.
 const anchored = (rect, anchor, view) => ({
@@ -54,8 +54,11 @@ function useViewport() {
   const [view, setView] = useState(viewport);
   useEffect(() => {
     const update = () => setView(viewport());
+    // The navigation is committed after the initial render; measure it then.
+    const initial = requestAnimationFrame(update);
     window.addEventListener('resize', update);
-    return () => window.removeEventListener('resize', update);
+    window.visualViewport?.addEventListener('resize', update);
+    return () => { cancelAnimationFrame(initial); window.removeEventListener('resize', update); window.visualViewport?.removeEventListener('resize', update); };
   }, []);
   return view;
 }
@@ -75,7 +78,8 @@ function Surface() {
   const gesture = useRef(null);
   const dragged = useRef(false);
   const button = rectFromAnchor(anchor, BUTTON, view);
-  const panel = rectFromAnchor(anchor, size, view);
+  const mobile = view.width < 768;
+  const panel = rectFromAnchor(anchor, mobile ? { w: Math.min(size.w, 340), h: Math.min(size.h, Math.round(view.height * .65)) } : size, view);
 
   const close = useCallback(() => { setOpen(false); requestAnimationFrame(() => trigger.current?.focus({ preventScroll: true })); }, []);
   const hideForCapture = useCallback((hidden) => { if (root.current) root.current.dataset.capturing = String(hidden); }, []);
@@ -99,7 +103,7 @@ function Surface() {
 
   // One pointer gesture moves the button, moves the panel, or resizes the panel from an edge.
   const begin = (event) => {
-    if (isMobile() || event.button !== 0 || !event.isPrimary) return;
+    if (event.button !== 0 || event.isPrimary === false) return;
     const mode = event.currentTarget.dataset.drag;
     const box = event.currentTarget.closest('.ocr-launcher, .ocr-panel').getBoundingClientRect();
     const rect = { x: box.left, y: box.top, w: box.width, h: box.height };
@@ -128,7 +132,7 @@ function Surface() {
   const pointer = { onPointerDown: begin, onPointerMove: move, onPointerUp: end, onPointerCancel: end, onLostPointerCapture: end };
   const nudge = (event) => {
     const offsets = { ArrowLeft: [-16, 0], ArrowRight: [16, 0], ArrowUp: [0, -16], ArrowDown: [0, 16] };
-    if (!offsets[event.key] || isMobile()) return;
+    if (!offsets[event.key]) return;
     event.preventDefault();
     const [dx, dy] = offsets[event.key];
     setAnchor(anchorFromRect(clampRect({ ...button, x: button.x + dx, y: button.y + dy }, view), view));
@@ -138,10 +142,10 @@ function Surface() {
   const restore = () => { setMinimized(false); requestAnimationFrame(() => trigger.current?.focus({ preventScroll: true })); };
 
   return createPortal(<div ref={root} className="ocr-widget" data-ocr-widget>
-    {minimized ? <button type="button" className="ocr-restore" style={{ top: `${Math.min(button.y, view.height - 52)}px` }}
+    {mobile ? !open && <MobileEdgeTab storageKey="stockmaster:mobile-analyzer-edge" label="AI 용어 분석" defaultY={244} buttonRef={trigger} controls="ocr-analysis-panel" onOpen={() => { setMinimized(false); setOpen(true); }}><ScanText size={17} aria-hidden="true" /></MobileEdgeTab> : minimized ? <button type="button" className="ocr-restore" style={{ top: `${Math.min(button.y, view.height - 52)}px` }}
       aria-label="AI 용어 분석 버튼 다시 보이기" title="AI 용어 분석 다시 보이기" onClick={restore}>
       <ScanText size={16} aria-hidden="true" />
-    </button> : !open && <div className="ocr-launcher" style={placed(button)}>
+    </button> : !open && <div className="ocr-launcher" style={placed(button)} onPointerDownCapture={event => raiseFloatingPanel(event.currentTarget)}>
       <button ref={trigger} type="button" className="ocr-trigger" aria-label="AI 용어 분석" title="AI 용어 분석 · 드래그 또는 방향키로 이동"
         aria-expanded={false} aria-controls="ocr-analysis-panel" data-drag="move" {...pointer} onKeyDown={nudge}
         onClick={(event) => { if (event.detail !== 0 && dragged.current) { dragged.current = false; return; } setOpen(true); }}>
@@ -151,7 +155,8 @@ function Surface() {
         <X size={12} aria-hidden="true" />
       </button>
     </div>}
-    {open && <aside id="ocr-analysis-panel" className="ocr-panel" style={anchored(panel, anchor, view)} data-anchor={`${anchor.v}-${anchor.h}`}
+    {open && <aside id="ocr-analysis-panel" className="ocr-panel" style={mobile ? { ...placed(panel), right: 'auto', bottom: 'auto', maxHeight: panel.h } : anchored(panel, anchor, view)} data-anchor={`${anchor.v}-${anchor.h}`}
+      onPointerDownCapture={event => raiseFloatingPanel(event.currentTarget)}
       role="dialog" aria-modal="false" aria-labelledby="ocr-panel-title">
       <header className="ocr-panel-header" title="드래그해서 옮길 수 있어요" data-drag="move" {...pointer}>
         <GripVertical size={16} className="ocr-grip" aria-hidden="true" />

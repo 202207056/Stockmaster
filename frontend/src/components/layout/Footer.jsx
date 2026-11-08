@@ -1,4 +1,5 @@
 import ThemeToggle from '../common/ThemeToggle';
+import DisplayModeToggle from '../common/DisplayModeToggle';
 
 /**
  * 공통 푸터 (F-5)
@@ -22,7 +23,10 @@ export default function Footer() {
         </p>
         <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
           <p className="text-xs text-gray-400">© 인생한방 프로젝트</p>
-          <ThemeToggle />
+          <div className="flex items-center gap-1">
+            <DisplayModeToggle />
+            <ThemeToggle />
+          </div>
         </div>
       </div>
     </footer>
