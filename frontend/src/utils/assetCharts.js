@@ -45,6 +45,12 @@ function parseAssetHistory(source, accountId, range) {
 
 
 const DAY = 86400000;
+export function assetDayChange(points, point, previous = null) {
+  if (!point || point.isDemo) return null;
+  const prior = [...points, ...(previous ? [previous] : [])].find(row => row.time === point.time - DAY && !row.isDemo);
+  if (!prior || !Number.isFinite(prior.value) || prior.value <= 0) return null;
+  return (point.value - prior.value) / prior.value * 100;
+}
 export function koreaDate(now = new Date()) {
   return new Date(now.getTime() + 9 * 3600000).toISOString().slice(0, 10);
 }

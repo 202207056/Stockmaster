@@ -70,3 +70,15 @@ test('range history supports multiple weeks and same-day windows', () => {
   assert.throws(() => parseAssetRange({...data, end_date: '2026-10-19'}, 1));
   assert.throws(() => parseAssetRange(data, 2));
 });
+
+import { assetDayChange } from '../src/utils/assetCharts.js';
+test('tooltip compares the actual previous day, including range boundary, without inventing missing rates', () => {
+ const first={time:assetDateTime('2026-11-03'),value:100};
+ const next={time:assetDateTime('2026-11-04'),value:110};
+ assert.equal(assetDayChange([first,next],next),10);
+ assert.equal(assetDayChange([next],next,first),10);
+ assert.equal(assetDayChange([first],{time:assetDateTime('2026-11-05'),value:110}),null);
+ assert.equal(assetDayChange([{...first,value:0}],next),null);
+ assert.equal(assetDayChange([{...first,isDemo:true}],next),null);
+ assert.equal(assetDayChange([first],{...next,value:90}),-10);
+});

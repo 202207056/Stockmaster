@@ -1,8 +1,8 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useId, useState } from 'react';
 import useAuth from '../../hooks/useAuth';
 import useRemote from '../../hooks/useRemote';
 import { fetchAssetRange } from '../../api/assetHistory';
-import { assetComparison, assetWeekOffset, assetWeekStart, koreaDate, portfolioSlices } from '../../utils/assetCharts';
+import { assetComparison, assetDayChange, assetWeekOffset, assetWeekStart, koreaDate, portfolioSlices } from '../../utils/assetCharts';
 import { comma, won } from '../../utils/format';
 
 const timeLabel = time => new Date(time).toLocaleDateString('ko-KR', { month: 'numeric', day: 'numeric', timeZone: 'UTC' });
@@ -33,9 +33,9 @@ export default function AssetCharts({ accountId, resource, practice }) {
         <label htmlFor="asset-end-date">끝 날짜 <input id="asset-end-date" type="date" value={endDate} min={startDate} max={today} disabled={!enabled} onChange={event => { const value = event.target.value; if (assetWeekOffset(value, today) !== null && value >= startDate) setEndDate(value); }} /></label>
       </div>
       {enabled && <div className="assets-flow-comparison" role="status">
-        {comparison ? <><p className="assets-flow-basis">{comparison.date.replaceAll('-', '.')} ~ {last.date.replaceAll('-', '.')} 기준</p><p><strong className={comparison.difference > 0 ? 'text-up-600' : comparison.difference < 0 ? 'text-down-600' : ''}>보유자산이 {won(Math.abs(comparison.difference))} {comparison.difference > 0 ? '늘었어요.' : comparison.difference < 0 ? '줄었어요.' : '변동이 없어요.'}</strong></p></> : <p className="assets-chart-note">{history.loading ? '변동 내역을 불러오는 중…' : !ready ? '변동 내역을 불러오지 못했습니다.' : '비교할 과거 자산 기록이 없습니다.'}</p>}
+        {comparison ? <><p><strong className={comparison.difference > 0 ? 'text-up-600' : comparison.difference < 0 ? 'text-down-600' : ''}>보유자산이 {won(Math.abs(comparison.difference))} {comparison.difference > 0 ? '늘었어요.' : comparison.difference < 0 ? '줄었어요.' : '변동이 없어요.'}</strong></p></> : <p className="assets-chart-note">{history.loading ? '변동 내역을 불러오는 중…' : !ready ? '변동 내역을 불러오지 못했습니다.' : '비교할 과거 자산 기록이 없습니다.'}</p>}
       </div>}
-      {history.data ? <AssetFlow key={`${accountId}:${startDate}:${endDate}`} points={history.data.rows} start={history.data.start} end={history.data.end} /> : <div className="assets-chart-empty">{!enabled ? practice ? '연습 계좌는 이력을 저장하지 않습니다.' : '계좌를 선택하면 이력이 표시됩니다.' : history.loading ? '자산 이력을 불러오는 중…' : '자산 이력을 불러오지 못했습니다.'}</div>}
+      {history.data ? <AssetFlow key={`${accountId}:${startDate}:${endDate}`} points={history.data.rows} start={history.data.start} end={history.data.end} previous={history.data.previous} /> : <div className="assets-chart-empty">{!enabled ? practice ? '연습 계좌는 이력을 저장하지 않습니다.' : '계좌를 선택하면 이력이 표시됩니다.' : history.loading ? '자산 이력을 불러오는 중…' : '자산 이력을 불러오지 못했습니다.'}</div>}
       {enabled && (history.error || history.data?.saveFailed) && <p className="assets-chart-note">{history.data?.saveFailed ? '오늘의 자산을 저장하지 못했습니다.' : '이력 조회에 실패했습니다.'} <button type="button" disabled={history.loading} onClick={history.reload}>다시 시도</button></p>}
     </section>
     <section className="assets-chart-panel">
@@ -44,12 +44,14 @@ export default function AssetCharts({ accountId, resource, practice }) {
     </section>
   </div>;
 }
-function AssetFlow({ points, start, end }) {
+function AssetFlow({ points, start, end, previous }) {
   const [selected, setSelected] = useState(null);
+  const tooltipId = useId();
   if (!points.length) return <div className="assets-chart-empty">이 기간에 저장된 자산 이력이 없습니다.</div>;
 
   const defaultIndex = points.length - 1;
   const active = points[Math.min(selected ?? defaultIndex, points.length - 1)];
+  const change = assetDayChange(points, active, previous);
   const values = points.map(point => point.value);
   const low = Math.min(...values), high = Math.max(...values);
   const pad = Math.max((high - low) * .15, Math.abs(high) * .005, 1);
@@ -63,22 +65,25 @@ function AssetFlow({ points, start, end }) {
     points.forEach((point, index) => { if (Math.abs(x(point) - position) < Math.abs(x(points[nearest]) - position)) nearest = index; });
     setSelected(nearest);
   };
-  return <>
-    <div className="assets-flow-value"><strong>{won(active.value)}</strong><span>{timeLabel(active.time)}{active.isDemo ? ' · 임시 데이터' : ''}</span></div>
+  return <div className="assets-flow-chart"><div className="assets-flow-plot">
     <svg className="assets-flow" viewBox="0 0 620 230" role="img" tabIndex={0}
-      aria-label={`총자산 조회 기록 ${points.length}개. 좌우 방향키로 확인`}
-      onPointerMove={selectPointer} onPointerLeave={() => setSelected(null)} onBlur={() => setSelected(null)}
-      onKeyDown={event => { if (['ArrowLeft', 'ArrowRight'].includes(event.key)) { event.preventDefault(); setSelected(Math.max(0, Math.min(points.length - 1, (selected ?? defaultIndex) + (event.key === 'ArrowLeft' ? -1 : 1)))); } }}>
+      aria-label={`총자산 조회 기록 ${points.length}개. 좌우 방향키로 확인`} aria-describedby={selected !== null ? tooltipId : undefined}
+      onPointerMove={selectPointer} onPointerDown={selectPointer} onPointerLeave={() => setSelected(null)} onBlur={() => setSelected(null)} onFocus={() => setSelected(defaultIndex)}
+      onKeyDown={event => { if (event.key === 'Escape') setSelected(null); if (['ArrowLeft', 'ArrowRight'].includes(event.key)) { event.preventDefault(); setSelected(Math.max(0, Math.min(points.length - 1, (selected ?? defaultIndex) + (event.key === 'ArrowLeft' ? -1 : 1)))); } }}>
       {[max, (max + min) / 2, min].map((value, index) => <g key={index}><line x1="110" x2="590" y1={y(value)} y2={y(value)} className="assets-flow-grid" /><text x="100" y={y(value) + 4} textAnchor="end">{comma(value / 10000, 1)}만</text></g>)}
       {points.map((point, index) => <g key={point.time}>
         {index > 0 && point.time - points[index - 1].time === 86400000 && <line x1={x(points[index - 1])} y1={y(points[index - 1].value)} x2={x(point)} y2={y(point.value)} stroke="var(--color-brand-600)" strokeWidth="3" />}
         <circle cx={x(point)} cy={y(point.value)} r="3" fill="var(--color-brand-600)" />
       </g>)}
-      <circle cx={x(active)} cy={y(active.value)} r="5" fill="var(--color-brand-600)" />
+      {selected !== null && <circle cx={x(active)} cy={y(active.value)} r="5" fill="var(--color-brand-600)" />}
       {Array.from({ length: Math.min(5, Math.round((end - start) / 86400000) + 1) }, (_, index) => { const count = Math.min(5, Math.round((end - start) / 86400000) + 1); const time = start + Math.round(index * (end - start) / Math.max(1, count - 1) / 86400000) * 86400000; return <text key={time} x={x({ time })} y="220" textAnchor="middle">{timeLabel(time)}</text>; })}
     </svg>
-    {points.length === 1 && <p className="assets-chart-note">하루 마지막으로 저장된 자산 기준</p>}
-  </>;
+    {selected !== null && <div id={tooltipId} role="tooltip" className="assets-flow-tooltip" style={{ left: `clamp(95px, ${x(active) / 620 * 100}%, calc(100% - 95px))`, top: `${y(active.value) / 230 * 100}%` }}>
+      <p>{new Date(active.time).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' })}{active.isDemo ? ' · 임시 데이터' : ''}</p>
+      <strong>{won(active.value)}</strong>
+      <div><span>전일 대비</span><b className={change > 0 ? 'text-up-600' : change < 0 ? 'text-down-600' : ''}>{change === null ? '—' : `${change > 0 ? '+' : ''}${comma(change, 2)}%`}</b></div>
+    </div>}
+  </div></div>;
 }
 
 function PortfolioPie({ slices }) {

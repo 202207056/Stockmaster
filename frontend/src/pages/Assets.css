@@ -144,3 +144,11 @@
 .assets-range-options button:focus-visible { outline: 2px solid var(--color-brand-500); outline-offset: 2px; }
 
 .assets-flow-basis { margin-bottom: 5px; color: var(--assets-muted); font-size: 12px; line-height: 1.6; }
+.assets-flow-chart { padding-top: 24px; }
+.assets-flow-plot { position: relative; }
+.assets-flow-plot .assets-flow { margin-top: 0; }
+.assets-flow-tooltip { position: absolute; z-index: 2; width: 190px; padding: 12px 14px; transform: translate(-50%, calc(-100% - 12px)); pointer-events: none; border: 1px solid var(--assets-rule); border-radius: 8px; background: var(--surface, #fff); color: var(--color-gray-900); box-shadow: 0 4px 16px #00000014; font-variant-numeric: tabular-nums; }
+.assets-flow-tooltip p { color: var(--assets-muted); font-size: 12px; margin-bottom: 4px; }
+.assets-flow-tooltip strong { display: block; font-size: 16px; }
+.assets-flow-tooltip > div { display: flex; justify-content: space-between; gap: 8px; margin-top: 6px; font-size: 12px; }
+.assets-flow-tooltip > div > span { color: var(--assets-muted); }

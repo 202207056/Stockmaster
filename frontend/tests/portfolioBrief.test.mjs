@@ -178,8 +178,8 @@ test('chips put big movers first, then larger positions; one is on by default an
   assert.deepEqual(chips().map(item => item.getAttribute('aria-pressed')), ['true', 'false', 'false', 'false', 'false']);
   for (const name of ['테스트전자', '테스트반도체', '중간종목']) await press(chip(name));
   assert.equal(chip('막내종목').disabled, true);
-  assert.equal(container.querySelectorAll('.portfolio-brief-block').length, 4);
-  assert.match(block('중간종목').textContent, /아직 브리핑이 없어요/);
+  assert.equal(container.querySelectorAll('.portfolio-brief-block').length, 0);
+  assert.equal(block('중간종목'), null);
   assert.equal(db.listCalls, 1, 'the saved list is read once per account');
   await remount({ holdings: list });
   assert.deepEqual(chips().map(item => item.getAttribute('aria-pressed')), ['true', 'true', 'true', 'true', 'false']);
@@ -555,7 +555,7 @@ test('session change clears browser copies and malformed copies are ignored', as
     savedAt: Date.now(), data: [{ symbol_code: '005930', generated_at: new Date().toISOString(), headline: 'MALFORMED_BRIEF', disclaimer: '안내' }] }]));
   await render();
   assert.doesNotMatch(container.textContent, /MALFORMED_BRIEF/);
-  assert.match(block('테스트전자').textContent, /아직 브리핑이 없어요/);
+  assert.equal(block('테스트전자'), null);
 });
 
 test('trend guesses show in their own marked section; missing or malformed guesses show nothing', async () => {

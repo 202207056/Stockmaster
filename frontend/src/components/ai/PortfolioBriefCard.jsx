@@ -216,7 +216,7 @@ function AccountBrief({ accountId, holdings }) {
     </div>
     <p role="status" className="mt-2 text-sm text-gray-500">{run === 'busy' ? '브리핑을 생성하고 있어요.' : run === 'done' ? '브리핑 생성이 완료됐어요.' : ''}</p>
     <div className="space-y-3">
-      {on.map(code => <BriefBlock key={code} stock={names[code]} latest={latestOf(code)} state={status[code] ?? IDLE}
+      {on.filter(code => latestOf(code) || status[code]?.loading || status[code]?.error).map(code => <BriefBlock key={code} stock={names[code]} latest={latestOf(code)} state={status[code] ?? IDLE}
         accountId={accountId} open={openCode === code}
         onFlip={() => setOpenCode(prev => prev === code ? null : code)} onClose={() => toggle(code)} />)}
     </div>
