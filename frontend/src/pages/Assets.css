@@ -131,7 +131,7 @@
 .assets-date-controls :focus-visible { outline: 2px solid var(--color-brand-500); outline-offset: 3px; }
 .assets-flow-comparison { margin-top: 20px; padding: 16px; background: var(--color-gray-50); border-radius: 8px; }
 .assets-flow-comparison > p:first-child { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: baseline; font-size: 13px; line-height: 1.7; }
-.assets-flow-comparison strong { font-size: 20px; font-variant-numeric: tabular-nums; }
+.assets-flow-comparison strong { font-size: 18px; font-variant-numeric: tabular-nums; }
 .assets-flow-comparison dl { display: flex; flex-wrap: wrap; gap: 8px 24px; margin-top: 10px; font-size: 12px; }
 .assets-flow-comparison dl > div { display: flex; gap: 8px; }
 .assets-flow-comparison dt { color: var(--assets-muted); }
@@ -142,3 +142,5 @@
 .assets-range-options button { min-height: 40px; padding: 8px 12px; border-radius: 6px; color: var(--assets-muted); font-size: 13px; }
 .assets-range-options button[aria-pressed=true] { background: var(--color-gray-100); color: var(--color-gray-900); font-weight: 600; }
 .assets-range-options button:focus-visible { outline: 2px solid var(--color-brand-500); outline-offset: 2px; }
+
+.assets-flow-basis { margin-bottom: 5px; color: var(--assets-muted); font-size: 12px; line-height: 1.6; }
