@@ -1,4 +1,4 @@
-import { useCallback, useId, useState } from 'react';
+import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import useAuth from '../../hooks/useAuth';
 import useRemote from '../../hooks/useRemote';
 import { fetchAssetRange } from '../../api/assetHistory';
@@ -47,6 +47,17 @@ export default function AssetCharts({ accountId, resource, practice }) {
 function AssetFlow({ points, start, end, previous }) {
   const [selected, setSelected] = useState(null);
   const tooltipId = useId();
+  const plotRef = useRef(null);
+  const [width, setWidth] = useState(620);
+  useEffect(() => {
+    const element = plotRef.current;
+    if (!element) return;
+    const measure = () => setWidth(Math.max(1, element.getBoundingClientRect().width));
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [points.length]);
   if (!points.length) return <div className="assets-chart-empty">이 기간에 저장된 자산 이력이 없습니다.</div>;
 
   const defaultIndex = points.length - 1;
@@ -56,29 +67,29 @@ function AssetFlow({ points, start, end, previous }) {
   const low = Math.min(...values), high = Math.max(...values);
   const pad = Math.max((high - low) * .15, Math.abs(high) * .005, 1);
   const min = low - pad, max = high + pad;
-  const x = point => end === start ? 350 : 110 + (point.time - start) / (end - start) * 480;
+  const x = point => end === start ? width / 2 : 24 + (point.time - start) / (end - start) * (width - 48);
   const y = value => 190 - (value - min) / (max - min) * 154;
   const selectPointer = event => {
     const bounds = event.currentTarget.getBoundingClientRect();
-    const position = (event.clientX - bounds.left) / bounds.width * 620;
+    const position = (event.clientX - bounds.left) / bounds.width * width;
     let nearest = 0;
     points.forEach((point, index) => { if (Math.abs(x(point) - position) < Math.abs(x(points[nearest]) - position)) nearest = index; });
     setSelected(nearest);
   };
-  return <div className="assets-flow-chart"><div className="assets-flow-plot">
-    <svg className="assets-flow" viewBox="0 0 620 230" role="img" tabIndex={0}
+  return <div className="assets-flow-chart"><div ref={plotRef} className="assets-flow-plot">
+    <svg className="assets-flow" viewBox={`0 0 ${width} 230`} role="img" tabIndex={0}
       aria-label={`총자산 조회 기록 ${points.length}개. 좌우 방향키로 확인`} aria-describedby={selected !== null ? tooltipId : undefined}
       onPointerMove={selectPointer} onPointerDown={selectPointer} onPointerLeave={() => setSelected(null)} onBlur={() => setSelected(null)} onFocus={() => setSelected(defaultIndex)}
       onKeyDown={event => { if (event.key === 'Escape') setSelected(null); if (['ArrowLeft', 'ArrowRight'].includes(event.key)) { event.preventDefault(); setSelected(Math.max(0, Math.min(points.length - 1, (selected ?? defaultIndex) + (event.key === 'ArrowLeft' ? -1 : 1)))); } }}>
-      {[max, (max + min) / 2, min].map((value, index) => <g key={index}><line x1="110" x2="590" y1={y(value)} y2={y(value)} className="assets-flow-grid" /><text x="100" y={y(value) + 4} textAnchor="end">{comma(value / 10000, 1)}만</text></g>)}
+      {[max, (max + min) / 2, min].map((value, index) => <g key={index}><line x1="24" x2={width - 24} y1={y(value)} y2={y(value)} className="assets-flow-grid" /><text x="24" y={y(value) - 8} textAnchor="start">{comma(value / 10000, 1)}만</text></g>)}
       {points.map((point, index) => <g key={point.time}>
         {index > 0 && point.time - points[index - 1].time === 86400000 && <line x1={x(points[index - 1])} y1={y(points[index - 1].value)} x2={x(point)} y2={y(point.value)} stroke="var(--color-brand-600)" strokeWidth="3" />}
         <circle cx={x(point)} cy={y(point.value)} r="3" fill="var(--color-brand-600)" />
       </g>)}
       {selected !== null && <circle cx={x(active)} cy={y(active.value)} r="5" fill="var(--color-brand-600)" />}
-      {Array.from({ length: Math.min(5, Math.round((end - start) / 86400000) + 1) }, (_, index) => { const count = Math.min(5, Math.round((end - start) / 86400000) + 1); const time = start + Math.round(index * (end - start) / Math.max(1, count - 1) / 86400000) * 86400000; return <text key={time} x={x({ time })} y="220" textAnchor="middle">{timeLabel(time)}</text>; })}
+      {Array.from({ length: Math.min(5, Math.round((end - start) / 86400000) + 1) }, (_, index) => { const count = Math.min(5, Math.round((end - start) / 86400000) + 1); const time = start + Math.round(index * (end - start) / Math.max(1, count - 1) / 86400000) * 86400000; return <text key={time} x={x({ time })} y="220" textAnchor={count === 1 ? 'middle' : index === 0 ? 'start' : index === count - 1 ? 'end' : 'middle'}>{timeLabel(time)}</text>; })}
     </svg>
-    {selected !== null && <div id={tooltipId} role="tooltip" className="assets-flow-tooltip" style={{ left: `clamp(95px, ${x(active) / 620 * 100}%, calc(100% - 95px))`, top: `${y(active.value) / 230 * 100}%` }}>
+    {selected !== null && <div id={tooltipId} role="tooltip" className="assets-flow-tooltip" style={{ left: `clamp(95px, ${x(active) / width * 100}%, calc(100% - 95px))`, top: `${y(active.value) / 230 * 100}%` }}>
       <p>{new Date(active.time).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' })}{active.isDemo ? ' · 임시 데이터' : ''}</p>
       <div className="assets-flow-tooltip-amount"><strong>{won(active.value)}</strong>
       <b className={change > 0 ? 'text-up-600' : change < 0 ? 'text-down-600' : ''}>{change === null ? '—' : `${change > 0 ? '+' : ''}${comma(change, 2)}%`}</b></div>

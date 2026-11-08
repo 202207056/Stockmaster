@@ -96,7 +96,7 @@
 @media (max-width: 640px) {
   .assets-chart-panel { padding: 20px; }
   .assets-chart-panel h2 { font-size: 16px; }
-  .assets-flow text { font-size: 22px; }
+  .assets-flow text { font-size: 12px; }
   .assets-portfolio-chart { flex-direction: column; }
   .assets-pie { width: 200px; max-width: 100%; }
   .assets-chart-legend { width: 100%; }
