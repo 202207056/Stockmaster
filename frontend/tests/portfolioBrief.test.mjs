@@ -172,9 +172,9 @@ test('chips put big movers first, then larger positions; one is on by default an
   await render({ holdings: list });
   assert.deepEqual(chips().map(item => item.textContent.match(/작은급등주|테스트전자|중간종목|테스트반도체|막내종목/)[0]),
     ['작은급등주', '테스트전자', '테스트반도체', '중간종목', '막내종목']);
-  assert.match(chip('작은급등주').textContent, /035420/);
-  assert.match(chip('작은급등주').textContent, /4\.2/);
-  assert.match(chip('테스트전자').textContent, /비중 \d+%/);
+  assert.doesNotMatch(chip('작은급등주').textContent, /035420/);
+  assert.doesNotMatch(chip('작은급등주').textContent, /4\.2/);
+  assert.doesNotMatch(chip('테스트전자').textContent, /비중 \d+%/);
   assert.deepEqual(chips().map(item => item.getAttribute('aria-pressed')), ['true', 'false', 'false', 'false', 'false']);
   for (const name of ['테스트전자', '테스트반도체', '중간종목']) await press(chip(name));
   assert.equal(chip('막내종목').disabled, true);
@@ -231,11 +231,11 @@ test('the main button fills stocks without a briefing today; holding a chip mark
   db.items = [{ ...brief('000660', 'YESTERDAY', ago(1)), id: 90 }, { ...brief('005930', 'TODAY_DONE'), id: 91 }];
   await render();
   await press(chip('테스트반도체'));
-  assert.match(container.textContent, /생성할 종목: 테스트반도체\(오늘 처음\)/);
+  assert.doesNotMatch(container.textContent, /생성할 종목: 테스트반도체\(오늘 처음\)/);
   await generate();
   assert.deepEqual(urls, ['000660']);
   assert(gen().disabled);
-  assert.match(container.textContent, /켠 종목은 오늘 브리핑이 있어요/);
+  assert.doesNotMatch(container.textContent, /켠 종목은 오늘 브리핑이 있어요/);
   assert.equal(byLabel('테스트전자 브리핑 다시 생성'), null, 'no separate regenerate button');
   await act(async () => fire(chip('테스트전자'), 'pointerdown'));
   assert.equal(switchOf('테스트전자'), 'ON', 'a quick tap shows nothing');
@@ -253,7 +253,7 @@ test('the main button fills stocks without a briefing today; holding a chip mark
   assert.deepEqual(urls, ['000660'], 'holding only selects; it never generates by itself');
   assert.equal(switchOf('테스트전자'), 'RE');
   assert.equal(chip('테스트전자').getAttribute('aria-pressed'), 'true', 'the hold does not also toggle the chip');
-  assert.match(container.textContent, /생성할 종목: 테스트전자\(RE\)/);
+  assert.doesNotMatch(container.textContent, /생성할 종목: 테스트전자\(RE\)/);
   await press(chip('테스트전자'));
   assert.equal(switchOf('테스트전자'), 'ON', 'a tap on RE goes back to ON');
   assert(gen().disabled);

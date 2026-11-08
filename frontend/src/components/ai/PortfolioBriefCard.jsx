@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react';
 import { deletePortfolioBrief, fetchPortfolioBrief, fetchPortfolioBriefHistory } from '../../api/data';
 import { numberOrNull, quotePrice } from '../../api/normalize';
 import { readResource, resourceKey, writeResource } from '../../api/resourceCache';
-import { comma, rate, signTextClass } from '../../utils/format';
 import { kstStamp } from '../../utils/kstStamp';
 import { LearningButton, LearningCard } from '../learn/LearningUI';
 import BriefReport from './BriefReport';
@@ -198,11 +197,9 @@ function AccountBrief({ accountId, holdings }) {
     }
   }
 
-  const listNames = codes => codes.map(code => ranked.find(stock => stock.code === code)?.name ?? code).join('·');
   if (!holdings.length) return <p className="text-sm text-gray-500">보유종목이 생기면 AI 브리핑을 확인할 수 있어요.</p>;
   const names = Object.fromEntries(ranked.map(stock => [stock.code, stock]));
   return <>
-    <p className="text-sm leading-relaxed text-gray-500">현재 보유 상태와 포지션 시작 당시 가격 흐름, 최근 확인되는 종목 이슈를 객관적인 정보 중심으로 정리합니다.</p>
     <div role="group" aria-label="브리핑 대상 종목" className="portfolio-brief-chips">
       {ranked.map(stock => {
         const active = on.includes(stock.code);
@@ -212,15 +209,10 @@ function AccountBrief({ accountId, holdings }) {
           onToggle={() => toggle(stock.code)} onHold={() => setAgain(prev => [...prev, stock.code])} />;
       })}
     </div>
-    <p className="mt-2 text-xs text-gray-500">오늘 크게 움직인 종목과 비중이 큰 종목이 앞에 있어요. 최대 {comma(MAX_ON)}개까지 켤 수 있어요.
-      브리핑이 있는 종목은 ON을 길게 누르면 RE로 바뀌고, 브리핑 생성하기를 누르면 다시 생성해요.</p>
     <div className="mt-4 flex flex-wrap items-center gap-3">
       <LearningButton onClick={() => generate(pending)} disabled={run === 'busy' || !pending.length}>
         {run === 'busy' ? '브리핑 생성 중...' : '브리핑 생성하기'}
       </LearningButton>
-      {run !== 'busy' && on.length > 0 && !pending.length && <span className="text-xs text-gray-500">켠 종목은 오늘 브리핑이 있어요. 새로 만들려면 종목의 ON을 길게 눌러 RE로 바꿔 주세요.</span>}
-      {run !== 'busy' && pending.length > 0 && <span className="text-xs text-gray-500">
-        생성할 종목: {[fresh.length && `${listNames(fresh)}(오늘 처음)`, redo.length && `${listNames(redo)}(RE)`].filter(Boolean).join(' · ')}</span>}
     </div>
     <p role="status" className="mt-2 text-sm text-gray-500">{run === 'busy' ? '브리핑을 생성하고 있어요.' : run === 'done' ? '브리핑 생성이 완료됐어요.' : ''}</p>
     <div className="space-y-3">
@@ -280,9 +272,6 @@ function StockChip({ stock, active, disabled, redo, canHold, onToggle, onHold })
     style={{ '--hold-ms': `${HOLD_MS}ms` }}>
     <span className="portfolio-brief-chip__switch" aria-hidden="true">{redo || charging ? 'RE' : active ? 'ON' : 'OFF'}</span>
     <span className="font-bold">{stock.name}</span>
-    <span className="portfolio-brief-chip__meta">{stock.code}</span>
-    {stock.change !== null && <span className={`portfolio-brief-chip__meta ${signTextClass(stock.change)}`}>{rate(stock.change)}</span>}
-    {stock.weight !== null && <span className="portfolio-brief-chip__meta">비중 {Math.round(stock.weight)}%</span>}
   </button>;
 }
 
@@ -293,7 +282,7 @@ function BriefBlock({ stock, latest, state, accountId, open, onFlip, onClose }) 
   return <section className="portfolio-brief-block" aria-label={`${stock.name} 브리핑`}>
     <header className="portfolio-brief-block__head">
       <div className="min-w-0">
-        <p className="font-bold text-gray-900">{stock.name} <span className="text-xs font-normal text-gray-500">{stock.code}</span></p>
+        <p className="font-bold text-gray-900">{stock.name}</p>
         <p className="portfolio-brief-stamp">
           {saved && !state.loading && <span className="portfolio-brief-saved">✓ 서버에 저장됨</span>}
           {latest && !state.loading && <span>{kstStamp(latest.generated_at)} 생성</span>}
