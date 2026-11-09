@@ -13,9 +13,10 @@ import { ALWAYS_SHOW_CHART_TUTORIAL } from '../../config/features';
 import { buyTutorialKey, hasCompletedBuyTutorial, completeBuyTutorial } from '../../utils/orderTypes';
 import '../learn/ChartLearning.css';
 
-export default function ChartWorkspace({ rows, userId, periodLabel, period, onPeriod, replay = false, onReplayClose, allowTutorial = true, demo = false, emptyContent, repeatTutorial = ALWAYS_SHOW_CHART_TUTORIAL }) {
+export default function ChartWorkspace({ rows, userId, periodLabel, period, onPeriod, replay = false, onReplayClose, allowTutorial = true, demo = false, emptyContent, repeatTutorial = ALWAYS_SHOW_CHART_TUTORIAL, compact = false }) {
   const [tutorialsEnabled] = useTutorialSetting();
   const [type, setType] = useState('line');
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [scale, setScale] = useState('linear');
   const [ma, setMa] = useState(0);
   const [volume, setVolume] = useState(false);
@@ -82,7 +83,7 @@ export default function ChartWorkspace({ rows, userId, periodLabel, period, onPe
     else { setType('bar'); setTour(2); }
   };
   const finish = (openGuide = false) => { completeBuyTutorial(key); close(); if (openGuide) navigate('/learn/charts'); };
-  return <div ref={root} className={`chart-workspace ${running ? 'chart-tour-active' : ''}`} role={running ? 'dialog' : undefined} aria-modal={running || undefined} aria-label={running ? '차트 유형 둘러보기' : undefined} onClick={event => {
+  return <div ref={root} className={`chart-workspace ${running ? 'chart-tour-active' : ''} ${compact ? 'chart-compact' : ''} ${settingsOpen || running ? 'chart-settings-visible' : ''}`} role={running ? 'dialog' : undefined} aria-modal={running || undefined} aria-label={running ? '차트 유형 둘러보기' : undefined} onClick={event => {
     if (event.target.closest('button, select, input, label, a, summary, dialog') || window.getSelection?.()?.toString()) return;
     advanceCandle();
   }} onKeyDown={event => {
@@ -95,6 +96,7 @@ export default function ChartWorkspace({ rows, userId, periodLabel, period, onPe
     }
   }}>
     {running && !concept && <TutorialSkipButton onSkip={close} />}
+    {compact && <button type="button" className="chart-settings-toggle" aria-expanded={settingsOpen || running} onClick={() => setSettingsOpen(value => !value)}>차트 설정</button>}
     <div className="chart-controls">
       <label>그래프 종류<select data-chart-selector aria-label="그래프 종류" value={type} onPointerDown={intercept} onKeyDown={intercept} onChange={event => {
         if (!running && tutorialsEnabled && allowTutorial && (repeatTutorial || (!dismissed.current && !hasCompletedBuyTutorial(key))) && rows?.length) { original.current = type; setType('line'); setTour(0); return; }
@@ -106,7 +108,7 @@ export default function ChartWorkspace({ rows, userId, periodLabel, period, onPe
     </div>
     {type === 'renko' && <label className="chart-setting">벽돌 크기 (원)<NumberInput aria-label="벽돌 크기 (원)" min="1" value={running ? 4 : box || boxSize} disabled={running} onChange={event => setBox(event.target.value)} /></label>}
     {!running && <details className="chart-settings"><summary>보조 표시 설정</summary><label>단순이동평균<select aria-label="이동평균 기간" value={ma} onChange={event => setMa(Number(event.target.value))}><option value="0">없음</option><option value="5">5기간</option><option value="20">20기간</option></select></label><label><input type="checkbox" checked={volume} onChange={event => setVolume(event.target.checked)} />거래량</label></details>}
-    {(running || rows?.length) ? <CandleChart key={type} candleStep={candleLesson ? candleStep : undefined} showPriceTable={!running && !demo} rows={running ? CHART_GUIDE_ROWS : rows} type={type} scale={running ? 'linear' : scale} boxSize={running ? 4 : boxSize} maPeriod={running ? 0 : ma} showVolume={!running && volume} periodLabel={running ? '학습 예시' : periodLabel} onExplain={running ? () => setConcept(type) : undefined} /> : emptyContent || <p className="p-8 text-sm text-gray-500">차트 데이터를 불러온 뒤 유형 소개를 시작할 수 있습니다.</p>}
+    {(running || rows?.length) ? <CandleChart compact={compact && !running} key={type} candleStep={candleLesson ? candleStep : undefined} showPriceTable={!running && !demo} rows={running ? CHART_GUIDE_ROWS : rows} type={type} scale={running ? 'linear' : scale} boxSize={running ? 4 : boxSize} maPeriod={running ? 0 : ma} showVolume={!running && volume} periodLabel={running ? '학습 예시' : periodLabel} onExplain={running ? () => setConcept(type) : undefined} /> : emptyContent || <p className="p-8 text-sm text-gray-500">차트 데이터를 불러온 뒤 유형 소개를 시작할 수 있습니다.</p>}
     {running && !concept && <div ref={note} className="chart-tour-note" role="status" aria-live="polite"><button className="chart-tour-close" aria-label="차트 안내 종료" onClick={close}>×</button><small>{tour + 1} / {CHART_TYPES.length} · 같은 가격, 일곱 가지 그림</small>{candleLesson ? <><CandleCalloutContent step={candleStep}/><div className="chart-tour-actions">{candleStep>0 && <button type="button" onClick={()=>setCandleStep(step=>step-1)}>뒤로가기</button>}{candleStep === CANDLE_WALKTHROUGH.length - 1 && <button type="button" onClick={()=>setConcept('candle')}>전체 구조 크게 보기</button>}</div></> : <><h3>{selected.label}</h3><p className="chart-tour-purpose">{guide[2]}</p><p>{guide[3]}</p><p>{guide[4]}</p></>}
 
 {tour < CHART_TYPES.length - 1 ? !candleLesson && <p><strong>그래프 종류를 ‘{CHART_TYPES[tour + 1].label}’ 항목으로 바꿔 보세요.</strong></p> : <><p>가격 축·돌파·거래량·이동평균도 같은 화면에서 비교해 보세요.</p><div className="chart-tour-actions"><button type="button" onClick={() => setConcept('comparisons')}>그래프 모양과 지표 비교</button><button type="button" onClick={() => finish()}>튜토리얼 마치기</button><button type="button" onClick={() => finish(true)}>상세 차트 학습 시작</button></div></>}</div>}

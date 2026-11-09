@@ -19,6 +19,12 @@ export const SITE_TOUR_STEPS = [
   { path: '/learn', target: 'page', title: '학습', text: '투자 기초, 차트와 주문 튜토리얼을 살펴보세요. 실제 화면의 강조 표시와 안내를 따라 하나씩 연습할 수 있어요. 둘러보기를 마치면 홈으로 돌아가요.' },
 ];
 
+// Keep related guidance together in the full-site tour.
+SITE_TOUR_STEPS.splice(SITE_TOUR_STEPS.findIndex(step => step.path === '/trading') + 1, 0,
+  { path: '/trading', target: 'ai-news', title: 'AI 뉴스', text: '종목을 선택한 뒤 AI 뉴스 배너를 눌러 보세요. 최근 이슈와 긍정·주의 요인, 근거 기사를 함께 살펴볼 수 있어요. 관련 종목과 테마를 누르면 다른 관점의 분석으로 이어져요. 창 안의 이용 안내에서 사용법을 확인해 보세요.' });
+SITE_TOUR_STEPS.splice(SITE_TOUR_STEPS.findIndex(step => step.path === '/assets') + 1, 0,
+  { path: '/assets', target: 'asset-charts', title: '보유자산 흐름과 포트폴리오', text: '왼쪽은 기간별 자산 변화, 오른쪽은 종목별 평가금액 비중이에요. 조회 기간을 바꾸거나 종목 범례를 눌러 자세히 살펴보세요.' });
+
 export function siteTourIndex(value) {
   if (!/^\d+$/.test(value || '')) return -1;
   const index = Number(value);

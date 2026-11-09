@@ -67,6 +67,20 @@ test('tour visits all real routes, supports previous and closes on completion', 
   } finally { await React.act(async () => root.unmount()); links.remove(); }
 });
 
+test('AI news tour keeps the selected stock and includes both asset chart steps', async () => {
+  const tradingIndex = SITE_TOUR_STEPS.findIndex(step => step.path === '/trading' && step.target === 'page');
+  const root = createRoot(document.getElementById('root'));
+  try {
+    await React.act(async () => root.render(h(MemoryRouter, { initialEntries: [`/trading?code=005930&tour=${tradingIndex}`] }, h(AuthContext.Provider, { value: {} }, h(Tour)), h(Location))));
+    await click('다음');
+    assert.equal(document.querySelector('output').textContent, `/trading?tour=${tradingIndex + 1}&code=005930`);
+    assert.equal(document.querySelector('.site-tour-note').getAttribute('aria-label'), 'AI 뉴스 안내');
+    await click('뒤로가기');
+    assert(document.querySelector('output').textContent.includes('code=005930'));
+    assert.deepEqual(SITE_TOUR_STEPS.filter(step => step.path === '/assets').map(step => step.target), ['page', 'asset-charts', 'navigation']);
+  } finally { await React.act(async () => root.unmount()); }
+});
+
 test('home tour highlights each actual section using the existing pointer and callout template', async () => {
   const fixture = document.createElement('main');
   fixture.id = 'main';
@@ -192,7 +206,7 @@ test('signup → survey result → seed → tour and completion survives reload'
     await React.act(async () => root.render(flow('/dashboard')));
     assert.equal(document.querySelector('output').textContent, '/seed-money', 'unfinished seed resumes');
     await click('설정하기');
-    assert(document.querySelector('.site-tour-welcome').open);
+    assert(document.querySelector('.site-tour-intro').open);
     assert(document.body.textContent.includes('주린이들을 위한 프로젝트입니다!'));
     await click('시작하기');
     assert(document.querySelector('.site-tour-note'));
@@ -252,7 +266,7 @@ test('welcome can be skipped without starting the tour or reopening after reload
   const root = createRoot(document.getElementById('root'));
   try {
     await React.act(async () => root.render(flow('/dashboard')));
-    assert(document.querySelector('.site-tour-welcome').open);
+    assert(document.querySelector('.site-tour-intro').open);
     assert(!document.querySelector('.site-tour-note'));
     await click('건너뛰기');
     assert.equal(document.querySelector('output').textContent, '/dashboard');
@@ -267,13 +281,13 @@ test('failed account refresh retries without creating a duplicate account', asyn
   client.default.defaults.adapter = async config => {
     calls++;
     assert.equal(config.url, '/trading/accounts');
-    assert.equal(JSON.parse(config.data).initial_balance, 1000000);
+    assert.equal(JSON.parse(config.data).initial_balance, 11000000);
     return { data: { account_id: 8 }, status: 200, statusText: 'OK', headers: {}, config };
   };
   const auth = { isAuthenticated: true, accounts: [], refresh: async () => { throw new Error('Refresh unavailable'); }, selectAccount: () => {} };
   try {
     await React.act(async () => root.render(h(MemoryRouter, { initialEntries: ['/seed-money'] }, h(AuthContext.Provider, { value: auth }, h(SeedMoney)), h(Location))));
-    await click('1,000,000원');
+    await click('+1,000,000원');
     await click('설정하기');
     await click('설정하기');
     assert.equal(calls, 1);

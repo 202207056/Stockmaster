@@ -4,8 +4,11 @@ import useRemote from '../../hooks/useRemote';
 import { fetchStocks } from '../../api/data';
 import RemoteState from '../common/RemoteState';
 import { InlineError } from '../common/ErrorState';
+import useMobileLayout from '../../hooks/useMobileLayout';
 
 export default function CommunityCategories({ categories, onSave, selected, onSelect, authenticated }) {
+  const mobile = useMobileLayout();
+  const [expanded, setExpanded] = useState(false);
   const [adding, setAdding] = useState(false);
   const [search, setSearch] = useState('');
   const [query, setQuery] = useState('');
@@ -15,6 +18,8 @@ export default function CommunityCategories({ categories, onSave, selected, onSe
     try { onSave(next); setError(null); return true; } catch { setError(new Error('카테고리를 저장하지 못했습니다. 브라우저 저장 공간을 확인해 주세요.')); return false; }
   };
   return <aside aria-label="종목별 카테고리" className="community-categories">
+    {mobile && <button type="button" className="mts-category-toggle" aria-expanded={expanded} aria-controls="community-category-options" onClick={() => setExpanded(value => !value)}><span>{categories.find(stock => stock.symbol_code === selected)?.name || '전체 이야기'}</span><span>종목 선택 {expanded ? '−' : '+'}</span></button>}
+    <div id="community-category-options" hidden={mobile && !expanded}>
     <div className="mb-6 flex items-center gap-2"><span className="rounded-lg bg-brand-50 p-2 text-brand-600"><Hash size={18} /></span><h2 className="text-base font-bold text-gray-900">관심 카테고리</h2></div>
     <nav aria-label="종목별 게시글" className="space-y-1">
       <button type="button" onClick={() => onSelect(null)} aria-current={!selected ? 'page' : undefined} className={`community-category ${!selected ? 'is-active' : ''}`}><MessagesSquare size={18} /><span>전체 이야기</span></button>
@@ -27,5 +32,6 @@ export default function CommunityCategories({ categories, onSave, selected, onSe
       {query && <RemoteState resource={resource} empty={!resource.data?.length}><ul className="max-h-60 overflow-y-auto rounded-lg border border-gray-100 bg-white">{resource.data?.map(stock => <li key={stock.symbol_code}><button type="button" disabled={categories.some(item => item.symbol_code === stock.symbol_code)} onClick={() => { if (save([...categories, { symbol_code: stock.symbol_code, name: stock.name }])) { setAdding(false); setSearch(''); setQuery(''); } }} className="w-full px-3 py-2 text-left text-sm hover:bg-brand-50 disabled:text-gray-300">{stock.name}<span className="ml-1 text-xs text-gray-400">{stock.symbol_code}</span></button></li>)}</ul></RemoteState>}
     </form>}
     <InlineError error={error} />
+    </div>
   </aside>;
 }

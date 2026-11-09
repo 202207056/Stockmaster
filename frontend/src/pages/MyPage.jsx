@@ -1,166 +1,94 @@
+import { useState, useSyncExternalStore } from 'react';
+import { Link, useSearchParams, useNavigate } from 'react-router-dom';
+import { UserRound, SlidersHorizontal, Wallet, ShieldCheck, ChevronRight, Sun, Moon } from 'lucide-react';
 import ProfileSettings from '../components/common/ProfileSettings';
 import useTutorialSetting from '../hooks/useTutorialSetting';
-import { Link } from 'react-router-dom';
 import useAuth from '../hooks/useAuth';
 import { num, won } from '../utils/format';
 import HelpIcon from '../components/learn/HelpIcon';
 import LoginNotice from '../components/common/LoginNotice';
 import AccountPicker from '../components/common/AccountPicker';
+import Avatar from '../components/common/Avatar';
 import useMiniAssetsSetting from '../hooks/useMiniAssetsSetting';
 import DeleteMembership from '../components/common/DeleteMembership';
 import useTermAnalyzerSetting from '../components/ai/term-analyzer/useTermAnalyzerSetting';
+import { getTheme, setTheme, subscribeTheme } from '../utils/theme';
+import CreateAccount from '../components/common/CreateAccount';
+import './MyPage.css';
 
-/**
- * 마이페이지 (F-2 라우팅 연결)
- *
- * 헤더의 사용자 이름이 여기로 옵니다. 라우트가 없으면 404 로 떨어지므로 함께 만듭니다.
- * 표시하는 값은 이미 AuthContext 가 들고 있는 것(/users/me, /trading/accounts)뿐이고,
- * 추가 API 호출은 하지 않습니다. 나머지는 F-20 에서 채웁니다.
- *
- * 로그인하지 않고 들어오면 빈 표 대신 로그인 안내를 보여 줍니다.
- * (개인정보 화면이라 "둘러보기"로 채울 내용이 없습니다)
- */
+const sections = [
+  ['profile', '프로필', UserRound, '다른 회원에게 보여지는 내 모습을 관리하세요.'],
+  ['display', '화면 및 도구', SlidersHorizontal, '나에게 편한 화면과 투자 도구를 선택하세요.'],
+  ['investment', '투자 설정', Wallet, '투자성향과 사용 중인 모의투자 계좌를 확인하세요.'],
+  ['account', '계정 관리', ShieldCheck, '로그인 정보와 계정 이용을 관리하세요.'],
+];
+
 export default function MyPage() {
-  const { user, account, isAuthenticated } = useAuth();
+  const [params, setParams] = useSearchParams();
+  const section = sections.some(([id]) => id === params.get('section')) ? params.get('section') : 'profile';
+  const current = sections.find(([id]) => id === section);
+  const { user, account, isAuthenticated, logout } = useAuth();
+  const navigate = useNavigate();
   const [tutorialsEnabled, setTutorialsEnabled] = useTutorialSetting();
   const [miniAssetsEnabled, setMiniAssetsEnabled] = useMiniAssetsSetting();
   const [termAnalyzerEnabled, setTermAnalyzerEnabled] = useTermAnalyzerSetting();
-
-  return (
-    <div className="mx-auto flex w-full max-w-2xl flex-col gap-8">
-      <div className="border-b border-gray-200 pb-4">
-        <h1 className="text-xl font-extrabold text-gray-900">내 정보</h1>
+  const theme = useSyncExternalStore(subscribeTheme, getTheme, () => 'light');
+  const [resetting, setResetting] = useState(false);
+  const [notice, setNotice] = useState('');
+  const select = id => { setParams(previous => { const next = new URLSearchParams(previous); next.set('section', id); return next; }); setNotice(''); setResetting(false); };
+  const reset = () => {
+    setTheme('light'); setTutorialsEnabled(true); setMiniAssetsEnabled(true); setTermAnalyzerEnabled(false);
+    setResetting(false); setNotice('화면 옵션을 초기화했어요.');
+  };
+  return <div className="mypage-page settings-page">
+    <header className="settings-heading"><h1>내 정보</h1><p>프로필부터 화면 환경까지, 내게 맞게 설정하세요.</p></header>
+    <div className="settings-layout">
+      <aside className="settings-sidebar">
+        <div className="settings-identity"><Avatar name={user?.user_name || '방문자'} src={user?.profile_image} /><div><strong>{user?.user_name || '방문자'}</strong><span>{isAuthenticated ? '내 계정 설정' : '로그인 전에도 화면 설정이 가능해요'}</span></div></div>
+        <nav aria-label="내 정보 메뉴">{sections.map(([id, title, Icon]) => <button key={id} type="button" aria-current={section === id ? 'page' : undefined} onClick={() => select(id)}><Icon size={18} aria-hidden="true" /><span>{title}</span><ChevronRight size={15} className="settings-nav-arrow" aria-hidden="true" /></button>)}</nav>
+      </aside>
+      <div className="settings-content">
+        <header className="settings-section-heading"><h2>{current[1]}</h2><p>{current[3]}</p></header>
+        <div hidden={section !== 'profile'} className="settings-panel">
+          {isAuthenticated ? <ProfileSettings key={user?.user_id} /> : <LoginNotice message="프로필은 로그인 후 관리할 수 있어요" />}
+        </div>
+        <div hidden={section !== 'display'} className="settings-stack">
+          <section className="settings-panel" aria-labelledby="appearance-title"><h3 id="appearance-title">화면 테마</h3><p className="settings-caption">화면에 바로 적용되며 이 브라우저에 저장됩니다.</p>
+            <div className="settings-themes" role="group" aria-label="화면 테마">{[['light', '라이트', Sun], ['dark', '다크', Moon]].map(([id, title, Icon]) => <button type="button" key={id} aria-pressed={theme === id} onClick={() => setTheme(id)}><Icon size={20} aria-hidden="true" /><span>{title}</span><span className="settings-radio" aria-hidden="true" /></button>)}</div>
+          </section>
+          <section className="settings-panel" aria-labelledby="tools-title"><h3 id="tools-title">편의 기능</h3>
+            <SwitchRow id="mini-assets" title="미니 내 자산 탭" description="어느 화면에서든 내 자산을 빠르게 확인합니다." value={miniAssetsEnabled} onChange={setMiniAssetsEnabled} />
+            <SwitchRow id="tutorial" title="튜토리얼 자동 안내" description="매수·차트·내 자산·미수거래를 처음 이용할 때 안내합니다." value={tutorialsEnabled} onChange={setTutorialsEnabled} />
+            <SwitchRow id="term-analyzer" title="AI 용어 분석 · 실험 기능" description="화면의 어려운 투자 용어를 찾아 설명합니다. 실험 중인 기능으로 결과가 정확하지 않을 수 있습니다." value={termAnalyzerEnabled} onChange={setTermAnalyzerEnabled} />
+            <p className="settings-caption">옵션은 변경 즉시 적용됩니다. 저장 공간을 사용할 수 없으면 현재 세션에만 유지됩니다.</p>
+          </section>
+          <section className="settings-panel"><h3>이용 안내</h3><Link className="settings-link-row" to="/dashboard?tour=start"><span>사이트 둘러보기 다시 시작</span><ChevronRight size={17} aria-hidden="true" /></Link><Link className="settings-link-row" to="/learn"><span>투자 학습 및 도움말</span><ChevronRight size={17} aria-hidden="true" /></Link></section>
+          <section className="settings-reset"><div><h3>화면 옵션 초기화</h3><p>라이트 테마, 자산 탭·튜토리얼 켜짐, AI 용어 분석 꺼짐으로 돌아갑니다.</p></div><button type="button" className="settings-button" onClick={() => setResetting(true)}>초기화</button>
+            {resetting && <div className="settings-reset-confirm"><p>화면 옵션을 초기화할까요? 프로필과 투자 기록은 유지됩니다.</p><div><button type="button" className="settings-button" onClick={() => setResetting(false)}>취소</button><button type="button" className="settings-button settings-button-primary" onClick={reset}>초기화하기</button></div></div>}
+            <p role="status" className="settings-feedback">{notice}</p>
+          </section>
+        </div>
+        <div hidden={section !== 'investment'} className="settings-stack">
+          {!isAuthenticated ? <LoginNotice message="투자 설정은 로그인 후 확인할 수 있어요" /> : <>
+            <section className="settings-panel"><h3>나의 투자성향 <HelpIcon termId="risk_profile" /></h3><p className="settings-investment-style">{user?.investment_style || '아직 투자성향을 확인하지 않았어요'}</p><p className="settings-caption">투자 경험과 선호도에 맞는 성향을 확인해 보세요.</p><Link className="settings-button" to="/survey?mode=edit">{user?.investment_style ? '투자성향 설문 다시하기' : '투자성향 알아보기'}</Link></section>
+            <section className="settings-panel"><h3>모의투자 계좌</h3><p className="settings-caption">선택한 계좌가 거래 및 자산 화면에도 적용됩니다.</p><AccountPicker />{account ? <dl className="settings-details"><Row label="계좌명" value={account.account_name} /><Row label="모의투자 계좌번호" value={account.account_number} /><Row label={<>예수금 <HelpIcon termId="deposit" /></>} value={account.withdrawable_cash == null ? '—' : won(num(account.withdrawable_cash))} /><Row label={<>주문가능금액 <HelpIcon termId="orderable_cash" /></>} value={account.withdrawable_cash == null ? '—' : won(num(account.withdrawable_cash))} /></dl> : <p className="settings-caption">표시할 계좌 정보가 없습니다.</p>}<Link className="settings-link-row" to="/assets"><span>내 자산 자세히 보기</span><ChevronRight size={17} aria-hidden="true" /></Link></section>
+            <CreateAccount key={user?.user_id} />
+          </>}
+        </div>
+        <div hidden={section !== 'account'} className="settings-stack">
+          {!isAuthenticated ? <LoginNotice message="계정 관리는 로그인 후 이용할 수 있어요" /> : <>
+            <section className="settings-panel"><h3>로그인 정보</h3><dl className="settings-details"><Row label="아이디" value={user?.login_id} /><Row label="이메일" value={user?.email} /></dl></section>
+            <section className="settings-panel settings-logout"><div><h3>로그아웃</h3><p className="settings-caption">이 브라우저에서 현재 계정의 접속을 종료합니다.</p></div><button type="button" className="settings-button" onClick={() => { logout(); navigate('/login'); }}>로그아웃</button></section>
+            <div className="settings-panel settings-danger"><DeleteMembership /></div>
+          </>}
+        </div>
       </div>
-
-      <section className="flex flex-col gap-3" aria-labelledby="display-settings-title">
-        <h2 id="display-settings-title" className="text-sm font-bold text-gray-500">화면 설정</h2>
-        <Link to="/dashboard?tour=start" className="rounded-xl border border-brand-200 bg-brand-50 px-4 py-4 text-sm font-bold text-brand-700">사이트 둘러보기 다시 시작</Link>
-        <div className="flex items-center justify-between gap-4 rounded-xl border border-gray-200 px-4 py-4">
-          <div>
-            <p id="mini-assets-setting-label" className="text-sm font-bold text-gray-900">미니 내 자산 탭</p>
-            <p id="mini-assets-setting-description" className="mt-1 text-xs text-gray-500">모든 화면에서 내 자산 버튼을 표시해요. 설정은 이 브라우저에 저장돼요.</p>
-          </div>
-          <button type="button" role="switch" aria-checked={miniAssetsEnabled} aria-labelledby="mini-assets-setting-label" aria-describedby="mini-assets-setting-description"
-            onClick={() => setMiniAssetsEnabled(!miniAssetsEnabled)}
-            className={`flex shrink-0 items-center gap-2 rounded-full px-3 py-2 text-xs font-bold transition-colors ${miniAssetsEnabled ? 'bg-brand-600 text-white' : 'bg-gray-200 text-gray-600'}`}>
-            {miniAssetsEnabled ? 'ON' : 'OFF'}
-            <span aria-hidden="true" className={`relative h-5 w-9 rounded-full ${miniAssetsEnabled ? 'bg-brand-400' : 'bg-gray-400'}`}>
-              <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white transition-transform ${miniAssetsEnabled ? 'translate-x-4' : 'translate-x-0.5'} left-0`} />
-            </span>
-          </button>
-        </div>
-        <div className="flex items-center justify-between gap-4 rounded-xl border border-gray-200 px-4 py-4">
-          <div><p id="tutorial-setting-label" className="text-sm font-bold text-gray-900">튜토리얼 자동 안내</p>
-            <p id="tutorial-setting-description" className="mt-1 text-xs text-gray-500">매수·차트·내 자산·미수거래의 자동 튜토리얼을 켜거나 끕니다. 학습 탭과 ? 설명은 계속 이용할 수 있습니다. 설정은 이 브라우저에 저장됩니다.</p></div>
-          <button type="button" role="switch" aria-checked={tutorialsEnabled} aria-labelledby="tutorial-setting-label" aria-describedby="tutorial-setting-description"
-            onClick={()=>setTutorialsEnabled(!tutorialsEnabled)}
-            className={`flex shrink-0 items-center gap-2 rounded-full px-3 py-2 text-xs font-bold transition-colors ${tutorialsEnabled ? 'bg-brand-600 text-white' : 'bg-gray-200 text-gray-600'}`}>
-            {tutorialsEnabled ? 'ON' : 'OFF'}
-            <span aria-hidden="true" className={`relative h-5 w-9 rounded-full ${tutorialsEnabled ? 'bg-brand-400' : 'bg-gray-400'}`}><span className={`absolute left-0 top-0.5 h-4 w-4 rounded-full bg-white transition-transform ${tutorialsEnabled ? 'translate-x-4' : 'translate-x-0.5'}`}/></span>
-          </button>
-        </div>
-      </section>
-
-      <section className="flex flex-col gap-3" aria-labelledby="lab-settings-title">
-        <h2 id="lab-settings-title" className="text-sm font-bold text-gray-500">실험 기능</h2>
-        <div className="flex items-center justify-between gap-4 rounded-xl border border-gray-200 px-4 py-4">
-          <div>
-            <p id="term-analyzer-setting-label" className="text-sm font-bold text-gray-900">AI 용어 분석 <span className="ml-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-700">실험</span></p>
-            <p id="term-analyzer-setting-description" className="mt-1 text-xs text-gray-500">화면 오른쪽 아래에 용어 분석 버튼을 표시해요. 화면의 어려운 말을 찾아 뜻을 알려 줘요. 아직 시험 중인 기능이라 결과가 틀릴 수 있어요. 설정은 이 브라우저에 저장돼요.</p>
-          </div>
-          <button type="button" role="switch" aria-checked={termAnalyzerEnabled} aria-labelledby="term-analyzer-setting-label" aria-describedby="term-analyzer-setting-description"
-            onClick={() => setTermAnalyzerEnabled(!termAnalyzerEnabled)}
-            className={`flex shrink-0 items-center gap-2 rounded-full px-3 py-2 text-xs font-bold transition-colors ${termAnalyzerEnabled ? 'bg-brand-600 text-white' : 'bg-gray-200 text-gray-600'}`}>
-            {termAnalyzerEnabled ? 'ON' : 'OFF'}
-            <span aria-hidden="true" className={`relative h-5 w-9 rounded-full ${termAnalyzerEnabled ? 'bg-brand-400' : 'bg-gray-400'}`}>
-              <span className={`absolute left-0 top-0.5 h-4 w-4 rounded-full bg-white transition-transform ${termAnalyzerEnabled ? 'translate-x-4' : 'translate-x-0.5'}`} />
-            </span>
-          </button>
-        </div>
-      </section>
-
-      {!isAuthenticated ? (
-        <LoginNotice message="내 정보는 로그인해야 볼 수 있어요" />
-      ) : (
-        <>
-          <ProfileSettings key={user?.user_id} />
-          <section className="flex flex-col gap-3">
-            <h2 className="text-sm font-bold text-gray-500">계정</h2>
-            <dl className="divide-y divide-gray-100 rounded-xl border border-gray-200">
-              <Row label="닉네임" value={user?.user_name} />
-              <Row label="아이디" value={user?.login_id} />
-              <Row label="이메일" value={user?.email} />
-              <Row
-                label={
-                  <>
-                    투자성향
-                    <HelpIcon termId="risk_profile" />
-                  </>
-                }
-                value={
-                  user?.investment_style ?? (
-                    <Link to="/survey?mode=edit" className="font-bold text-brand-600 hover:underline">
-                      설문하고 확인하기 →
-                    </Link>
-                  )
-                }
-              />
-            </dl>
-            {/* ✅ 추가: 투자성향 설문 다시하기 버튼 */}
-            {user?.investment_style && (
-              <Link
-                to="/survey?mode=edit"
-                className="rounded-xl border border-brand-200 bg-brand-50 px-4 py-4 text-center text-sm font-bold text-brand-700 hover:bg-brand-100"
-              >
-                투자성향 설문 다시하기
-              </Link>
-            )}
-          </section>
-
-          <section className="flex flex-col gap-3">
-            <h2 className="text-sm font-bold text-gray-500">계좌</h2>
-            <AccountPicker />
-            {account ? (
-              <dl className="divide-y divide-gray-100 rounded-xl border border-gray-200">
-                <Row label="계좌명" value={account.account_name} />
-                <Row
-                  label={
-                    <>
-                      예수금
-                      <HelpIcon termId="deposit" />
-                    </>
-                  }
-                  /* 계좌 API 의 금액은 문자열로 옵니다 — 반드시 num() 을 거칩니다. (§4-1) */
-                  value={<span className="tabular">{account.withdrawable_cash == null ? '—' : won(num(account.withdrawable_cash))}</span>}
-                />
-                <Row
-                  label={
-                    <>
-                      주문가능금액
-                      <HelpIcon termId="orderable_cash" />
-                    </>
-                  }
-                  value={<span className="tabular">{won(num(account.withdrawable_cash))}</span>}
-                />
-              </dl>
-            ) : (
-              <p className="rounded-xl border border-dashed border-gray-200 px-4 py-6 text-center text-sm text-gray-400">
-                계좌 정보를 불러오지 못했어요.
-              </p>
-            )}
-          </section>
-          <DeleteMembership />
-        </>
-      )}
     </div>
-  );
+  </div>;
 }
-
+function SwitchRow({ id, title, description, value, onChange }) {
+  return <div className="settings-option"><div><p id={`${id}-setting-label`}>{title}</p><p id={`${id}-setting-description`}>{description}</p></div><button type="button" className="settings-switch" role="switch" aria-checked={value} aria-labelledby={`${id}-setting-label`} aria-describedby={`${id}-setting-description`} onClick={() => onChange(!value)}><span aria-hidden="true" /></button></div>;
+}
 function Row({ label, value }) {
-  return (
-    <div className="flex items-center justify-between px-4 py-3">
-      <dt className="flex items-center text-sm text-gray-500">{label}</dt>
-      <dd className="text-sm font-bold text-gray-900">{value ?? '-'}</dd>
-    </div>
-  );
+  return <div><dt>{label}</dt><dd>{value ?? '—'}</dd></div>;
 }

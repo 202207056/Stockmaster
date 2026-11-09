@@ -6,6 +6,8 @@ import { getToken } from '../api/client';
 import { InlineError } from '../components/common/ErrorState';
 import { setOnboarding } from '../utils/onboarding';
 import ThemeToggle from '../components/common/ThemeToggle';
+import SeedAmountInput from '../components/common/SeedAmountInput';
+import { validSeedAmount } from '../utils/seedAmount';
 
 export default function SeedMoney() {
   const { user, isAuthenticated, isLoading, accounts, refresh, selectAccount } = useAuth();
@@ -17,7 +19,7 @@ export default function SeedMoney() {
   const [ready, setReady] = useState(false);
   const locked = useRef(false);
   const value = Number(amount);
-  const valid = /^\d+$/.test(amount) && Number.isSafeInteger(value) && value >= 100000 && value <= 100000000;
+  const valid = validSeedAmount(amount);
 
   useEffect(() => {
     if (!ready || !isAuthenticated || !accounts.some(a => a.account_id === createdId)) return;
@@ -68,24 +70,7 @@ export default function SeedMoney() {
       <h1 className="mt-2 text-3xl font-extrabold text-gray-900">얼마로 투자를 시작할까요?</h1>
       <p className="mt-3 text-sm leading-relaxed text-gray-600">시드머니는 모의투자에 사용할 시작 자금이에요.</p>
       {!isAuthenticated ? <p className="mt-6">{isLoading ? '계좌를 불러오는 중이에요…' : <Link className="text-brand-700 underline" to="/login">로그인 후 설정하기</Link>}</p> : <form onSubmit={submit} className="mt-8">
-        <fieldset disabled={busy || createdId != null} className="min-w-0 rounded-xl border border-gray-200 p-6"><legend className="px-2 text-sm font-bold text-gray-900">시작 금액 선택</legend><div className="grid grid-cols-1 gap-2 sm:grid-cols-3">{[1000000, 10000000, 100000000].map(preset => <button key={preset} type="button" aria-pressed={value === preset} onClick={() => setAmount(String(preset))} className={`rounded-lg border px-2 py-2.5 text-sm font-bold transition ${value === preset ? 'border-brand-600 bg-brand-50 text-brand-700' : 'border-gray-300 text-gray-700 hover:bg-gray-50'}`}>{preset.toLocaleString('ko-KR')}원</button>)}</div>
-          <label className="mt-5 block text-sm font-bold" htmlFor="seed-amount">직접 입력 (원)</label><input id="seed-amount" inputMode="numeric" value={amount.replace(/\B(?=(\d{3})+(?!\d))/g, ',')} onChange={e => {
-            const input = e.target;
-            const digitsBeforeCaret = input.value.slice(0, input.selectionStart).replace(/\D/g, '').length;
-            const digits = input.value.replace(/,/g, '');
-            if (!/^\d*$/.test(digits)) return;
-            setAmount(digits);
-            requestAnimationFrame(() => {
-              let caret = 0;
-              let count = 0;
-              while (caret < input.value.length && count < digitsBeforeCaret) {
-                if (/\d/.test(input.value[caret])) count++;
-                caret++;
-              }
-              input.setSelectionRange(caret, caret);
-            });
-          }} aria-describedby="seed-hint" aria-invalid={!valid} className="mt-2 w-full rounded-lg border border-gray-300 p-4 text-xl font-bold text-gray-900 focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-100" />
-          <p id="seed-hint" className="mt-2 text-xs text-gray-500">10만원부터 1억원까지, 원 단위로 입력해 주세요.</p>
+        <fieldset disabled={busy || createdId != null} className="min-w-0 rounded-xl border border-gray-200 p-6"><legend className="px-2 text-sm font-bold text-gray-900">시작 금액 선택</legend><SeedAmountInput id="seed-amount" amount={amount} onChange={setAmount} />
         </fieldset>
         <div className="mt-4"><InlineError error={error} /></div>
         {ready && !accounts.some(a => a.account_id === createdId) && <p role="status" className="text-sm">계좌가 생성되었어요. 다시 눌러 계좌 정보를 불러와 주세요.</p>}

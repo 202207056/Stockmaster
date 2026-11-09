@@ -9,6 +9,17 @@
 .trading-news-chip { border-radius:5px; padding:3px 7px; background:var(--color-brand-50); color:var(--accent-ink); font-weight:700; }
 .trading-news-grid { display:grid; grid-template-columns:minmax(0,1fr); gap:24px; }
 .trading-news-connections { position:relative; display:grid; grid-template-columns:minmax(0,1.5fr) minmax(0,1fr); column-gap:48px; align-items:start; min-width:0; }
+.trading-news-reading-layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 24px; align-items: start; }
+.trading-news-reading-layout.has-themes { grid-template-columns: minmax(0, 3.2fr) minmax(190px, 1fr); }
+.trading-news-reading-layout .trading-news-connections { grid-template-columns: minmax(0, 2.2fr) minmax(190px, 1fr); column-gap: 24px; }
+.trading-news-reading-layout .trading-news-related { align-content: start; }
+.trading-news-reading-layout .trading-news-related-card { width: 100%; padding: 10px 12px; min-height: 64px; text-align: left; font-size: 12px; }
+.trading-news-card-summary { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin-top: 4px; color: var(--ink-muted); font-size: 12px; line-height: 1.5; }
+.trading-news-theme-stocks { min-width: 0; display: grid; gap: 12px; }
+.trading-news-theme-stocks h4 { margin-bottom: 8px; font-size: 12px; font-weight: 700; color: var(--ink-muted); }
+.trading-news-theme-stocks .trading-news-related-card + .trading-news-related-card { margin-top: 10px; }
+@container (max-width: 900px) { .trading-news-reading-layout.has-themes { grid-template-columns: minmax(0, 1fr); } }
+@container (max-width: 640px) { .trading-news-reading-layout .trading-news-connections { grid-template-columns: minmax(0, 1fr); } }
 .trading-news-connections > :not(svg) { position:relative; z-index:1; min-width:0; }
 .trading-news-connector { position:absolute; z-index:0; inset:0; width:100%; height:100%; overflow:visible; pointer-events:none; }
 .trading-news-connector path { fill:none; stroke:var(--color-gray-400); stroke-width:1.5; stroke-linejoin:round; stroke-linecap:round; }

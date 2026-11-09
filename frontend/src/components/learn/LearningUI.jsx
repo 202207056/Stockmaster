@@ -1,5 +1,5 @@
-export function LearningCard({ title, children, aside }) {
-  return <section className="min-w-0 rounded-xl border border-gray-200 bg-white p-4 sm:p-5"><div className="mb-3 flex flex-wrap items-center justify-between gap-2"><h2 className="text-base font-bold text-gray-800">{title}</h2>{aside}</div>{children}</section>;
+export function LearningCard({ title, children, aside, className = '' }) {
+  return <section className={`min-w-0 rounded-xl border border-gray-200 bg-white p-4 sm:p-5 ${className}`}>{(title || aside) && <div className="mb-3 flex flex-wrap items-center justify-between gap-2"><h2 className="text-base font-bold text-gray-800">{title}</h2>{aside}</div>}{children}</section>;
 }
 
 export function LearningButton({ children, secondary = false, className = '', ...props }) {

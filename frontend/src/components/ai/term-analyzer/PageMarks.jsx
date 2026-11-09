@@ -3,8 +3,9 @@ import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import { X } from 'lucide-react';
 import CompanyFacts from './CompanyFacts';
+import TermCard from '../../learn/TermCard';
 
-const POP_WIDTH = 260;
+const POP_WIDTH = 288;
 const POP_HEIGHT = 150;
 // The word's box, but only while the word itself is what is drawn there: words scrolled under a sticky
 // header, clipped by a scroll box or covered by the analysis panel are not marked.
@@ -20,7 +21,8 @@ function visibleRect(range) {
 function popPlace(rect) {
   const left = Math.max(8, Math.min(rect.left, window.innerWidth - POP_WIDTH - 8));
   return rect.bottom + 6 + POP_HEIGHT > window.innerHeight
-    ? { left, bottom: window.innerHeight - rect.top + 6 } : { left, top: rect.bottom + 6 };
+    ? { left, bottom: window.innerHeight - rect.top + 6, maxHeight: Math.max(0, rect.top - 14) }
+    : { left, top: rect.bottom + 6, maxHeight: Math.max(0, window.innerHeight - rect.bottom - 14) };
 }
 
 // Highlights the found words right where they were captured on the page; pressing one opens its
@@ -64,10 +66,9 @@ export default function PageMarks({ marks, scan, active, onPick, describe }) {
     {info && <div className="ocr-page-pop" role="dialog" aria-label={`${info.term} 뜻`} style={popPlace(open.rect)}>
       <div className="ocr-page-pop-head"><span>{info.label}</span>
         <button type="button" aria-label="뜻 닫기" onClick={() => onPick(open.mark.id)}><X size={14} aria-hidden="true" /></button></div>
-      <strong>{info.term}</strong>
-      <CompanyFacts term={info.ai} />
-      <p>{info.text}</p>
-      {info.code && <Link className="ocr-page-pop-link" to={`/trading?code=${encodeURIComponent(info.code)}`}>종목 보기 · {info.code}</Link>}
+      <TermCard term={info.entry ?? { term: info.term, desc: info.text }} beforeDescription={<CompanyFacts term={info.ai} />}>
+        {info.code && <Link className="relative z-10 mt-3 text-xs font-medium text-brand-600" to={`/trading?code=${encodeURIComponent(info.code)}`}>종목 보기 · {info.code} →</Link>}
+      </TermCard>
     </div>}
   </div>, document.body);
 }
