@@ -24,7 +24,7 @@ test('asset guide retains real account context and values, closes and scrolls to
   const [open,setOpen]=React.useState(true);
   return React.createElement('div',{ref:surface},
    React.createElement('div',{'data-assets-tour':'account'},React.createElement('select',{'aria-label':'내 계좌',onChange:()=>{selected=88;}},React.createElement('option',{},auth.account.account_name))),
-   ...['total','investment','holdings','flow','portfolio'].map(id=>React.createElement('section',{key:id,'data-assets-tour':id},auth.account.withdrawable_cash)),
+   ...['total','investment','holdings','charts'].map(id=>React.createElement('section',{key:id,'data-assets-tour':id},auth.account.withdrawable_cash)),
    open && React.createElement(Tour,{surfaceRef:surface,accountCount:1,onClose:()=>setOpen(false)}));
  }
  try{
@@ -35,10 +35,10 @@ test('asset guide retains real account context and values, closes and scrolls to
   assert(!container.querySelector('.assets-tour-note .tutorial-skip-button'));
   assert(!container.querySelector('.tutorial-pointer'));
   assert(!container.textContent.includes('매매 연습 계좌'));
-  for(let i=0;i<6;i++) await React.act(async()=>container.querySelector('.assets-tour-note p').click());
+  for(let i=0;i<5;i++) await React.act(async()=>container.querySelector('.assets-tour-note p').click());
   assert(!container.querySelector('.assets-tour-note'));
   assert.equal(container.querySelector('[data-assets-tour="total"]').textContent,'123456');
   assert.equal(selected,77);
-  assert.deepEqual(scrolled,['account','total','investment','holdings','flow','portfolio']);
+  assert.deepEqual(scrolled,['account','total','investment','holdings','charts']);
  }finally{await React.act(async()=>root.unmount());}
 });
