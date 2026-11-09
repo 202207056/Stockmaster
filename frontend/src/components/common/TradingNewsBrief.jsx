@@ -269,4 +269,3 @@ function StockConnections({ children, enabled }) {
     {children}
   </div>;
 }
-
