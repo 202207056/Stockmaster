@@ -8,5 +8,11 @@ export default defineConfig({
   optimizeDeps: { include: ['tesseract.js'] },
   server: {
     port: 5173,
+    proxy: {
+      '^/api/stocks/[A-Z0-9]{6}/(analysis|fundamentals|ratings)(\\?.*)?$': {
+        target: 'http://127.0.0.1:8011',
+        changeOrigin: true,
+      },
+    },
   },
 })

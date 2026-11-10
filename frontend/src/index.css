@@ -1,4 +1,10 @@
 @import "tailwindcss";
+@import "./mobile.css";
+@import "./mobile-mts.css";
+
+/* Hide page scrollbar chrome without disabling wheel, touch or keyboard scrolling. */
+html, body, .display-viewport { scrollbar-width: none; }
+html::-webkit-scrollbar, body::-webkit-scrollbar, .display-viewport::-webkit-scrollbar { display: none; }
 
 /* =========================================================================
    디자인 토큰 (F-4)
@@ -242,6 +248,7 @@ body {
 .card-strip > * {
   scroll-snap-align: start;
 }
+.card-strip.is-sliding { scroll-snap-type: none; }
 
 /* 모션 최소화 설정을 존중 */
 @media (prefers-reduced-motion: reduce) {

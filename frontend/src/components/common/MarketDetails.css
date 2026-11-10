@@ -1,5 +1,7 @@
 .market-details { margin-top: 20px; min-width: 0; border:1px solid var(--color-gray-200); border-radius: 10px; background:var(--surface); }
 .market-details-tabs { display: flex; border-bottom:1px solid var(--color-gray-200); }
+.market-details-heading .market-details-tabs { overflow-x: auto; scrollbar-width: thin; }
+.market-details-heading .market-details-tab { flex: 1 0 auto; }
 .market-details-tabs button[role="tab"] { flex: 1; padding: 13px 8px; font-size: 14px; color:var(--color-gray-500); border-bottom:2px solid transparent; }
 .market-details-tabs button[aria-selected="true"] { border-color:var(--color-brand-600); color:var(--color-brand-700); background:var(--color-brand-50); font-weight: 700; }
 .market-details-meta { display: flex; justify-content: space-between; gap: 8px; padding: 12px 10px; color:var(--color-gray-500); font-size: 11px; }
@@ -34,3 +36,8 @@
 .market-definition-popover { position:absolute; top:26px; left:50%; transform:translateX(-50%); z-index:85; width:min(290px,80vw); padding:14px; border:1px solid var(--theme-e5e7eb, #e5e7eb); border-radius:12px; background:var(--surface); box-shadow:0 8px 24px #0f172a22; font-size:13px; font-weight:400; line-height:1.75; color:var(--theme-4b5563, #4b5563); text-align:left; }
 .market-details-tab:first-child .market-definition-popover { left:-50px; transform:none; }
 .market-details-tab:last-child .market-definition-popover { left:auto; right:-16px; transform:none; }
+.market-details .stock-fundamentals { margin-top: 0; padding: 16px; }
+.market-details-tabs button[role="tab"] { white-space: nowrap; }
+@media (max-width: 400px) {
+  .market-details-tabs .market-details-tab > button { padding-inline: 4px; font-size: 12px; }
+}

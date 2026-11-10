@@ -8,6 +8,7 @@ import { marketChartPoints } from '../../utils/marketChart';
 
 /** 공개 지수 API를 표시하고 자동 스크롤·드래그를 유지합니다. */
 const STEP_MS = 2500;
+const SLIDE_MS = 350;
 
 export default function MarketStrip() {
   const resource = useRemote(useCallback((signal) => fetchMarketIndices(signal), []), true, { keepPreviousData: true, cacheKey: 'indices', publicCache: true });
@@ -29,6 +30,7 @@ export default function MarketStrip() {
   const stripRef = useRef(null);
   const pausedRef = useRef(false);
   const dragRef = useRef({ active: false, lastX: 0, moved: 0 });
+  const animationRef = useRef(null);
 
   /** 카드 한 장 + 오른쪽 여백 = 한 칸 이동 거리 */
   const stepSize = useCallback(() => {
@@ -62,22 +64,36 @@ export default function MarketStrip() {
     const id = setInterval(() => {
       const el = stripRef.current;
       if (!el || pausedRef.current || dragRef.current.active) return;
+      el.classList.add('is-sliding');
 
       // 넘기기 직전에 위치를 되돌려 두면, 이어지는 smooth 스크롤 중에는
       // 위치를 건드리지 않아도 되어 튀지 않습니다.
       if (el.scrollLeft >= halfWidth()) el.scrollLeft -= halfWidth();
-      el.scrollBy({ left: stepSize(), behavior: 'smooth' });
+      // Equal duration on PC and mobile regardless of their different card widths.
+      cancelAnimationFrame(animationRef.current);
+      const from = el.scrollLeft;
+      const distance = Math.min(stepSize(), el.scrollWidth - el.clientWidth - from);
+      const started = performance.now();
+      const slide = now => {
+        const progress = Math.min(1, (now - started) / SLIDE_MS);
+        el.scrollLeft = from + distance * (1 - (1 - progress) ** 3);
+        if (progress < 1) animationRef.current = requestAnimationFrame(slide);
+        else el.classList.remove('is-sliding');
+      };
+      animationRef.current = requestAnimationFrame(slide);
     }, STEP_MS);
 
-    return () => clearInterval(id);
+    return () => { clearInterval(id); cancelAnimationFrame(animationRef.current); stripRef.current?.classList.remove('is-sliding'); };
   }, [stepSize, halfWidth]);
 
   /* ---- 마우스로 끌기 ---- */
   const onPointerDown = (e) => {
     // 마우스 왼쪽 버튼 / 터치 / 펜만
     if (e.button !== 0) return;
+    cancelAnimationFrame(animationRef.current);
     const el = stripRef.current;
     if (!el) return;
+    el.classList.remove('is-sliding');
     dragRef.current = { active: true, lastX: e.clientX, moved: 0 };
     el.classList.add('is-dragging');
     el.setPointerCapture?.(e.pointerId);

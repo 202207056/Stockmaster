@@ -9,6 +9,9 @@ const steps = [
   ['investment', '내 투자', '매입금액은 보유 주식을 사는 데 든 금액, 평가금액은 현재 시세로 계산한 금액입니다. 평가손익은 두 금액의 차이이며, 이 화면에서는 수수료·세금을 제외합니다.'],
   ['holdings', '보유종목', '선택한 계좌의 보유수량·평균단가·현재가·평가손익을 확인합니다. 보유종목이 없으면 빈 목록이 표시됩니다. 종목명을 누르면 해당 종목의 트레이딩 화면으로 이동합니다.'],
 ];
+steps.push(
+  ['charts', '보유자산 흐름과 포트폴리오', '왼쪽은 기간별 자산 변화, 오른쪽은 종목별 평가금액 비중이에요. 조회 기간을 바꾸거나 종목 범례를 눌러 자세히 살펴보세요.'],
+);
 export default function AssetsTour({ surfaceRef, accountCount, onClose }) {
   const [step,setStep] = useState(0);
   const note = useRef(null), pointer = useRef(null);
@@ -16,6 +19,7 @@ export default function AssetsTour({ surfaceRef, accountCount, onClose }) {
   useEffect(()=>{
     const target=surfaceRef.current.querySelector('[data-assets-tour="'+targetId+'"]');
     if(!target) return;
+    target.scrollIntoView?.({block:'center', behavior:'instant'});
     target.classList.add('assets-tour-target');
     const position=()=>{
       const rect=target.getBoundingClientRect(), popup=note.current;
@@ -26,7 +30,7 @@ export default function AssetsTour({ surfaceRef, accountCount, onClose }) {
       const box=popup.getBoundingClientRect();
       const left=rect.right+box.width+12<=width-12 ? rect.right+12 : rect.left-box.width-12>=12 ? rect.left-box.width-12 : rect.left;
       popup.style.left=Math.max(12,Math.min(left,width-box.width-12))+'px';
-      popup.style.top=Math.max(12,Math.min(rect.top,window.innerHeight-box.height-12))+'px';
+      popup.style.top=Math.max(102,Math.min(targetId==='charts' ? rect.top-box.height-12 : rect.top,window.innerHeight-box.height-12))+'px';
     };
     const change=()=>{if(targetId==='account') setStep(1);};
     target.addEventListener('change',change);

@@ -27,7 +27,7 @@ export async function fetchChartHistory(code, range, signal) {
   if (range === 'D' && payload.resolution !== '1d' && requireArray(payload.rows).length === 0) {
     const daily = await api.get(`/stocks/${encodeURIComponent(code)}/chart`, { params: { period: 'D' }, signal });
     const fallback = legacyChart(daily.data, 'D');
-    return { ...fallback, notice: '조회 가능한 당일 분봉이 없어 최근 거래일의 일별 가격을 표시합니다. 장중에는 화면을 새로고침하면 당일 분봉을 다시 조회합니다.' };
+    return { ...fallback, notice: '조회 가능한 당일 분봉이 없어 최근 거래일의 일별 가격을 표시합니다. 당일 분봉은 자동으로 다시 조회합니다.' };
   }
   const byTime = new Map();
   for (const source of requireArray(payload.rows)) {

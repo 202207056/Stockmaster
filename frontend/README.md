@@ -70,6 +70,21 @@ npm.cmd run build
 
 ## 개발 시 기준
 
+### 트레이딩 종목 분석 로컬 실행
+
+실적·투자자 동향·재무정보·투자의견·기업개요 및 투자 지표는 개발 모드에서 Vite가
+`/api/stocks/{code}/analysis`, `/api/stocks/{code}/fundamentals`만 로컬 8011 포트로 전달합니다.
+별도 backend 저장소의 `backend` 디렉터리에서 다음 읽기 전용 서버를 함께 실행합니다.
+DB·로그인·주문 감시 프로세스는 실행하지 않습니다.
+
+```sh
+python -m uvicorn app.market_data_preview:app --host 127.0.0.1 --port 8011
+```
+
+운영 빌드는 기존 API 주소의 동일 엔드포인트를 사용합니다. 프런트 배포 전에 backend의
+`stock_analysis.py`, `stock_fundamentals.py`, `stock_ratings.py`, `securities.py` 변경을 함께 배포해야 합니다.
+순매수는 제공되는 최근 거래일의 주식 수이며, 재무표의 추정치는 별도로 표시합니다.
+
 - 요청은 `src/api/client.js`와 `src/api/data.js` 등 API 모듈을 사용합니다.
 - `useRemote`로 조회 취소·로딩·오류·재시도를 처리합니다. 응답 실패를 목업으로 대체하지 않습니다.
 - 금액 누락과 0원을 구분합니다. 평가 계산에는 `numberOrNull`, `quotePrice`, `portfolioTotals`를 사용합니다.

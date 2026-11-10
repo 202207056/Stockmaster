@@ -1,6 +1,7 @@
 import api, { getToken, toUserMessage } from './client';
 import { chartRows, quotePrice, requireArray, requireObject } from './normalize';
 import { abortableDelay, createSharedRequest } from './sharedRequest';
+import { publishStockBrief, rememberPortfolioHeadline } from './stockBriefCache';
 
 const get = async (path, params, signal) => (await api.get(path, { params, signal })).data;
 export const fetchPopularStocks = async signal => requireArray((await api.get('/stocks/popular-searches', { signal, cache: false })).data);
@@ -47,20 +48,30 @@ export const fetchCoach = async (symbol, signal) => requireObject(await get('/ai
 export const fetchNewsSummary = async (code, signal) => requireObject(await get(`/ai/news-summary/${encodeURIComponent(code)}`, undefined, signal));
 const portfolioSections = ['current_status', 'entry_context', 'position_summary', 'recent_issues',
   'positive_factors', 'risk_factors', 'watch_points', 'limitations'];
+const validSharedNews = (data, code) => data?.symbol_code === String(code)
+  && (data.title === null || typeof data.title === 'string')
+  && typeof data.name === 'string' && Number.isFinite(Date.parse(data.generated_at))
+  && ['recent_issues', 'positive_factors', 'risk_factors'].every(key => Array.isArray(data[key])
+    && data[key].every(text => typeof text === 'string'))
+  && Array.isArray(data.evidence) && data.evidence.every(article => typeof article?.title === 'string');
 const isPortfolioBrief = (data, code) => data?.symbol_code === String(code)
   && ['headline', 'disclaimer'].every(key => typeof data[key] === 'string' && data[key].trim())
   && portfolioSections.every(key => Array.isArray(data[key]) && data[key].length <= 3
     && data[key].every(item => typeof item === 'string' && item.trim()))
-  && data.current_status.length > 0;
+  && (data.news_brief == null || validSharedNews(data.news_brief, code))
+  && (data.current_status.length > 0 || validSharedNews(data.news_brief, code));
 // Guesses and sources are optional (older briefings have none); anything malformed is dropped rather than shown.
 const isSource = item => typeof item?.title === 'string' && item.title.trim()
   && (item.url === null || item.url === undefined || (typeof item.url === 'string' && /^https?:\/\//.test(item.url)));
 const optionalTexts = (value, max) => Array.isArray(value) && value.length <= max
   && value.every(item => typeof item === 'string' && item.trim()) ? value : [];
-const withGuesses = data => ({ ...data,
+const withGuesses = data => {
+  rememberPortfolioHeadline(data);
+  return ({ ...data,
   trend_guesses: optionalTexts(data.trend_guesses, 3),
   entry_news_summary: optionalTexts(data.entry_news_summary, 2),
   sources: Array.isArray(data.sources) && data.sources.length <= 10 && data.sources.every(isSource) ? data.sources : [] });
+};
 export const fetchPortfolioBrief = async (accountId, code, signal, profile = 'luna') => {
   // A manual refresh must generate a new briefing, including within the GET cache TTL.
   const data = requireObject((await api.get(`/ai/portfolio-brief/${encodeURIComponent(code)}`, {
@@ -86,7 +97,7 @@ export const reportBrief = ({ kind, code, generatedAt, accountId, reason, note }
   reason, note: note?.trim() || null,
 });
 export const fetchStockBrief = async (code, signal) => {
-  const data = requireObject(await get(`/ai/stock-brief/${encodeURIComponent(code)}`, undefined, signal));
+  const data = requireObject((await api.get(`/ai/stock-brief/${encodeURIComponent(code)}`, { signal, cache: false })).data);
   const texts = list => Array.isArray(list) && list.length <= 3 && list.every(item => typeof item === 'string');
   const nullableText = value => value === null || typeof value === 'string';
   if (data.symbol_code !== String(code) || typeof data.name !== 'string' || !Number.isFinite(data.change_rate)
@@ -99,7 +110,8 @@ export const fetchStockBrief = async (code, signal) => {
     || typeof data.disclaimer !== 'string') {
     throw new Error('종목 브리핑 응답 형식을 확인할 수 없습니다.');
   }
-  return data;
+  // The banner uses the original stock-news headline, before any portfolio-title override.
+  return publishStockBrief({ ...data, banner_title: data.title });
 };
 async function withPostSymbolName(post, signal) {
   if (!post.symbol_code || post.attachments?.symbol_name) return post;

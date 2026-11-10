@@ -3,9 +3,10 @@ import { CATEGORIES, GLOSSARY } from '../../../constants/glossary';
 import { findDetectedTerms } from './terms';
 import { recognizeLocal } from './ocr';
 import PageMarks from './PageMarks';
+import TermCard from '../../learn/TermCard';
 import CompanyFacts from './CompanyFacts';
 import { collectPageMarks, shiftArea, WHOLE_PAGE } from './pageMarkRanges';
-import { clearLast, ownerOf, readLast, savedTime, writeLast } from './lastAnalysis';
+import { clearLast, ownerOf, readLast, writeLast } from './lastAnalysis';
 import { detectTerms } from './termDetect';
 import { Link, useLocation } from 'react-router-dom';
 import { aiId, BASIC_IDS, TIER_LABELS } from './readMarks';
@@ -39,10 +40,9 @@ export default function TermAnalysisPanel({ onCaptureVisibility, selectedNewsWor
   const [picking, setPicking] = useState(null);
   const { pathname } = useLocation();
   const [owner] = useState(() => ownerOf(getToken()));
-  // The previous result of this browser tab, shown with its time until a new analysis replaces it.
+  // The previous result of this browser tab, kept until a new analysis replaces it.
   const [restored] = useState(() => readLast(owner, GLOSSARY));
   const [analyzedAt, setAnalyzedAt] = useState(restored?.at ?? null);
-  const [restoredAt, setRestoredAt] = useState(restored?.at ?? null);
   // Where the found words are marked: the dragged rectangle or the whole page, with the scroll at that moment.
   const [capture, setCapture] = useState(restored?.capture ?? null);
   const [text, setText] = useState(restored?.text ?? '');
@@ -115,7 +115,7 @@ export default function TermAnalysisPanel({ onCaptureVisibility, selectedNewsWor
     clearWiki();
     job.current?.abort(); job.current = null;
     aiJob.current?.abort(); aiJob.current = null; setAi({ status: 'idle', terms: [] }); setTab('invest'); setCapture(null);
-    setAnalyzedAt(null); setRestoredAt(null); clearLast();
+    setAnalyzedAt(null); clearLast();
     onCaptureVisibility(false);
     setText(''); setSelected(null); setAiTarget(null); setError(''); setMetrics(null); setPhase('idle');
     setPageTerms([]); setAnalysisSource('page');
@@ -131,7 +131,7 @@ export default function TermAnalysisPanel({ onCaptureVisibility, selectedNewsWor
     clearWiki();
     const pageText = readVisiblePageText().normalize('NFKC');
     const terms = findDetectedTerms(pageText, GLOSSARY);
-    setPageTerms(terms); setAnalysisSource('page'); setText(pageText); setAnalyzedAt(Date.now()); setRestoredAt(null);
+    setPageTerms(terms); setAnalysisSource('page'); setText(pageText); setAnalyzedAt(Date.now());
     setCapture({ kind: 'page', path: pathname, area: { left: 0, top: 0, right: window.innerWidth, bottom: window.innerHeight },
       scrollX: window.scrollX, scrollY: window.scrollY, key: Date.now(), fresh: true });
     setSelected(null); setAiTarget(null); setMetrics(null); setError('');
@@ -184,7 +184,7 @@ export default function TermAnalysisPanel({ onCaptureVisibility, selectedNewsWor
     finally { setPicking(null); onCaptureVisibility(false); }
     setAnalysisSource('region'); setSelected(null); setAiTarget(null); setMetrics(null); setTab('invest');
     setCapture({ kind: 'region', path: pathname, area, scrollX: window.scrollX, scrollY: window.scrollY, key: Date.now(), fresh: true });
-    setAnalyzedAt(Date.now()); setRestoredAt(null);
+    setAnalyzedAt(Date.now());
     aiJob.current?.abort(); aiJob.current = null; setAi({ status: 'idle', terms: [] });
     const pageText = readVisiblePageText(document.body, area);
     setText(pageText);
@@ -221,7 +221,7 @@ export default function TermAnalysisPanel({ onCaptureVisibility, selectedNewsWor
   const describe = (id) => {
     const found = ai.terms.find((term) => aiId(term) === id);
     if (found) return { label: found.basis === 'data' ? '종목 데이터 · 기업' : `AI 풀이 · ${TIER_LABELS[found.tier]}`, term: found.term, text: found.meaning, code: found.code, ai: found };
-    return { label: `용어사전 · ${CATEGORIES[GLOSSARY[id].category]}`, term: GLOSSARY[id].term, text: GLOSSARY[id].desc };
+    return { label: `용어사전 · ${CATEGORIES[GLOSSARY[id].category]}`, term: GLOSSARY[id].term, text: GLOSSARY[id].desc, entry: GLOSSARY[id] };
   };
   const pick = (id) => {
     clearTimeout(leaveTimer.current); setLeaving(null);
@@ -235,12 +235,10 @@ export default function TermAnalysisPanel({ onCaptureVisibility, selectedNewsWor
     clearTimeout(leaveTimer.current);
     leaveTimer.current = setTimeout(() => setLeaving(null), 220);
   };
-  const line = (n) => ({ '--line': n });
   const aiOwner = `${authStatus}:${user?.user_id ?? 'guest'}:${getSessionId()}`;
   const aiTarget = aiRequest?.owner === aiOwner ? aiRequest : null;
   const askAi = (term) => { if (term) clearWiki(); setAiTarget(term ? { term, owner: aiOwner, sequence: ++aiSequence.current } : null); };
   const aiKey = `${aiOwner}:${aiTarget?.sequence}`;
-  const dictionaryAi = !!entry && aiTarget?.term.glossaryId === selected;
   return <div className="ocr-panel-body" aria-busy={busy}>
     <div className="ocr-actions">
       <button type="button" className="ocr-primary" disabled={busy} onClick={analyzePage}>페이지 전체 분석</button>
@@ -249,8 +247,6 @@ export default function TermAnalysisPanel({ onCaptureVisibility, selectedNewsWor
     </div>
     {status && <p className="ocr-status" role="status">{status}</p>}
     {error && <p className="ocr-error" role="alert">{error}</p>}
-    {restoredAt && <p className="ocr-note ocr-restored"><span>이전 결과</span>{savedTime(restoredAt)}에 분석했어요
-      {capture && capture.path !== pathname ? ' · 다른 화면에서 분석한 결과예요' : ''}. 새로 보려면 위에서 다시 분석하세요.</p>}
     <div className="ocr-tabs" role="tablist" aria-label="찾은 말 종류">
       {Object.entries(TIER_LABELS).map(([id, label]) =>
         <button type="button" role="tab" key={id} className="ocr-tab" aria-selected={tab === id} onClick={() => setTab(id)}>{label}<b>{counts[id]}</b></button>)}
@@ -265,27 +261,20 @@ export default function TermAnalysisPanel({ onCaptureVisibility, selectedNewsWor
     {ai.status === 'error' && <p className="ocr-note">{ai.message}</p>}
     {ai.status !== 'loading' && ai.status !== 'error' && !counts[tab]
       && <p className="ocr-note">{ai.status === 'done' ? '이 글에서는 더 찾은 말이 없어요.' : '아직 찾은 말이 없어요. 페이지 전체 분석이나 영역 선택 분석을 해 보세요.'}</p>}
-    {aiEntry && <div key={current} className={`ocr-reveal ${selected ? '' : 'is-closing'}`}><div className="ocr-reveal-clip"><article ref={definition} className="ocr-definition">
-      <p className="ocr-note ocr-line" style={line(0)}>{aiEntry.basis === 'data' ? '종목 데이터 · 기업 · AI가 놓친 상장사를 채웠어요'
-        : `AI 풀이 · ${TIER_LABELS[aiEntry.tier]} · ${aiEntry.basis === 'context' ? '글에 적힌 내용 기준' : '이 글의 맥락 기준'}`}</p>
-      <h3 className="ocr-line" style={line(1)}>{aiEntry.term}</h3>
-      <div className="ocr-line" style={line(1)}><CompanyFacts term={aiEntry} /></div>
-      <p className="ocr-line" style={line(2)}>{aiEntry.meaning}</p>
-      {aiEntry.code && <div className="ocr-line" style={line(3)}><Link className="ocr-secondary ocr-stock-link" to={`/trading?code=${encodeURIComponent(aiEntry.code)}`}>종목 보기 · {aiEntry.code}</Link></div>}
-      {aiEntry.basis !== 'data' && <p className="ocr-note ocr-line" style={line(4)}>AI가 만든 풀이라 틀릴 수 있어요. 투자 판단의 근거로 쓰지 마세요.</p>}
-    </article></div></div>}
-    {entry && <div key={selected ?? leaving} className={`ocr-reveal ${selected ? '' : 'is-closing'}`}><div className="ocr-reveal-clip"><article ref={definition} className="ocr-definition">
-      <p className="ocr-note ocr-line" style={line(0)}>기존 용어사전 · {CATEGORIES[entry.category]}</p>
-      <h3 className="ocr-line" style={line(1)}>{entry.term}</h3><p className="ocr-line" style={line(2)}>{entry.desc}</p><p className="ocr-example ocr-line" style={line(3)}>예시: {entry.example}</p>
-      <div className="ocr-line" style={line(4)}><button type="button" className="ocr-secondary" onClick={() => askAi({ text: entry.term.split(' (')[0].split(' · ')[0], glossaryId: selected })}>AI로 더 쉽게 설명</button></div>
-      <div className="ocr-chips ocr-line" style={line(5)}>{entry.related?.filter((id) => GLOSSARY[id]).map((id) => <button type="button" className="ocr-secondary" key={id} onClick={() => pick(id)}>{GLOSSARY[id].term}</button>)}</div>
-      {dictionaryAi && <TermAiExplanation key={aiKey} target={aiTarget.term} onClose={() => setAiTarget(null)} />}
-    </article></div></div>}
+    {aiEntry && <div key={current} className={`ocr-reveal ${selected ? '' : 'is-closing'}`}><div className="ocr-reveal-clip">
+      <TermCard ref={definition} className="mt-3.5" categoryLabel={describe(current).label} term={{ term: aiEntry.term, desc: aiEntry.meaning }} beforeDescription={<CompanyFacts term={aiEntry} />}>
+        {aiEntry.code && <Link className="relative z-10 mt-3 text-xs font-medium text-brand-600" to={`/trading?code=${encodeURIComponent(aiEntry.code)}`}>종목 보기 · {aiEntry.code} →</Link>}
+        {aiEntry.basis !== 'data' && <p className="mt-3 text-xs leading-relaxed text-gray-500">AI가 만든 풀이로 틀릴 수 있어요. 투자 판단의 근거로 쓰지 마세요.</p>}
+      </TermCard>
+    </div></div>}
+    {entry && <div key={selected ?? leaving} className={`ocr-reveal ${selected ? '' : 'is-closing'}`}><div className="ocr-reveal-clip">
+      <TermCard ref={definition} className="mt-3.5" categoryLabel={`기존 용어사전 · ${CATEGORIES[entry.category]}`} term={entry} onPickRelated={pick} />
+    </div></div>}
     {WIKI_ENABLED && <WikiExplanation result={wikiResult} onCancel={cancelWiki} onSelect={chooseWikiCandidate} />}
     {/* One shared question below the list and definition; keep its draft across OCR runs. */}
     <TermQuestion onPick={pick} onAsk={askAi} onLookup={lookupTerm} onEdit={clearWiki} selectedNewsWord={selectedNewsWord} busy={busy} lookupBusy={wikiResult?.status === 'loading'} />
     <button type="button" className="ocr-reset" onClick={reset}>결과 초기화</button>
-    {aiTarget && !dictionaryAi && <TermAiExplanation key={aiKey} target={aiTarget.term} onClose={() => setAiTarget(null)} />}
+    {aiTarget && <TermAiExplanation key={aiKey} target={aiTarget.term} onClose={() => setAiTarget(null)} />}
     {marksHere && <PageMarks marks={pageMarks} scan={capture.fresh ? capture : null} active={selected} onPick={toggle} describe={describe} />}
     {picking && <RegionSelector onSelect={picking.resolve} onCancel={() => picking.reject(new DOMException('Selection cancelled', 'AbortError'))} />}
   </div>;

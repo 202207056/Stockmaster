@@ -1,0 +1,76 @@
+.stock-analysis { min-width: 0; padding: 16px; color: var(--color-gray-800); }
+.stock-analysis-toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; }
+.stock-analysis-toolbar h2 { font-size: 14px; font-weight: 700; margin-right: 4px; }
+.stock-analysis button { min-height: 32px; padding: 5px 10px; font-size: 12px; }
+.stock-analysis-refresh { margin-left: auto; text-decoration: underline; }
+.stock-analysis-switch { display: flex; background: var(--color-gray-100); }
+.stock-analysis-switch button[aria-pressed="true"] { color: var(--color-gray-900); background: var(--color-gray-200); font-weight: 700; }
+.stock-analysis-estimates { display: flex; gap: 6px; align-items: center; font-size: 12px; }
+.stock-analysis-estimates input { accent-color: var(--color-brand-600); }
+.stock-analysis-subfilters { display: flex; gap: 4px; margin-bottom: 12px; }
+.stock-analysis-subfilters button { color: var(--color-gray-500); }
+.stock-analysis-subfilters button[aria-pressed="true"] { background: var(--color-gray-100); color: var(--color-gray-900); font-weight: 700; }
+.stock-analysis-table-scroll { overflow: auto; max-height: 430px; }
+.market-details .stock-analysis-table { font-size: 12px; font-variant-numeric: tabular-nums; }
+.market-details .stock-analysis-table th, .market-details .stock-analysis-table td { padding: 11px 12px; }
+.market-details .stock-analysis-table tbody th { text-align: left; font-weight: 500; }
+.market-details .stock-analysis-table th:first-child { position: sticky; left: 0; background: var(--surface); z-index: 1; min-width: 110px; }
+.market-details .stock-analysis-table thead th { background: var(--color-gray-50); }
+.market-details .stock-analysis-table thead th:first-child { z-index: 2; }
+.stock-analysis-table small { display: inline; margin-left: 5px; color: var(--color-gray-500); font-size: 11px; }
+.market-details .stock-analysis-table .stock-analysis-estimate { background: var(--color-gray-50); }
+.stock-analysis-positive { color: #dc2626; }
+.stock-analysis-negative { color: #2563eb; }
+.stock-analysis-section-meta { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; color: var(--color-gray-500); font-size: 12px; margin-bottom: 12px; }
+.stock-analysis-totals { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; padding: 12px 0 20px; }
+.stock-analysis-totals dt { color: var(--color-gray-500); font-size: 12px; margin-bottom: 6px; }
+.stock-analysis-totals dd { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.stock-analysis-totals small { font-size: 12px; font-weight: 400; margin-left: 4px; }
+.stock-analysis-consensus { grid-template-columns: repeat(2, minmax(0,1fr)); }
+.stock-analysis-consensus > div { border: 1px solid var(--color-gray-300); border-radius: 0; padding: 16px; }
+.stock-investor-chart { margin: 0 0 20px; }
+.stock-investor-chart-heading { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 12px; }
+.stock-investor-chart-heading h3 { font-size: 13px; font-weight: 700; }
+.stock-investor-legend { display: flex; gap: 14px; font-size: 12px; }
+.stock-investor-legend span { display: inline-flex; gap: 5px; align-items: center; }
+.stock-investor-legend i { width: 9px; height: 9px; }
+.stock-investor-selection { display: flex; flex-wrap: wrap; gap: 6px 16px; min-height: 42px; font-size: 12px; font-variant-numeric: tabular-nums; }
+.stock-investor-selection b { font-weight: 500; }
+.stock-investor-chart-scroll { overflow-x: auto; }
+.stock-investor-chart svg { display: block; width: 100%; min-width: 480px; height: 300px; }
+.stock-investor-chart text { fill: var(--color-gray-600); font-family: inherit; font-size: 11px; font-variant-numeric: tabular-nums; }
+.stock-investor-grid { stroke: var(--color-gray-100); }
+.stock-investor-zero { stroke: var(--color-gray-400); stroke-width: 1.2px; }
+.stock-investor-hit { fill: transparent; }
+.stock-investor-day { cursor: pointer; }
+.stock-investor-day[aria-pressed="true"] .stock-investor-hit { fill: var(--color-gray-100); fill-opacity: .6; }
+.stock-investor-day:focus-visible .stock-investor-hit { stroke: var(--color-gray-500); stroke-width: 1px; }
+.stock-analysis-broker-ratings { margin: 4px 0 24px; }
+.stock-analysis-broker-ratings .stock-analysis-toolbar { margin-bottom: 8px; }
+.stock-analysis-chart { margin-bottom: 16px; }
+.stock-analysis-chart-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.stock-analysis-chart-heading > span { font-size: 11px; color: var(--color-gray-500); }
+.stock-analysis-chart-scroll { overflow-x: auto; }
+.stock-analysis-chart svg { width: 100%; min-width: 480px; max-height: 220px; }
+.stock-analysis-chart text { font-family: inherit; font-size: 11px; fill: var(--color-gray-600); font-variant-numeric: tabular-nums; }
+.stock-analysis-baseline { stroke: var(--color-gray-200); }
+.stock-analysis-bar { fill: #356ba8; }
+.stock-analysis-bar-negative { fill: #2563eb; }
+.stock-analysis-bar-estimate { fill: var(--surface); stroke: #356ba8; stroke-width: 1.5px; stroke-dasharray: 4 2; }
+.stock-analysis-report-heading { font-size: 13px; font-weight: 700; margin: 8px 0 12px; }
+.market-details .stock-analysis-reports td { text-align: left; }
+.market-details .stock-analysis-reports th:nth-child(n+2) { text-align: left; }
+.market-details .stock-analysis-reports td:last-child { min-width: 220px; white-space: normal; line-height: 1.6; }
+.stock-analysis-reports a { text-decoration: underline; text-underline-offset: 3px; }
+.stock-analysis-overview { max-width: 880px; font-size: 14px; line-height: 1.9; }
+.stock-analysis-overview p + p { margin-top: 16px; }
+.stock-analysis-source { margin-top: 16px; font-size: 11px; color: var(--color-gray-500); }
+.stock-analysis-source a { text-decoration: underline; }
+.stock-analysis-empty { padding: 36px 12px; text-align: center; font-size: 13px; color: var(--color-gray-500); }
+@media (max-width: 640px) {
+  .stock-analysis { padding: 12px; }
+  .stock-analysis-toolbar { gap: 8px; }
+  .stock-analysis-totals { gap: 8px; }
+  .stock-analysis-totals dd { font-size: 14px; }
+  .stock-analysis-estimates { font-size: 11px; }
+}

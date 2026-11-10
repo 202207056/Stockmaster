@@ -60,7 +60,7 @@ export async function updateInvestmentStyle(investment_style) {
   return data;
 }
 
-export async function createAccount(initial_balance) {
-  const { data } = await api.post('/trading/accounts', { account_name: '시작 모의계좌', initial_balance });
+export async function createAccount(initial_balance, account_name = '시작 모의계좌') {
+  const { data } = await api.post('/trading/accounts', { account_name, initial_balance });
   return data;
 }
