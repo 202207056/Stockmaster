@@ -21,7 +21,7 @@ function stockInfo(stock, news) {
 }
 
 export default function PortfolioNewsBoard({ stocks, records = [], status = {}, selected, onSelect, onGenerate, renderGuesses, autoGenerateReady = false,
-  renderOverview, title = 'AI 보유종목 브리핑', publicOnly = false, initialBriefs = {}, renderNewsFooter, autoFocus = false }) {
+  renderOverview, title = 'AI 보유종목 브리핑', publicOnly = false, initialBriefs = {}, renderNewsFooter, autoFocus = false, relations = {} }) {
   const [briefs, setBriefs] = useState(initialBriefs);
   const [errors, setErrors] = useState({});
   const [retry, setRetry] = useState(0);
@@ -188,7 +188,7 @@ export default function PortfolioNewsBoard({ stocks, records = [], status = {}, 
                 : !hasNews(news) ? '최근 확인되는 뉴스가 없어요' : moveTitle ? '회사 개별 소식 없음 · 시장 흐름' : '회사 개별 소식 없음';
               return <div className="portfolio-news-banner" data-news-card={stock.code} key={stock.code}>
                 <button type="button" onClick={() => select(stock.code)} aria-label={`${stock.name} 뉴스 요약 열기`} aria-expanded={false}>
-                  <div className="portfolio-news-banner-heading"><strong>{stock.name}</strong>{Number.isFinite(news?.change_rate ?? stock.change) && <b className={signTextClass(news?.change_rate ?? stock.change)}>{rate(news?.change_rate ?? stock.change)}</b>}{headline && <BannerTone tone={news?.banner_tone} rate={news?.change_rate ?? stock.change} />}</div><span title={headline ? plainHeadline(headline) : undefined} className={headline ? undefined : 'portfolio-news-banner-note'}>{headline ? plainHeadline(headline) : note}</span>
+                  <div className="portfolio-news-banner-heading"><strong>{stock.name}</strong>{Number.isFinite(news?.change_rate ?? stock.change) && <b className={signTextClass(news?.change_rate ?? stock.change)}>{rate(news?.change_rate ?? stock.change)}</b>}{headline && <BannerTone tone={news?.banner_tone} rate={news?.change_rate ?? stock.change} />}</div>{relations[stock.code] && <small className="portfolio-news-banner-relation">{relations[stock.code]}</small>}<span title={headline ? plainHeadline(headline) : undefined} className={headline ? undefined : 'portfolio-news-banner-note'}>{headline ? plainHeadline(headline) : note}</span>
                   <i aria-hidden="true">›</i>
                 </button>
               </div>;

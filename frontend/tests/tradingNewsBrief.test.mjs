@@ -238,6 +238,23 @@ test('a detail title is dropped when a saved holding summary replaces the shared
   assert.equal(mixed.banner_detail, null);
 });
 
+test('related cards show their relation to the opened stock, and only for that stock', async () => {
+  const relations = { '005930': '고객사', '042700': 'HBM 장비 제조사', '403870': '동종업체' };
+  serve({ '/ai/stock-brief/000660': config => response(config, { ...main,
+    related: peers.map(stock => ({ ...stock, relation: relations[stock.code] ?? null })) }) });
+  await render();
+  await React.act(async () => document.querySelector('.trading-news-banner').click());
+  const relationOf = code => document.querySelector(`[data-news-card="${code}"] .portfolio-news-banner-relation`)?.textContent ?? null;
+  // 고객사·동종업체는 누구 기준인지 붙이고, 제조사·업체는 그대로 쓴다. 관계가 없으면 줄을 만들지 않는다.
+  assert.equal(relationOf('005930'), 'SK하이닉스의 고객사');
+  assert.equal(relationOf('042700'), 'HBM 장비 제조사');
+  assert.equal(relationOf('403870'), 'SK하이닉스의 동종업체');
+  assert.equal(relationOf('000990'), null);
+  // 다른 종목을 펼치면 SK하이닉스 기준 관계는 더 이상 붙지 않는다.
+  await React.act(async () => document.querySelector('[aria-label="삼성전자 뉴스 요약 열기"]').click());
+  assert.equal(document.querySelectorAll('.portfolio-news-banner-relation').length, 0);
+});
+
 test('unsafe evidence links are shown as text only', async () => {
   serve({ '/ai/stock-brief/000660': config => response(config, { ...main,
     citations: { [main.recent_issues[0]]: [{ title: '안전하지 않은 링크', source: '출처', url: 'javascript:alert(1)' }] },

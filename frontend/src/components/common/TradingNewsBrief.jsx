@@ -60,6 +60,15 @@ function Direction({ changeRate }) {
 
 const question = changeRate => changeRate > 0 ? '왜 올랐을까?' : changeRate < 0 ? '왜 내렸을까?' : '최근 뉴스 정리';
 
+// 관련 종목 카드 첫 줄에 펼친 종목과의 관계를 쓴다.
+// 경쟁사·고객사처럼 누구 기준인지 필요한 관계는 '본 종목의 …'로, 제조사·업체는 그대로 쓴다.
+function relationLabels(brief) {
+  return Object.fromEntries((brief?.related || []).filter(stock => stock.code && stock.relation).map(stock => {
+    const peer = /(제조사|업체)$/.test(stock.relation) && !/동종업체$/.test(stock.relation);
+    return [stock.code, peer ? stock.relation : `${brief.name}의 ${stock.relation}`];
+  }));
+}
+
 export default function TradingNewsBrief({ code, triggerLabel, initialBrief }) {
   const { isAuthenticated } = useAuth();
   const fetchedMain = useStockBrief(code, isAuthenticated && !initialBrief);
@@ -137,7 +146,7 @@ export default function TradingNewsBrief({ code, triggerLabel, initialBrief }) {
       </div>}
       {theme ? <ThemeDetail key={theme.id} theme={theme} data={themes} autoFocus={picked} onStock={selectStock} />
         : <PortfolioNewsBoard stocks={boardStocks} selected={selectedCode} onSelect={selectStock}
-          title={null} publicOnly autoFocus={picked}
+          title={null} publicOnly autoFocus={picked} relations={relationLabels(activeBrief)}
           initialBriefs={{ [code]: brief, ...(activeBrief ? { [activeBrief.symbol_code]: activeBrief } : {}) }}
           renderNewsFooter={news => <BriefReport key={`${news.symbol_code}-${news.generated_at}`} kind="stock"
             code={news.symbol_code} generatedAt={news.generated_at} />} />}
