@@ -10,6 +10,7 @@ import GroupedFavoriteButton from '../components/common/GroupedFavoriteButton';
 import { comma, rate, signTextClass, won, wonShort } from '../utils/format';
 import { RANKING_CATEGORIES as categories } from '../constants/rankings';
 import './Rankings.css';
+import useMobileLayout from '../hooks/useMobileLayout';
 
 export default function Rankings() {
   const [params] = useSearchParams();
@@ -18,6 +19,7 @@ export default function Rankings() {
 }
 
 function RankingList({ category }) {
+  const mobile = useMobileLayout();
   const tabs = useRef(null);
   useEffect(() => {
     const nav = tabs.current;
@@ -41,7 +43,18 @@ function RankingList({ category }) {
     </div>
     {resource.error && rows.length > 0 && <p className="rankings-status" role="status">새로고침에 실패했습니다. 이전 조회 결과입니다.</p>}
     <RemoteState resource={resource} requiresAuth={false} empty={!rows.length}>
-      <div className="rankings-table-scroll" tabIndex={0} role="region" aria-label={`${category.label} 전체 목록`}>
+      {mobile ? <ol className="mts-ranking-list" aria-label={`${category.label} 전체 목록`}>{rows.map((stock, index) => {
+        const change = numberOrNull(stock.change_rate);
+        const price = numberOrNull(stock.price);
+        return <li key={stock.symbol_code}>
+          <span className="mts-rank-number">{comma(stock.rank ?? index + 1)}</span>
+          <div className="mts-rank-content"><Link title={stock.name} to={`/trading?${new URLSearchParams({ code: stock.symbol_code })}`}>
+            <StockLogo code={stock.symbol_code} name={stock.name} className="h-6 w-6" />
+            <span className="mts-rank-name"><strong>{stock.name}</strong><small>{category.id === 'amount' && numberOrNull(stock.amount) !== null ? wonShort(stock.amount) : category.id === 'volume' && numberOrNull(stock.volume) !== null ? `${comma(stock.volume)}주` : stock.symbol_code}</small></span>
+            <span className="mts-rank-price"><strong>{price === null || price <= 0 ? '—' : won(price)}</strong><small className={change === null ? '' : signTextClass(change)}>{change === null ? '—' : rate(change)}</small></span>
+          </Link></div><GroupedFavoriteButton code={stock.symbol_code} />
+        </li>;
+      })}</ol> : <div className="rankings-table-scroll" tabIndex={0} role="region" aria-label={`${category.label} 전체 목록`}>
         <table className="rankings-table">
           <caption className="sr-only">{category.label}</caption>
           <colgroup>
@@ -69,7 +82,7 @@ function RankingList({ category }) {
             </tr>;
           })}</tbody>
         </table>
-      </div>
+      </div>}
     </RemoteState>
   </section>;
 }

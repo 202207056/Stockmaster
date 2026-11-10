@@ -26,9 +26,8 @@ export default function Favorites() {
   return <div className="favorites-page flex flex-col gap-6">
     <div className="border-b border-gray-200 pb-4">
       <h1 className="flex items-center text-xl font-extrabold text-gray-900">관심종목<HelpIcon termId="portfolio" label="포트폴리오 설명 보기" /></h1>
-      <p className="mt-1 text-sm text-gray-500">이 목록은 이 브라우저에만 저장돼요. 다른 기기에서는 보이지 않습니다.</p>
     </div>
-    <nav aria-label="관심종목 보기" className="flex flex-wrap items-center gap-2">
+    <nav aria-label="관심종목 보기" className="favorites-view-nav flex flex-wrap items-center gap-2">
       {[['recent', '최근 조회'], ['favorites', '관심'], ['groups', '그룹']].map(([id, label]) => <button key={id} type="button" aria-pressed={view === id} onClick={() => { setView(id); setRenaming(false); }} className={`rounded-lg px-4 py-2 text-sm font-bold ${view === id ? 'bg-brand-600 text-white' : 'bg-gray-100 text-gray-600'}`}>{label}</button>)}
       <button type="button" onClick={() => { setView('groups'); setAdding(value => !value); }} aria-expanded={adding && view === 'groups'} className="rounded-lg border border-gray-300 px-3 py-2 text-sm">+ 그룹 추가</button>
     </nav>

@@ -44,7 +44,6 @@ export default function TradingOrderForm({ kind, setKind, priceType, setPriceTyp
   return <Container onSubmit={execution === 'immediate' ? onSubmit : undefined} onClickCapture={intercept} onChangeCapture={intercept} onKeyDownCapture={event => { if (!['Tab', 'Shift', 'Escape'].includes(event.key)) intercept(event); }} className={`trading-order ${kind === '매도' ? 'trading-order-sell' : ''}`}>
     <div className="trading-order-tabs" role="group" aria-label="주문 구분">
       {['매수', '매도'].map(side => <button key={side} data-side={side} type="button" disabled={disabled || automationLocked || (tutorial && side === '매도')} aria-pressed={kind === side} onClick={() => setKind(side)}>{side}</button>)}
-      <span>모의투자</span>
     </div>
     <div className="trading-order-body">
       <fieldset disabled={disabled || automationLocked} className="trading-order-fields">
@@ -65,7 +64,7 @@ export default function TradingOrderForm({ kind, setKind, priceType, setPriceTyp
           <NumberInput id={fieldPrefix + "-quantity"} aria-label="수량" min="1" max="1000000" step="1" required placeholder={kind === '매수' ? `최대 ${maximum.toLocaleString('ko-KR')}주` : '수량 입력'} value={quantity} onChange={event => setQuantity(event.target.value)} />
           <button type="button" aria-label="수량 늘리기" disabled={Number(quantity) >= 1_000_000} onClick={() => setQuantity(String(Math.min(1_000_000, Number(quantity) + 1)))}><Plus size={16} /></button>
         </div></div>
-        {kind === '매수' && <><p className="trading-order-maximum">{cash === null ? '주문가능 금액 확인 필요' : `${misu ? '증거금 50%·수수료 기준' : '수수료 포함'} 최대 ${maximum.toLocaleString('ko-KR')}주`}</p><div className="trading-order-percent" role="group" aria-label="주문가능 금액 비율">{[10, 20, 50, 75, 100].map(percent => <button key={percent} type="button" disabled={cash === null || maximumFor(cash * percent / 100) < 1} onClick={() => setQuantity(String(maximumFor(cash * percent / 100)))}>{percent}%</button>)}</div></>}
+        {kind === '매수' && <><p className="trading-order-maximum">{cash === null ? '주문가능 금액 확인 필요' : `${misu ? '증거금 50%·수수료 기준 ' : ''}최대 ${maximum.toLocaleString('ko-KR')}주`}</p><div className="trading-order-percent" role="group" aria-label="주문가능 금액 비율">{[10, 20, 50, 75, 100].map(percent => <button key={percent} type="button" disabled={cash === null || maximumFor(cash * percent / 100) < 1} onClick={() => setQuantity(String(maximumFor(cash * percent / 100)))}>{percent}%</button>)}</div></>}
         <div className="trading-order-row trading-order-amount"><span>금액</span><div><output>{costs ? won(costs.gross) : '금액'}</output><button type="button" aria-label="수량 초기화" onClick={() => setQuantity('1')}><RotateCw size={18} /></button></div></div>
       </fieldset>
       {(!enabled || priceType !== '시장가') && <div className="trading-order-notice">{!enabled ? '모의 주문은 점검 중입니다.' : priceType === '지정가' ? '지정가는 대기로 접수됩니다. 내역의 체결 확인으로 호가를 확인할 수 있습니다. 현금·수량은 예약되지 않습니다.' : '모의 호가 주문: 최우선 호가 잔량으로 전량 체결 가능할 때만 체결합니다. 나머지는 대기하며, 내역의 체결 확인 때 중간가도 갱신됩니다. 현금·수량 예약과 자동 감시는 지원하지 않습니다.'}</div>}

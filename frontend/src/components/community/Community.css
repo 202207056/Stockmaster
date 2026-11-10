@@ -1,5 +1,5 @@
 .community-layout { display: grid; grid-template-columns: 260px minmax(0, 1fr); align-items: start; gap: 28px; max-width: 1180px; margin: 0 auto; }
-.community-categories { position: sticky; top: 24px; min-height: 640px; padding: 28px 20px; border:1px solid var(--theme-e5e7eb, #e5e7eb); border-radius: 0; background:var(--theme-fff, #fff); }
+.community-categories { position: sticky; top: 24px; min-height: 640px; padding: 28px 20px; border: 0; background: transparent; }
 .community-category { display: flex; align-items: center; gap: 10px; width: 100%; padding: 12px; border-radius: 10px; color:var(--theme-6b7280, #6b7280); font-size: 14px; text-align: left; }
 .community-category:hover { background:var(--theme-f9fafb, #f9fafb); }
 .community-category.is-active { background:var(--theme-eef2ff, #eef2ff); color:var(--theme-accent, #4338ca); font-weight: 700; }

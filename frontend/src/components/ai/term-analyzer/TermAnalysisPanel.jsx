@@ -5,9 +5,10 @@ import { CATEGORIES, GLOSSARY } from '../../../constants/glossary';
 import { exactGlossaryId, findDetectedTerms } from './terms';
 import { recognizeLocal } from './ocr';
 import PageMarks from './PageMarks';
+import TermCard from '../../learn/TermCard';
 import CompanyFacts from './CompanyFacts';
 import { collectPageMarks, shiftArea, WHOLE_PAGE } from './pageMarkRanges';
-import { clearLast, ownerOf, readLast, savedTime, writeLast } from './lastAnalysis';
+import { clearLast, ownerOf, readLast, writeLast } from './lastAnalysis';
 import { addHistory, readHistory, removeHistory } from './searchHistory';
 import { detectTerms } from './termDetect';
 import { Link, useLocation } from 'react-router-dom';
@@ -38,10 +39,9 @@ export default function TermAnalysisPanel({ onCaptureVisibility, showMarks = tru
   const [picking, setPicking] = useState(null);
   const { pathname } = useLocation();
   const [owner] = useState(() => ownerOf(getToken()));
-  // The previous result of this browser tab, shown with its time until a new analysis replaces it.
+  // The previous result of this browser tab, kept until a new analysis replaces it.
   const [restored] = useState(() => readLast(owner, GLOSSARY));
   const [analyzedAt, setAnalyzedAt] = useState(restored?.at ?? null);
-  const [restoredAt, setRestoredAt] = useState(restored?.at ?? null);
   // Where the found words are marked: the dragged rectangle or the whole page, with the scroll at that moment.
   const [capture, setCapture] = useState(restored?.capture ?? null);
   const [text, setText] = useState(restored?.text ?? '');
@@ -154,7 +154,7 @@ export default function TermAnalysisPanel({ onCaptureVisibility, showMarks = tru
     job.current?.abort(); job.current = null;
     aiJob.current?.abort(); aiJob.current = null; setAi({ status: 'idle', terms: [] }); setTab('invest'); setCapture(null);
     searchJob.current?.abort(); searchJob.current = null; setSearched(null);
-    setAnalyzedAt(null); setRestoredAt(null); clearLast();
+    setAnalyzedAt(null); clearLast();
     onCaptureVisibility(false);
     setText(''); setSelected(null); setError(''); setPhase('idle');
     setPageTerms([]); setAnalysisSource('page');
@@ -208,7 +208,7 @@ export default function TermAnalysisPanel({ onCaptureVisibility, showMarks = tru
     finally { setPicking(null); onCaptureVisibility(false); }
     setAnalysisSource('region'); setSelected(null); setSearched(null); setTab('invest');
     setCapture({ kind: 'region', path: pathname, area, scrollX: window.scrollX, scrollY: window.scrollY, key: Date.now(), fresh: true });
-    setAnalyzedAt(Date.now()); setRestoredAt(null);
+    setAnalyzedAt(Date.now());
     aiJob.current?.abort(); aiJob.current = null; setAi({ status: 'idle', terms: [] });
     const pageText = readVisiblePageText(document.body, area);
     setText(pageText);
@@ -246,7 +246,7 @@ export default function TermAnalysisPanel({ onCaptureVisibility, showMarks = tru
   const describe = (id) => {
     const found = ai.terms.find((term) => aiId(term) === id);
     if (found) return { label: found.basis === 'data' ? '종목 데이터' : '', term: found.term, text: found.meaning, code: found.code, ai: found };
-    return { label: `용어사전 · ${CATEGORIES[GLOSSARY[id].category]}`, term: GLOSSARY[id].term, text: GLOSSARY[id].desc };
+    return { label: `용어사전 · ${CATEGORIES[GLOSSARY[id].category]}`, term: GLOSSARY[id].term, text: GLOSSARY[id].desc, entry: GLOSSARY[id] };
   };
   const pick = (id) => {
     clearTimeout(leaveTimer.current); setLeaving(null);
@@ -261,16 +261,12 @@ export default function TermAnalysisPanel({ onCaptureVisibility, showMarks = tru
     clearTimeout(leaveTimer.current);
     leaveTimer.current = setTimeout(() => setLeaving(null), 220);
   };
-  const line = (n) => ({ '--line': n });
-  // The AI warning lives once on the experimental switch in My page, not on every card.
-  const source = (term) => term.basis === 'data' && <span className="ocr-source" title="우리 종목 데이터로 채운 상장사예요">종목 데이터</span>;
+  // Same definition card as the glossary. The AI warning lives once on the experimental switch in My page, not on every card.
   const aiCard = (term, closing = false) => <div key={`ai:${term.term}`} className={`ocr-reveal${closing ? ' is-closing' : ''}`}><div className="ocr-reveal-clip">
-    <article ref={definition} className="ocr-definition">
-      <div className="ocr-definition-head ocr-line" style={line(0)}><h3>{term.term}</h3>{source(term)}</div>
-      <div className="ocr-line" style={line(1)}><CompanyFacts term={term} /></div>
-      <p className="ocr-line" style={line(2)}>{term.meaning}</p>
-      {term.code && <div className="ocr-line" style={line(3)}><Link className="ocr-secondary ocr-stock-link" to={`/trading?code=${encodeURIComponent(term.code)}`}>종목 보기 · {term.code}</Link></div>}
-    </article></div></div>;
+    <TermCard ref={definition} className="mt-3.5" categoryLabel={term.basis === 'data' ? '종목 데이터' : undefined} term={{ term: term.term, desc: term.meaning }} beforeDescription={<CompanyFacts term={term} />}>
+      {term.code && <Link className="relative z-10 mt-3 text-xs font-medium text-brand-600" to={`/trading?code=${encodeURIComponent(term.code)}`}>종목 보기 · {term.code} →</Link>}
+    </TermCard>
+  </div></div>;
   const emptyNote = tab === 'history' ? '검색한 말이 여기에 남아요. 위 검색창에 궁금한 말을 입력해 보세요.'
     : ai.status === 'done' ? '이 글에서는 더 찾은 말이 없어요.' : '아직 찾은 말이 없어요. 영역 선택 분석으로 궁금한 곳을 골라 보세요.';
   const searchBox = <form className="ocr-search" role="search" onSubmit={(event) => { event.preventDefault(); search(word); }}>
@@ -286,8 +282,6 @@ export default function TermAnalysisPanel({ onCaptureVisibility, showMarks = tru
     </div>
     {status && <p className="ocr-status" role="status">{status}</p>}
     {error && <p className="ocr-error" role="alert">{error}</p>}
-    {restoredAt && <p className="ocr-note ocr-restored"><span>이전 결과</span>{savedTime(restoredAt)} 분석
-      {capture && capture.path !== pathname ? ' · 다른 화면' : ''}</p>}
     <div className="ocr-tabs" role="tablist" aria-label="찾은 말 종류">
       {Object.entries(TABS).map(([id, label]) =>
         <button type="button" role="tab" key={id} className="ocr-tab" aria-selected={tab === id} onClick={() => setTab(id)}>{label}<b>{counts[id]}</b></button>)}
@@ -311,11 +305,9 @@ export default function TermAnalysisPanel({ onCaptureVisibility, showMarks = tru
     {searched?.status === 'error' && <p className="ocr-note">‘{searched.term}’ · {searched.message}</p>}
     {searched?.status === 'done' && aiCard(searched.detail)}
     {aiEntry && aiCard(aiEntry, !selected)}
-    {entry && <div key={selected ?? leaving} className={`ocr-reveal ${selected ? '' : 'is-closing'}`}><div className="ocr-reveal-clip"><article ref={definition} className="ocr-definition">
-      <div className="ocr-definition-head ocr-line" style={line(0)}><h3>{entry.term}</h3><span className="ocr-source">용어사전 · {CATEGORIES[entry.category]}</span></div>
-      <p className="ocr-line" style={line(1)}>{entry.desc}</p><p className="ocr-example ocr-line" style={line(2)}>예시: {entry.example}</p>
-      <div className="ocr-chips ocr-line" style={line(3)}>{entry.related?.filter((id) => GLOSSARY[id]).map((id) => <button type="button" className="ocr-secondary" key={id} onClick={() => pick(id)}>{GLOSSARY[id].term}</button>)}</div>
-    </article></div></div>}
+    {entry && <div key={selected ?? leaving} className={`ocr-reveal ${selected ? '' : 'is-closing'}`}><div className="ocr-reveal-clip">
+      <TermCard ref={definition} className="mt-3.5" categoryLabel={`기존 용어사전 · ${CATEGORIES[entry.category]}`} term={entry} onPickRelated={pick} />
+    </div></div>}
     <button type="button" className="ocr-reset" onClick={reset}>결과 초기화</button>
     {marksHere && <PageMarks marks={pageMarks} scan={capture.fresh ? capture : null} active={selected} onPick={toggle} describe={describe} />}
     {picking && <RegionSelector onSelect={picking.resolve} onCancel={() => picking.reject(new DOMException('Selection cancelled', 'AbortError'))} />}

@@ -10,3 +10,54 @@
 .site-tour-welcome::backdrop { background:rgb(0 0 0 / 50%); }
 .site-tour-welcome h2 { font-size: 20px; font-weight: 800; line-height: 1.6; }
 .site-tour-welcome p { margin-top: 16px; font-size: 14px; line-height: 1.7; color:var(--theme-4b5563, #4b5563); }
+
+.site-tour-intro { position: fixed; inset: 0; margin: 0; padding: 0; border: 0; width: 100%; height: 100dvh; max-width: none; max-height: none; background: transparent; overflow: hidden; color: inherit; }
+.site-tour-intro::backdrop { background: rgb(0 0 0 / 50%); }
+.site-tour-scene { width: 100%; height: 100%; display: grid; place-items: center; }
+.site-tour-welcome-content { width: 100%; opacity: 0; transition: opacity 450ms ease; }
+.is-docking .site-tour-welcome-content, .is-ready .site-tour-welcome-content { opacity: 1; }
+.site-tour-welcome-actions { padding-right: 72px; flex-wrap: wrap; min-height: 44px; }
+.site-tour-mascot { position: absolute; left: 50%; top: 50%; width: 96px; height: 96px; margin: -48px 0 0 -48px; padding: 0; border: 0; background: transparent; transform: translate(0, 0); z-index: 1; cursor: pointer; }
+.site-tour-mascot:disabled { cursor: default; opacity: 1; }
+.site-tour-mascot:focus-visible { outline: 2px solid var(--theme-accent, #4f46e5); outline-offset: 4px; border-radius: 8px; }
+.site-tour-mascot img { position: absolute; inset: 0; width: 100%; height: 100%; image-rendering: pixelated; object-fit: contain; user-select: none; }
+.mascot-wave { position: absolute; inset: 0; display: none; }
+.mascot-pencil { visibility: hidden; }
+.is-entering .site-tour-mascot { animation: mascot-arrive 1400ms cubic-bezier(.45, 0, .25, 1) both; }
+.is-greeting .mascot-enter, .is-docking .mascot-enter, .is-ready .mascot-enter { visibility: hidden; }
+.is-greeting .mascot-wave, .is-waving .mascot-wave { display: block; animation: mascot-wave-body 1200ms ease-in-out; }
+.mascot-wave-one { animation: mascot-frame-one 400ms steps(1, end) 3; }
+.mascot-wave-two { animation: mascot-frame-two 400ms steps(1, end) 3; }
+.is-docking .mascot-pencil, .is-ready .mascot-pencil { visibility: visible; }
+.is-waving .mascot-pencil { visibility: hidden; }
+.is-docking .site-tour-mascot, .is-ready .site-tour-mascot { transform: translate(var(--mascot-x), var(--mascot-y)) scale(.666667); transition: transform 650ms cubic-bezier(.65, 0, .35, 1); }
+.is-ready .site-tour-mascot { transition: none; }
+@keyframes mascot-arrive {
+  0% { transform: translate(32vw, calc(50dvh + 96px)) rotate(-12deg); }
+  35% { transform: translate(8vw, 34dvh) rotate(-8deg); }
+  68% { transform: translate(-26vw, 12dvh) rotate(12deg); }
+  100% { transform: translate(0, 0) rotate(0); }
+}
+@keyframes mascot-frame-one { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+@keyframes mascot-frame-two { 0%, 100% { opacity: 0; } 50% { opacity: 1; } }
+@keyframes mascot-wave-body { 0%, 100% { transform: rotate(0); } 25%, 65% { transform: rotate(-7deg); } 45%, 85% { transform: rotate(7deg); } }
+/* Match TradingNewsBrief's text reveal: 320ms ease-out, 6px rise, 60ms stagger. */
+@keyframes site-tour-copy-reveal {
+  from { opacity: 0; translate: 0 6px; }
+  to { opacity: 1; translate: 0 0; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  :is(.is-docking, .is-ready) .site-tour-welcome > :is(h2, p) {
+    animation: site-tour-copy-reveal 320ms ease-out 60ms backwards;
+  }
+  :is(.is-docking, .is-ready) .site-tour-welcome > p { animation-delay: 120ms; }
+}
+@media (max-width: 480px) {
+  .site-tour-welcome { padding: 24px 20px; }
+  .site-tour-welcome h2 { font-size: 18px; }
+  .site-tour-welcome-actions { gap: 8px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .site-tour-scene *, .site-tour-scene *::before { animation: none !important; transition: none !important; }
+  .site-tour-scene .mascot-wave-two { opacity: 0; }
+}

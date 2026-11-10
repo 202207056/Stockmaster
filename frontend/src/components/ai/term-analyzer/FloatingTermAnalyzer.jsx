@@ -7,11 +7,12 @@ import { isAnalyzerRoute } from './terms';
 import PanelBoundary from './PanelBoundary';
 import './ocr.css';
 import useTermAnalyzerSetting from './useTermAnalyzerSetting';
+import { floatingViewport, raiseFloatingPanel } from '../../../utils/floatingViewport';
+import MobileEdgeTab from '../../common/MobileEdgeTab';
 
 const AnalysisPanel = lazy(() => import('./TermAnalysisPanel'));
 function overlaySnapshot() {
-  return !!document.querySelector('dialog[open]:not([data-ocr-editor]), [aria-modal="true"]:not([data-ocr-editor]), .tutorial-skip-button')
-    || (window.innerWidth < 640 && !!document.querySelector('.mini-assets.is-open'));
+  return !!document.querySelector('dialog[open]:not([data-ocr-editor]), [aria-modal="true"]:not([data-ocr-editor]), .tutorial-skip-button');
 }
 function subscribeOverlays(listener) {
   const observer = new MutationObserver(listener);
@@ -39,8 +40,7 @@ const OPEN_KEY = 'stockmaster:term-analyzer-open';
 const EDGES = ['e', 'w'];
 const reducedMotion = () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
 const readMinimized = () => { try { return localStorage.getItem(MINIMIZED_KEY) === 'true'; } catch { return false; } };
-const isMobile = () => window.matchMedia?.('(max-width: 639px)').matches ?? false;
-const viewport = () => ({ width: window.innerWidth, height: window.innerHeight });
+const viewport = floatingViewport;
 const placed = (rect) => ({ left: `${rect.x}px`, top: `${rect.y}px`, width: `${rect.w}px`, height: `${rect.h}px` });
 // Follows the height the panel's content needs, so the panel can grow and shrink smoothly instead of scrolling inside.
 function useContentHeight(panel, active) {
@@ -77,8 +77,11 @@ function useViewport() {
   const [view, setView] = useState(viewport);
   useEffect(() => {
     const update = () => setView(viewport());
+    // The navigation is committed after the initial render; measure it then.
+    const initial = requestAnimationFrame(update);
     window.addEventListener('resize', update);
-    return () => window.removeEventListener('resize', update);
+    window.visualViewport?.addEventListener('resize', update);
+    return () => { cancelAnimationFrame(initial); window.removeEventListener('resize', update); window.visualViewport?.removeEventListener('resize', update); };
   }, []);
   return view;
 }
@@ -102,11 +105,15 @@ function Surface() {
   const gesture = useRef(null);
   const dragged = useRef(false);
   const button = rectFromAnchor(anchor, BUTTON, view);
-  const width = Math.min(size.w, view.width - MARGIN * 2);
+  // Narrow screens keep the smaller panel (at most 340px wide and 65% of the height).
+  const mobile = view.width < 768;
+  const width = Math.min(mobile ? Math.min(size.w, 340) : size.w, view.width - MARGIN * 2);
   const contentHeight = useContentHeight(panelRef, open);
+  const mobileHeight = Math.round(view.height * .65);
   // The button and the panel share one place: the panel opens with its top-left corner on the button,
   // and folds back into a button at its own top-left corner, so neither jumps elsewhere.
-  const panelStyle = placePanel(button, width, contentHeight, view);
+  const placedPanel = placePanel(button, width, mobile ? Math.min(contentHeight, mobileHeight) : contentHeight, view);
+  const panelStyle = mobile ? { ...placedPanel, maxHeight: `${mobileHeight}px` } : placedPanel;
   const growFrom = `${button.x - parseFloat(panelStyle.left)}px ${button.y - parseFloat(panelStyle.top)}px`;
   const closeTimer = useRef(0);
   useEffect(() => () => clearTimeout(closeTimer.current), []);
@@ -114,7 +121,7 @@ function Surface() {
   const close = useCallback(() => {
     const box = panelRef.current?.getBoundingClientRect();
     const finish = () => { setClosing(null); setOpen(false); requestAnimationFrame(() => trigger.current?.focus({ preventScroll: true })); };
-    if (!box || isMobile()) { finish(); return; }
+    if (!box || viewport().width < 768) { finish(); return; }
     const current = viewport();
     setAnchor(anchorFromRect(clampRect({ x: box.left, y: box.top, ...BUTTON }, current), current));
     if (reducedMotion()) { finish(); return; }
@@ -143,7 +150,7 @@ function Surface() {
 
   // One pointer gesture moves the button, moves the panel, or resizes the panel from an edge.
   const begin = (event) => {
-    if (isMobile() || event.button !== 0 || !event.isPrimary) return;
+    if (event.button !== 0 || event.isPrimary === false) return;
     const mode = event.currentTarget.dataset.drag;
     const box = event.currentTarget.closest('.ocr-launcher, .ocr-panel').getBoundingClientRect();
     const rect = { x: box.left, y: box.top, w: box.width, h: box.height };
@@ -177,7 +184,7 @@ function Surface() {
   const pointer = { onPointerDown: begin, onPointerMove: move, onPointerUp: end, onPointerCancel: end, onLostPointerCapture: end };
   const nudge = (event) => {
     const offsets = { ArrowLeft: [-16, 0], ArrowRight: [16, 0], ArrowUp: [0, -16], ArrowDown: [0, 16] };
-    if (!offsets[event.key] || isMobile()) return;
+    if (!offsets[event.key]) return;
     event.preventDefault();
     const [dx, dy] = offsets[event.key];
     setAnchor(anchorFromRect(clampRect({ ...button, x: button.x + dx, y: button.y + dy }, view), view));
@@ -187,10 +194,10 @@ function Surface() {
   const restore = () => { setMinimized(false); requestAnimationFrame(() => trigger.current?.focus({ preventScroll: true })); };
 
   return createPortal(<div ref={root} className="ocr-widget" data-ocr-widget>
-    {minimized ? <button type="button" className="ocr-restore" style={{ top: `${Math.min(button.y, view.height - 52)}px` }}
+    {mobile ? !open && <MobileEdgeTab storageKey="stockmaster:mobile-analyzer-edge" label="AI 용어 분석" defaultY={244} buttonRef={trigger} controls="ocr-analysis-panel" onOpen={() => { setMinimized(false); setOpen(true); }}><ScanText size={17} aria-hidden="true" /></MobileEdgeTab> : minimized ? <button type="button" className="ocr-restore" style={{ top: `${Math.min(button.y, view.height - 52)}px` }}
       aria-label="AI 용어 분석 버튼 다시 보이기" title="AI 용어 분석 다시 보이기" onClick={restore}>
       <ScanText size={16} aria-hidden="true" />
-    </button> : !open && <div className="ocr-launcher" style={placed(button)}>
+    </button> : !open && <div className="ocr-launcher" style={placed(button)} onPointerDownCapture={event => raiseFloatingPanel(event.currentTarget)}>
       <button ref={trigger} type="button" className="ocr-trigger" aria-label="AI 용어 분석" title="AI 용어 분석 · 드래그 또는 방향키로 이동"
         aria-expanded={false} aria-controls="ocr-analysis-panel" data-drag="move" {...pointer} onKeyDown={nudge}
         onClick={(event) => { if (event.detail !== 0 && dragged.current) { dragged.current = false; return; } setOpen(true); }}>
@@ -202,6 +209,7 @@ function Surface() {
     </div>}
     {open && <aside ref={panelRef} id="ocr-analysis-panel" className={`ocr-panel${closing ? ' is-closing' : ''}`}
       style={{ ...panelStyle, transformOrigin: closing ? '0 0' : growFrom, ...(closing && { '--sx': closing.sx, '--sy': closing.sy }) }}
+      onPointerDownCapture={event => raiseFloatingPanel(event.currentTarget)}
       role="dialog" aria-modal="false" aria-labelledby="ocr-panel-title">
       <header className="ocr-panel-header" title="드래그해서 옮길 수 있어요" data-drag="move" {...pointer}>
         <GripVertical size={16} className="ocr-grip" aria-hidden="true" />

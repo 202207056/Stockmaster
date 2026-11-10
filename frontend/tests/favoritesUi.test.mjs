@@ -43,7 +43,7 @@ test('recent view, star group creation, membership editing, rename, deletion and
     await click(button('최근 조회'));
     assert(container.textContent.includes('테스트전자'));
     assert(!container.textContent.includes('005930'));
-    assert.equal(container.querySelector('.text-blue-600').textContent, '+1.50%');
+    assert.equal(container.querySelector('.text-up-600').textContent, '+1.50%');
     await click(container.querySelector('[aria-label="관심종목 추가"]'));
     assert(container.querySelector('dialog[open]'));
     await fill(container.querySelector('[aria-label="새 그룹 이름"]'), '반도체');

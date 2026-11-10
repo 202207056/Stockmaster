@@ -42,10 +42,10 @@ export default function HelpIcon({ termId, className = '', label }) {
       if (e.key === 'Escape') close();
     };
 
-    document.addEventListener('mousedown', onPointerDown);
+    document.addEventListener('pointerdown', onPointerDown);
     document.addEventListener('keydown', onKeyDown);
     return () => {
-      document.removeEventListener('mousedown', onPointerDown);
+      document.removeEventListener('pointerdown', onPointerDown);
       document.removeEventListener('keydown', onKeyDown);
     };
   }, [open, close]);
@@ -82,7 +82,7 @@ export default function HelpIcon({ termId, className = '', label }) {
           id={popoverId}
           role="dialog"
           aria-label={`${term.term} 설명`}
-          className={`absolute top-6 z-50 w-72 rounded-xl border border-gray-200 bg-white p-4 text-left shadow-xl ${
+          className={`term-help-popover absolute top-6 z-50 w-72 rounded-xl border border-gray-200 bg-white p-4 text-left shadow-xl ${
             alignRight ? 'right-0' : 'left-0'
           }`}
         >

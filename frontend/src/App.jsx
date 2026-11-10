@@ -1,4 +1,6 @@
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { MemoryRouter, Navigate, Route, Routes } from 'react-router-dom';
+import DisplayMode, { DisplayRouteSync } from './components/layout/DisplayMode';
+import { isDisplayFrame } from './utils/displayMode';
 
 import AuthProvider from './contexts/AuthContext';
 import Layout from './components/layout/Layout';
@@ -52,7 +54,8 @@ import WithdrawalComplete from './pages/WithdrawalComplete';
  *  보호가 필요해지면 features.js 의 값 하나만 true 로 바꾸면 됩니다.
  */
 export default function App() {
-  return <BrowserRouter><AppSurface /></BrowserRouter>;
+  if (!isDisplayFrame()) return <DisplayMode />;
+  return <MemoryRouter initialEntries={[window.location.pathname + window.location.search + window.location.hash]}><DisplayRouteSync /><AppSurface /></MemoryRouter>;
 }
 
 export function AppSurface() {

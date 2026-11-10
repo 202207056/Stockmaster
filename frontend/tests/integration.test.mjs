@@ -310,7 +310,9 @@ test('assets show holdings before the lazy AI briefing and the scenario stays in
   const props = { symbol: '005930', quantity: 2, price: 10000, cash: 100000, busy: false };
   const buy = render(React.createElement(TradingLearning, { ...props, side: '매수' }));
   const sell = render(React.createElement(TradingLearning, { ...props, side: '매도' }));
-  assert(buy.includes('매수 전 판단 점검') && buy.includes('가상 사례로 매수 이후까지 확인하기'));
+  assert(buy.includes('매수 전 판단 점검') && buy.includes('/learn?tab=courses&amp;lesson=E1'));
+  assert(sell.includes('매도 전 판단 점검') && sell.includes('/learn?tab=courses&amp;lesson=E2'));
+  assert(!buy.includes('가상 사례로 매수 이후까지 확인하기'));
   assert(!sell.includes('가상 사례로 매수 이후까지 확인하기'));
   assert(!buy.includes('type="submit"'));
 });

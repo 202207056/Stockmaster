@@ -19,6 +19,18 @@ export function quotePrice(quote) {
   return value !== null && value > 0 ? value : null;
 }
 
+export function quotePreviousClose(quote) {
+  const supplied = numberOrNull(quote?.previous_close);
+  if (supplied !== null && supplied > 0) return supplied;
+  const price = quotePrice(quote);
+  const change = numberOrNull(quote?.change_amount);
+  const rate = numberOrNull(quote?.change_rate);
+  if (price === null || change === null || (rate === 0 && change !== 0)) return null;
+  const signedChange = rate === null ? change : Math.sign(rate) * Math.abs(change);
+  const previous = price - signedChange;
+  return previous > 0 ? previous : null;
+}
+
 export function chartRows(value) {
   const byDate = new Map();
   for (const row of requireArray(value)) {

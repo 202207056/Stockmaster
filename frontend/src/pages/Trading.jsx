@@ -36,11 +36,18 @@ import BuyTutorial from './BuyTutorial';
 import MisuTutorial from './MisuTutorial';
 import { estimateMisu } from '../utils/misu';
 import MarketDetails from '../components/common/MarketDetails';
+import useAutoRefresh from '../hooks/useAutoRefresh';
 import { learningScope } from '../utils/learning';
 import './Trading.css';
+import useMobileLayout from '../hooks/useMobileLayout';
+import MobileTradingSheet from '../components/common/MobileTradingSheet';
 
 export default function Trading() {
   const practice = useSitePractice();
+  const isMobile = useMobileLayout();
+  const mobile = isMobile && !practice;
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [mobileTab, setMobileTab] = useState('chart');
   const [params, setParams] = useSearchParams();
   const code = params.get('code') || '';
   const search = params.get('search') || '';
@@ -54,30 +61,35 @@ export default function Trading() {
     return () => { window.removeEventListener(FAVORITES_EVENT, sync); window.removeEventListener('storage', sync); };
   }, []);
   const stocks = useSiteResource('stocks', useCallback((signal) => fetchStocks(search, signal), [search]), true, { cacheKey: JSON.stringify(['stocks', search]), publicCache: true });
-  return <div className="trading-page flex flex-col gap-6">
-    <div className="border-b border-gray-200 pb-4"><h1 className="text-xl font-extrabold">트레이딩</h1></div>
+  const selectStock = selected => { const next = new URLSearchParams(params); next.set('code', selected); setParams(next); setPickerOpen(false); setMobileTab('chart'); if (mobile) window.scrollTo({ top: 0 }); };
+  return <div className={`trading-page flex flex-col gap-6 ${mobile ? 'trading-mobile' : ''}`}>
+    <div className="trading-page-heading border-b border-gray-200 pb-4"><h1 className="text-xl font-extrabold">트레이딩</h1>{mobile && code && <button type="button" onClick={() => setPickerOpen(true)} aria-haspopup="dialog">종목 변경</button>}</div>
     <div className="grid gap-4 lg:grid-cols-4 lg:items-start">
+      <MobileTradingSheet enabled={mobile && !!code} open={pickerOpen} onClose={() => setPickerOpen(false)} title="종목 선택">
       <aside className="trading-stock-sidebar rounded-xl border border-gray-200 p-4 lg:col-span-1">
         <div className="mb-3 flex items-center justify-between"><h2 className="text-sm font-bold text-gray-700">관심종목</h2><Link to="/favorites" className="text-xs text-gray-400 hover:text-gray-700">관리 &gt;</Link></div>
-        {favorites.length ? <ul className="mb-4 divide-y divide-gray-100">{favorites.map((favoriteCode) => <li key={favoriteCode} className="py-2.5"><StockQuote code={favoriteCode} variant="trading" onSelect={() => { const next = new URLSearchParams(params); next.set('code', favoriteCode); setParams(next); }} /></li>)}</ul> : <p className="py-8 text-center text-xs leading-relaxed text-gray-400">담아 둔 종목이 없어요.<br />종목을 담으면 여기에 표시됩니다.</p>}
+        {favorites.length ? <ul className="mb-4 divide-y divide-gray-100">{favorites.map((favoriteCode) => <li key={favoriteCode} className="py-2.5"><StockQuote code={favoriteCode} variant="trading" onSelect={() => selectStock(favoriteCode)} /></li>)}</ul> : <p className="py-8 text-center text-xs leading-relaxed text-gray-400">담아 둔 종목이 없어요.<br />종목을 담으면 여기에 표시됩니다.</p>}
     <PracticeTarget id="search"><form className="mb-4 flex gap-2" onSubmit={(event) => { event.preventDefault(); const next = new URLSearchParams(params); const query = new FormData(event.currentTarget).get('search').trim(); next.set('search', query); setParams(next); if (query && ('예시전자 990001'.includes(query))) practice?.event('search'); }}>
       <input key={search} name="search" defaultValue={search} aria-label="종목명 또는 코드 검색" placeholder="종목명 또는 코드 검색" className="min-w-0 flex-1 rounded-lg border border-gray-300 px-4 py-2" maxLength={100} />
       <button className="rounded-lg bg-brand-600 px-5 py-2 font-bold text-white">검색</button>
     </form></PracticeTarget>
         <h2 className="mb-3 text-sm font-bold text-gray-700">종목 목록</h2>
         <div className="trading-stock-list"><RemoteState resource={stocks} requiresAuth={false} empty={!stocks.data?.length}>
-          <ul className="divide-y divide-gray-100">{stocks.data?.map((stock) => <li key={stock.symbol_code}><PracticeTarget id="stock"><div className={`w-full px-2 py-3 ${stock.symbol_code === code ? 'bg-brand-50' : 'hover:bg-gray-50'}`}><StockQuote code={stock.symbol_code} stock={stock} variant="trading" onSelect={() => { const next = new URLSearchParams(params); next.set('code', stock.symbol_code); setParams(next); practice?.event('stock'); }} /></div></PracticeTarget></li>)}</ul>
+          <ul className="divide-y divide-gray-100">{stocks.data?.map((stock) => <li key={stock.symbol_code}><PracticeTarget id="stock"><div className={`w-full px-2 py-3 ${stock.symbol_code === code ? 'bg-brand-50' : 'hover:bg-gray-50'}`}><StockQuote code={stock.symbol_code} stock={stock} variant="trading" onSelect={() => { selectStock(stock.symbol_code); practice?.event('stock'); }} /></div></PracticeTarget></li>)}</ul>
           {stocks.data?.length === 100 && <p className="mt-2 text-xs text-gray-500">최대 100개입니다. 검색어를 입력해 범위를 줄여 주세요.</p>}
         </RemoteState></div>
       </aside>
-      <StockPanel key={`chart:${user?.user_id ?? 'guest'}:${code}`} code={code} favorite={favorites.includes(code)} onFavoriteChange={() => practice?.toggleFavorite(code)} />
-      {code && !practice && <StockCoach key={`coach:${user?.user_id ?? 'guest'}:${code}`} code={code} />}
-      {(isAuthenticated || hasCachedSession) && <div className="lg:col-span-4"><OrderHistory key={`${user?.user_id}:${code}`} code={code} /></div>}
+      </MobileTradingSheet>
+      <StockPanel key={`chart:${user?.user_id ?? 'guest'}:${code}`} mobile={mobile} mobileTab={mobileTab} setMobileTab={setMobileTab} code={code} favorite={favorites.includes(code)} onFavoriteChange={() => practice?.toggleFavorite(code)} />
+      {code && !practice && <div className="lg:col-span-4" hidden={mobile && mobileTab !== 'info'}><StockCoach key={`coach:${user?.user_id ?? 'guest'}:${code}`} code={code} /></div>}
+      {(isAuthenticated || hasCachedSession) && <div className="lg:col-span-4" hidden={mobile && mobileTab !== 'orders'}><OrderHistory key={`${user?.user_id}:${code}`} code={code} /></div>}
+      {mobile && code && mobileTab === 'orders' && !isAuthenticated && !hasCachedSession && <p className="py-8 text-sm">주문내역은 <Link to="/login" className="underline">로그인</Link> 후 확인할 수 있어요.</p>}
     </div>
   </div>;
 }
 
-function StockPanel({ code, favorite, onFavoriteChange }) {
+function StockPanel({ code, favorite, onFavoriteChange, mobile = false, mobileTab = 'chart', setMobileTab }) {
+  const [orderOpen, setOrderOpen] = useState(false);
   const [tutorialsEnabled] = useTutorialSetting();
   const practice = useSitePractice();
   const { user, isAuthenticated, accountId, account, refresh } = useAuth();
@@ -127,10 +139,12 @@ function StockPanel({ code, favorite, onFavoriteChange }) {
     }
   }, [code, detail.data, practice]);
   const quote = useSiteResource('quote', useCallback((signal) => fetchPrice(code, signal), [code]), !!code, { cacheKey: JSON.stringify(['price', code]), publicCache: true });
+  useAutoRefresh(quote, 10_000, !!code && !practice);
   const chartReplay = !practice && !misuActive && tutorialParams.get('chartTour') === '1';
   const closeChartReplay = () => { const next = new URLSearchParams(tutorialParams); next.delete('chartTour'); setTutorialParams(next, { replace: true }); };
   const [chartPeriod, setChartPeriod] = useState('D');
   const chart = useSiteResource(`chart:${chartPeriod}`, useCallback((signal) => fetchChartHistory(code, chartPeriod, signal), [code, chartPeriod]), !!code, { cacheKey: JSON.stringify(['chart', code, chartPeriod]), publicCache: true });
+  useAutoRefresh(chart, 60_000, !!code && !practice && !chartReplay);
   const chartRows = chart.data?.rows;
   const periodLabel = { D: '1일', W: '1주', M: '3개월', Y: '1년' }[chartPeriod];
   const [kind, setKind] = useState('매수');
@@ -200,18 +214,23 @@ function StockPanel({ code, favorite, onFavoriteChange }) {
       setError(err);
     } finally { submitting.current = false; setBusy(false); }
   };
-  return <><div className="trading-workspace lg:col-span-3"><section className="trading-chart-panel rounded-xl border border-gray-200 p-4 lg:col-span-2">
-    <h2 className="mb-3 flex items-center text-sm font-bold text-gray-700">차트<HelpIcon termId="candle" /></h2>
+  const closeOrderSheet = () => { if (busy) return; setOrderOpen(false); if (tutorialActive) closeTutorial(); if (misuActive) closeMisu(); };
+  return <><div className="trading-workspace lg:col-span-3" hidden={mobile && !code && !chartReplay && !tutorialActive && !misuActive}><section className="trading-chart-panel rounded-xl border border-gray-200 p-4 lg:col-span-2">
+    {!mobile && <h2 className="mb-3 flex items-center text-sm font-bold text-gray-700">차트<HelpIcon termId="candle" /></h2>}
     {code && <div className="mb-5 flex flex-wrap items-center justify-between gap-3"><div className="flex items-center gap-2"><StockLogo code={code} name={detail.data?.name} /><h3 className="text-lg font-bold">{detail.data?.name || code} <span className="text-sm font-normal text-gray-500">{code}</span></h3></div>{practice ? <FavoriteButton selected={favorite} onClick={onFavoriteChange} /> : <GroupedFavoriteButton code={code} />}</div>}
     <div className={code && !practice ? 'trading-news-quote-row' : undefined}><div className="min-w-0">
     {detail.error && <InlineError error={detail.error} />}
     {code && <RemoteState resource={quote} requiresAuth={false}>
-      <div className="trading-quote-values mb-4 flex flex-wrap items-center gap-3"><p className="text-2xl font-extrabold">{price === null ? '시세 이용 불가' : won(price)}</p><span className={`text-sm ${signTextClass(changeRate)}`} aria-label={changeRate === null ? '등락 정보 없음' : `전일 대비 ${changeRate > 0 ? '상승' : changeRate < 0 ? '하락' : '보합'}`} >{changeRate === null ? '—' : `${signMark(changeRate)} ${changeAmount === null ? '—' : comma(Math.round(changeRate < 0 ? -Math.abs(changeAmount) : Math.abs(changeAmount)))}원(${comma(changeRate, 2)}%)`}</span><button className="text-xs text-gray-500 underline" onClick={quote.reload} aria-label="시세 새로고침" title="시세 새로고침"><RefreshCw size={16} aria-hidden="true" /></button></div>
+      <div className="trading-quote-values mb-4 flex flex-wrap items-center gap-3"><p className="text-2xl font-extrabold">{price === null ? '시세 이용 불가' : won(price)}</p><span className={`text-sm ${signTextClass(changeRate)}`} aria-label={changeRate === null ? '등락 정보 없음' : `전일 대비 ${changeRate > 0 ? '상승' : changeRate < 0 ? '하락' : '보합'}`} >{changeRate === null ? '—' : `${signMark(changeRate)} ${changeAmount === null ? '—' : comma(Math.round(changeRate < 0 ? -Math.abs(changeAmount) : Math.abs(changeAmount)))}원(${comma(changeRate, 2)}%)`}</span></div>
     </RemoteState>}
-    </div>{code && !practice && <TradingNewsBrief key={code} code={code} />}</div>
-    {code ? <ChartWorkspace key={String(chartReplay)} emptyContent={<RemoteState resource={chart} requiresAuth={false} empty={!chartRows?.length} />} rows={chartRows} userId={user?.user_id} periodLabel={chart.data?.displayLabel || periodLabel} period={chartPeriod} onPeriod={setChartPeriod} replay={chartReplay} onReplayClose={closeChartReplay} allowTutorial={!practice} /> : chartReplay ? <ChartWorkspace rows={CHART_EXAMPLE} userId={user?.user_id} periodLabel="학습 예시" replay onReplayClose={closeChartReplay} demo /> : <div className="flex h-[420px] items-center justify-center rounded-lg border border-dashed border-gray-200"><p className="text-center text-sm leading-relaxed text-gray-400">조회할 종목을 선택해 주세요.</p></div>}
+    {!practice && quote.error && quote.data && <p role="status" className="mb-3 text-xs text-gray-500">시세 갱신 지연 · 이전 조회 가격을 표시하고 있습니다.</p>}
+    </div>{code && !practice && (!mobile || mobileTab === 'info') && <TradingNewsBrief key={code} code={code} />}</div>
+    {mobile && code && <nav className="trading-mobile-tabs" aria-label="종목 상세 보기">{[['chart','차트'],['market','호가·체결'],['info','종목 정보'],['orders','주문내역']].map(([tab, label]) => <button key={tab} type="button" aria-pressed={mobileTab === tab} onClick={() => setMobileTab(tab)}>{label}</button>)}</nav>}
+    <div hidden={mobile && mobileTab !== 'chart'}>
+    {code ? <ChartWorkspace compact={mobile} key={String(chartReplay)} emptyContent={<RemoteState resource={chart} requiresAuth={false} empty={!chartRows?.length} />} rows={chartRows} userId={user?.user_id} periodLabel={chart.data?.displayLabel || periodLabel} period={chartPeriod} onPeriod={setChartPeriod} replay={chartReplay} onReplayClose={closeChartReplay} allowTutorial={!practice} /> : chartReplay ? <ChartWorkspace rows={CHART_EXAMPLE} userId={user?.user_id} periodLabel="학습 예시" replay onReplayClose={closeChartReplay} demo /> : <div className="flex h-[420px] items-center justify-center rounded-lg border border-dashed border-gray-200"><p className="text-center text-sm leading-relaxed text-gray-400">조회할 종목을 선택해 주세요.</p></div>}
     {chart.data?.notice && <p className="mt-2 text-xs text-gray-500">{chart.data.notice}</p>}
-  </section><section className="trading-order-panel rounded-xl border border-gray-200 p-3 lg:col-span-1">
+    </div>
+  </section><MobileTradingSheet enabled={mobile} open={orderOpen || tutorialActive || misuActive} onClose={closeOrderSheet} busy={busy} title={`${detail.data?.name || code || '종목'} ${kind}`}><section className="trading-order-panel rounded-xl border border-gray-200 p-3 lg:col-span-1">
     <h2 className="sr-only">주문</h2>
     {tutorialActive && <BuyTutorial onClose={closeTutorial} completionKey={buyTutorialKey(user?.user_id)} />}
     {misuActive && <MisuTutorial key={accountId || 'guest'} onClose={closeMisu} onEnable={isAuthenticated && !!accountId ? () => { setFunding({ accountId, enabled: true }); setKind('매수'); setPriceType('시장가'); closeMisu(); } : undefined} />}
@@ -225,10 +244,12 @@ function StockPanel({ code, favorite, onFavoriteChange }) {
       {!practice && <p className="text-xs text-gray-500">{priceType === '지정가' ? '지정가는 대기 주문으로 접수됩니다. 자동 체결되지 않으며 현금·보유 수량을 차감하거나 예약하지 않습니다. 내역에서 취소할 수 있습니다.' : '시장가는 서버 현재가로 즉시 체결됩니다. 실제 체결가와 비용은 예상값과 다를 수 있습니다.'}</p>}
       <PracticeTarget id="place"><button disabled={(!practice && !ENABLE_ORDER_SUBMISSION) || !accountId || total === null || busy || uncertain || (!!practice && practice.current?.event !== 'prepare')} className="w-full rounded-lg bg-brand-600 px-5 py-3 font-bold text-white disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-500">{busy ? '주문 처리 중…' : `모의 ${kind}`}</button></PracticeTarget>
       <InlineError error={error} />{message && <p role="status" className="text-sm text-gray-700">{message} <PracticeTarget id="assets-link"><Link to={practice ? practice.href('/assets') : '/assets'} onClick={() => practice?.event('assets')} className="underline">내 자산 보기</Link></PracticeTarget></p>}
-    </form> : <p className="text-sm text-gray-400">로그인 후 주문 정보를 확인할 수 있어요.</p>}
+    </form> : <p className="text-sm text-gray-600">로그인 후 주문 정보를 확인할 수 있어요. <Link className="underline" to="/login">로그인하기</Link></p>}
     </div>
     {!practice && <TradingLearning symbol={code} side={kind} quantity={qty} price={price} cash={account?.withdrawable_cash} busy={busy || uncertain} />}
-  </section>{!practice && <div className="trading-market-panel lg:col-span-3"><MarketDetails key={code} code={code} /></div>}</div>{pendingOrder && <OrderDialog tutorial={!!practice} instruction={practice?.current} order={pendingOrder} result={orderResult} busy={busy} uncertain={uncertain} error={error} message={message} onConfirm={place} onClose={() => { if (!busy) { setPendingOrder(null); if (practice) { if (orderResult) practice.event('closed'); else if (practice.current?.event === 'cancelled') practice.event('cancelled'); else practice.event('dismissed'); } } }} />}</>;
+  </section></MobileTradingSheet>{!practice && <div hidden={mobile && mobileTab !== 'market'} className="trading-market-panel lg:col-span-3"><MarketDetails key={code} code={code} active={!mobile || mobileTab === 'market'} /></div>}</div>
+  {mobile && code && <div className="trading-mobile-actions" aria-label="종목 주문"><button type="button" className="mobile-sell" onClick={() => { setKind('매도'); cashMode(); setOrderOpen(true); }}>매도</button><button type="button" className="mobile-buy" onClick={() => { setKind('매수'); setOrderOpen(true); }}>매수</button></div>}
+  {pendingOrder && <OrderDialog tutorial={!!practice} instruction={practice?.current} order={pendingOrder} result={orderResult} busy={busy} uncertain={uncertain} error={error} message={message} onConfirm={place} onClose={() => { if (!busy) { setPendingOrder(null); if (practice) { if (orderResult) practice.event('closed'); else if (practice.current?.event === 'cancelled') practice.event('cancelled'); else practice.event('dismissed'); } } }} />}</>;
 }
 
 function OrderStockName({ code }) {
@@ -237,16 +258,28 @@ function OrderStockName({ code }) {
 }
 
 function OrderHistory({ code }) {
+  const mobile = useMobileLayout();
   const practice = useSitePractice();
   const { user, accountId, isAuthenticated } = useAuth();
   const [reviewId, setReviewId] = useState(null);
   const orders = useSiteResource('orders', useCallback((signal) => fetchOrders(accountId, signal), [accountId]), isAuthenticated && !!accountId, { cacheKey: JSON.stringify(['orders', accountId]), cachePreview: true });
+  useAutoRefresh(orders, 15_000, isAuthenticated && !!accountId && !practice);
   const visibleOrders = orders.data?.filter((order) => !!code && order.symbol_code === code) ?? [];
   const scope = learningScope(user?.user_id, accountId);
   const review = !orders.loading && !orders.error && visibleOrders.find((order) => `${accountId}:${order.order_id}` === reviewId && order.status === '체결');
-  return <PracticeTarget id="history"><section className="rounded-xl border border-gray-200 p-5"><div className="mb-4 flex justify-between"><h2 className="font-bold">주문내역</h2><PracticeTarget id="history-refresh"><button disabled={orders.loading || !accountId} onClick={orders.reload} className="text-sm underline" aria-label="내역 새로고침" title="내역 새로고침"><RefreshCw size={16} aria-hidden="true" /></button></PracticeTarget></div>
+  return <PracticeTarget id="history"><section className="rounded-xl border border-gray-200 p-5"><div className="mb-4 flex justify-between"><h2 className="font-bold">주문내역</h2>{practice && <PracticeTarget id="history-refresh"><button disabled={orders.loading || !accountId} onClick={orders.reload} className="text-sm underline" aria-label="내역 새로고침" title="내역 새로고침"><RefreshCw size={16} aria-hidden="true" /></button></PracticeTarget>}</div>
     {!practice && <OrderUpdates reload={orders.reload} />}
-    {!accountId ? <p className="text-sm text-gray-500">계좌를 선택해 주세요.</p> : <RemoteState resource={orders} empty={!visibleOrders.length}><div className="max-h-80 overflow-auto"><table className="w-full min-w-[480px] text-right text-sm"><thead><tr>{['번호', '종목', '구분', '자금 방식', '가격 종류', '수량', '주문/체결가', '수수료', '거래세', '상태', '취소', '복기'].map((label) => <th className="p-2" key={label}>{label}</th>)}</tr></thead><tbody>{visibleOrders.map((order) => <tr key={order.order_id} className="border-t border-gray-100"><td className="p-2">{order.order_id}</td><td className="p-2"><OrderStockName code={order.symbol_code} /></td><td className="p-2">{order.order_type}</td><td className="p-2">{order.funding_type || '현금'}</td><td className="p-2">{order.price_type || '시장가'}</td><td className="p-2">{comma(order.quantity)}</td><td className="p-2">{numberOrNull(order.price) === null ? '—' : won(order.price)}</td><td className="p-2">{won(order.commission ?? 0)}{order.status !== '체결' && ' (예상)'}</td><td className="p-2">{won(order.tax ?? 0)}{order.status !== '체결' && ' (예상)'}</td><td className="p-2">{order.status}</td><td className="p-2">{order.status === '대기' && !practice && isAuthenticated ? <div className="flex gap-2"><CheckOrderButton orderId={order.order_id} /><CancelOrderButton key={accountId} orderId={order.order_id} /></div> : '—'}</td><td className="p-2">{order.status === '체결' && !practice ? <button type="button" onClick={() => setReviewId(`${accountId}:${order.order_id}`)} className="whitespace-nowrap text-xs text-brand-700 underline">돌아보기</button> : '—'}</td></tr>)}</tbody></table></div></RemoteState>}
+    {!accountId ? <p className="text-sm text-gray-500">계좌를 선택해 주세요.</p> : <RemoteState resource={orders} empty={!visibleOrders.length}>{mobile && !practice ? <ul className="mobile-order-list">{visibleOrders.map(order => <li key={order.order_id}>
+      <div className="mobile-order-row"><strong><OrderStockName code={order.symbol_code} /></strong><span>{order.status}</span></div>
+      <div className="mobile-order-row"><span className={order.order_type === '매수' ? 'text-red-600' : 'text-blue-600'}>{order.order_type} · {comma(order.quantity)}주</span><strong>{numberOrNull(order.price) === null ? '—' : won(order.price)}</strong></div>
+      <details><summary>주문 상세</summary><dl>{[
+        ['주문번호', order.order_id], ['자금 방식', order.funding_type || '현금'], ['가격 종류', order.price_type || '시장가'],
+        ['수수료', won(order.commission ?? 0) + (order.status !== '체결' ? ' (예상)' : '')],
+        ['거래세', won(order.tax ?? 0) + (order.status !== '체결' ? ' (예상)' : '')],
+      ].map(([label, value]) => <div className="mobile-order-row" key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl></details>
+      <div className="mobile-order-controls">{order.status === '대기' && isAuthenticated && <><CheckOrderButton orderId={order.order_id} /><CancelOrderButton key={accountId} orderId={order.order_id} /></>}
+      {order.status === '체결' && <button type="button" onClick={() => setReviewId(`${accountId}:${order.order_id}`)} className="text-brand-700 underline">돌아보기</button>}</div>
+    </li>)}</ul> : <div className="max-h-80 overflow-auto"><table className="w-full min-w-[480px] text-right text-sm"><thead><tr>{['번호', '종목', '구분', '자금 방식', '가격 종류', '수량', '주문/체결가', '수수료', '거래세', '상태', '취소', '복기'].map((label) => <th className="p-2" key={label}>{label}</th>)}</tr></thead><tbody>{visibleOrders.map((order) => <tr key={order.order_id} className="border-t border-gray-100"><td className="p-2">{order.order_id}</td><td className="p-2"><OrderStockName code={order.symbol_code} /></td><td className="p-2">{order.order_type}</td><td className="p-2">{order.funding_type || '현금'}</td><td className="p-2">{order.price_type || '시장가'}</td><td className="p-2">{comma(order.quantity)}</td><td className="p-2">{numberOrNull(order.price) === null ? '—' : won(order.price)}</td><td className="p-2">{won(order.commission ?? 0)}{order.status !== '체결' && ' (예상)'}</td><td className="p-2">{won(order.tax ?? 0)}{order.status !== '체결' && ' (예상)'}</td><td className="p-2">{order.status}</td><td className="p-2">{order.status === '대기' && !practice && isAuthenticated ? <div className="flex gap-2"><CheckOrderButton orderId={order.order_id} /><CancelOrderButton key={accountId} orderId={order.order_id} /></div> : '—'}</td><td className="p-2">{order.status === '체결' && !practice ? <button type="button" onClick={() => setReviewId(`${accountId}:${order.order_id}`)} className="whitespace-nowrap text-xs text-brand-700 underline">돌아보기</button> : '—'}</td></tr>)}</tbody></table></div>}</RemoteState>}
     {review && <OrderReflection key={`${scope}:${review.order_id}`} scope={scope} order={review} onClose={() => setReviewId(null)} />}
   </section></PracticeTarget>;
 }

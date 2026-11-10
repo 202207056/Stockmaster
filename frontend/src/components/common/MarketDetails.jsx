@@ -1,28 +1,31 @@
 import { comma } from '../../utils/format';
 import HelpIconButton from '../learn/HelpIconButton';
 import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
-import { RefreshCw } from 'lucide-react';
 import api from '../../api/client';
 import { fetchChart } from '../../api/data';
 import { requireArray, requireObject } from '../../api/normalize';
 import useRemote from '../../hooks/useRemote';
+import useAutoRefresh from '../../hooks/useAutoRefresh';
 import RemoteState from './RemoteState';
+import StockFundamentals from './StockFundamentals';
+import StockAnalysis from './StockAnalysis';
 import './MarketDetails.css';
 
-const tabs = [['orderbook', '호가'], ['trades', '체결'], ['daily', '일별']];
+const tabs = [['orderbook', '호가'], ['trades', '체결'], ['daily', '일별'], ['fundamentals', '투자 지표'], ['earnings', '실적'], ['investors', '투자자 동향'], ['financials', '재무정보'], ['opinions', '투자의견'], ['overview', '기업개요']];
+const analysisTabs = new Set(['earnings', 'investors', 'financials', 'opinions', 'overview']);
 const number = value => value == null ? '—' : Number(value).toLocaleString('ko-KR');
 
-export default function MarketDetails({ code }) {
+export default function MarketDetails({ code, active = true }) {
   const [tab, setTab] = useState('orderbook');
   const id = useId();
-  const selectTab = value => setTab(value);
+  const selectTab = value => { setTab(value); document.getElementById(`${id}-${value}`)?.scrollIntoView({ block: 'nearest', inline: 'nearest' }); };
   return <section className="market-details" aria-label="종목 시장 정보">
     <div className="market-details-heading"><div className="market-details-tabs" role="tablist" aria-label="시장 정보 구분">{tabs.map(([value, label], index) => <div key={value} className="market-details-tab" role="presentation"><button id={`${id}-${value}`} type="button" role="tab" aria-selected={tab === value} aria-controls={`${id}-panel`} tabIndex={tab === value ? 0 : -1} onClick={() => selectTab(value)} onKeyDown={event => {
       const next = event.key === 'ArrowRight' ? (index + 1) % tabs.length : event.key === 'ArrowLeft' ? (index + tabs.length - 1) % tabs.length : event.key === 'Home' ? 0 : event.key === 'End' ? tabs.length - 1 : null;
       if (next !== null) { event.preventDefault(); selectTab(tabs[next][0]); document.getElementById(`${id}-${tabs[next][0]}`)?.focus(); }
-    }}>{label}</button><MarketDefinition kind={value} label={label}/></div>)}</div></div>
+    }}>{label}</button>{['orderbook', 'trades', 'daily'].includes(value) && <MarketDefinition kind={value} label={label}/>}</div>)}</div></div>
     <div id={`${id}-panel`} role="tabpanel" aria-labelledby={`${id}-${tab}`} tabIndex={0}>
-      {code ? <MarketContent key={`${code}:${tab}`} code={code} tab={tab} /> : <p className="market-details-empty">종목을 선택하면 시장 정보를 확인할 수 있어요.</p>}
+      {code ? tab === 'fundamentals' ? <StockFundamentals key={code} code={code} active={active} /> : analysisTabs.has(tab) ? <StockAnalysis key={code} code={code} kind={tab} active={active} /> : <MarketContent key={`${code}:${tab}`} code={code} tab={tab} active={active} /> : <p className="market-details-empty">종목을 선택하면 시장 정보를 확인할 수 있어요.</p>}
     </div>
   </section>;
 }
@@ -35,17 +38,18 @@ async function loadDetails(code, tab, signal) {
   return data;
 }
 
-function MarketContent({ code, tab }) {
+function MarketContent({ code, tab, active }) {
   const resource = useRemote(useCallback(signal => loadDetails(code, tab, signal), [code, tab]), true, { cacheKey: JSON.stringify(['market-details', code, tab]), publicCache: true });
+  useAutoRefresh(resource, tab === 'daily' ? 60_000 : 15_000, active);
   const data = resource.data;
   const empty = tab === 'orderbook' ? !data?.asks.length && !data?.bids.length : !data?.rows.length;
   return <>
-    <div className="market-details-meta"><span>{tab === 'daily' ? '일별 가격 · 원 / 주' : 'KRX · 원 / 주'}</span><button type="button" aria-label={`${tabs.find(([value]) => value === tab)[1]} 새로고침`} disabled={resource.loading} onClick={resource.reload}><RefreshCw size={16} aria-hidden="true" className={resource.loading ? 'animate-spin' : undefined} /></button></div>
-    <RemoteState resource={resource} requiresAuth={false}>
-      {data && empty && <div role="status" className="market-details-empty"><p className="font-semibold">{tab === 'orderbook' ? '현재 제공되는 매수·매도 호가가 없습니다.' : tab === 'trades' ? '현재 제공되는 시장 체결 내역이 없습니다.' : '현재 제공되는 일별 가격이 없습니다.'}</p><p className="mt-2">{tab === 'daily' ? '잠시 후 다시 조회해 주세요.' : '조회는 완료됐지만 시세 제공처가 빈 데이터를 반환했습니다. 장 시작 전·휴장 또는 시세 제공 지연일 수 있습니다. 장중에도 계속 비어 있으면 시세 연결을 확인해야 합니다.'}</p><button type="button" onClick={resource.reload} className="mt-3 text-brand-700 underline">다시 조회</button></div>}
+    <div className="market-details-meta"><span>{tab === 'daily' ? '일별 가격 · 원 / 주' : 'KRX · 원 / 주'}</span></div>
+    <RemoteState resource={resource} requiresAuth={false} autoRefresh>
+      {data && empty && <div role="status" className="market-details-empty"><p className="font-semibold">{tab === 'orderbook' ? '현재 제공되는 매수·매도 호가가 없습니다.' : tab === 'trades' ? '현재 제공되는 시장 체결 내역이 없습니다.' : '현재 제공되는 일별 가격이 없습니다.'}</p><p className="mt-2">{tab === 'daily' ? '잠시 후 다시 조회해 주세요.' : '조회는 완료됐지만 시세 제공처가 빈 데이터를 반환했습니다. 장 시작 전·휴장 또는 시세 제공 지연일 수 있습니다. 장중에도 계속 비어 있으면 시세 연결을 확인해야 합니다.'}</p></div>}
       {data && !empty && <MarketTableViewport tab={tab} data={data} />}
     </RemoteState>
-    <p className="market-details-footnote">{tab === 'daily' ? '최근 거래일 기준 · 당일 값은 장중 변동될 수 있습니다.' : `${data?.market_time ? `호가 접수 ${data.market_time} · ` : ''}조회 시점 데이터`}{data?.observed_at && Number.isFinite(Date.parse(data.observed_at)) && <span className="block">조회: {new Date(data.observed_at).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' })} (한국시간)</span>}</p>
+    {tab === 'daily' && <p className="market-details-footnote">{tab === 'daily' && '최근 거래일 기준 · 당일 값은 장중 변동될 수 있습니다.'}{data?.observed_at && Number.isFinite(Date.parse(data.observed_at)) && <span className="block">조회: {new Date(data.observed_at).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' })} (한국시간)</span>}</p>}
   </>;
 }
 

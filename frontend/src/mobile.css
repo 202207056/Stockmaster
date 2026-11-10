@@ -1,0 +1,34 @@
+/* Mobile controls keep their labels and functionality; wide data stays in its
+   own scroll region instead of shrinking text or clipping the whole page. */
+.mobile-primary-nav { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.mobile-primary-nav > :is(a, button) { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: 52px; font-size: 12px; color: var(--theme-64748b, #64748b); cursor: pointer; }
+.mobile-primary-nav > .active { color: var(--theme-172b3a, #172b3a); font-weight: 750; }
+.mobile-menu-list { display: grid; gap: 4px; }
+.mobile-menu-list a { display: flex; gap: 14px; align-items: center; min-height: 52px; padding: 8px 12px; font-size: 16px; border-radius: 6px; }
+.mobile-menu-list a.active { background: var(--theme-f1f5f9, #f1f5f9); font-weight: 700; }
+:is(.mini-assets, .ocr-panel, .ocr-launcher)[data-floating-active="true"] { z-index: 45; }
+@media (max-width: 767px) {
+  :root { --mobile-nav-height: calc(64px + env(safe-area-inset-bottom, 0px)); }
+  body { font-size: 14px; }
+  #main { padding: 20px 16px; }
+  #main h1 { font-size: 22px; line-height: 1.35; }
+  #main :where(button, [role="button"]) { min-height: 44px; }
+  :is(#main, [role="dialog"]) .help-icon-button { position: relative; width: 44px; height: 44px; min-width: 44px; flex-shrink: 0; border: 0; background: transparent; font-size: 12px; }
+  :is(#main, [role="dialog"]) .help-icon-button::before { content: ''; position: absolute; inset: 13px; border: 1px solid currentColor; border-radius: 50%; pointer-events: none; }
+  #main :where(p, label) { line-height: 1.6; }
+  #main :where(.text-xs, .text-\[11px\], .text-\[10px\]) { font-size: 12px; }
+  .app-header { background: var(--surface, #fff); backdrop-filter: none; }
+  .app-header > div:first-child { gap: 8px; }
+  .app-header input { min-height: 44px; }
+  .app-layout { scroll-padding-bottom: 80px; }
+  :is(button, a, input, select, textarea) { scroll-margin-block: 80px; }
+  [role="dialog"] { overflow-wrap: anywhere; }
+  [role="dialog"] :where(button, [role="button"]) { min-height: 44px; }
+  [role="dialog"] [data-corner] { display: none; }
+  [role="dialog"]:has([data-corner]) { height: auto !important; max-height: calc(100dvh - 32px); }
+  .trading-page .trading-market-panel .market-details table { font-size: 13px; }
+  .trading-page .trading-market-panel .market-details :is(th, td) { padding: 12px 8px; }
+  .trading-page .trading-order-type-help { font-size: 12px; }
+  .term-help-popover,
+  #main .market-details .market-definition-popover { position: fixed; left: 16px; right: 16px; top: auto; bottom: calc(var(--mobile-nav-height) + 12px); width: auto; max-height: 55dvh; overflow-y: auto; transform: none; font-size: 14px; line-height: 1.6; }
+}

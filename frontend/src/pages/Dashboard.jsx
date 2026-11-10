@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import useAuth from '../hooks/useAuth';
 import { Heart, MessageSquare, Star } from 'lucide-react';
 import NewsThumbnail from '../components/common/NewsThumbnail';
@@ -15,9 +15,14 @@ import MarketStrip from '../components/dashboard/MarketStrip';
 import useRemote from '../hooks/useRemote';
 import { fetchRanking, fetchNews, fetchPosts } from '../api/data';
 import { numberOrNull, safeExternalUrl } from '../api/normalize';
+import useMobileLayout from '../hooks/useMobileLayout';
+import MobileSectionNav from '../components/common/MobileSectionNav';
 
 /** 기존 홈 레이아웃을 유지하며 순위·뉴스·게시글은 실제 API 응답으로 표시합니다. */
 export default function Dashboard() {
+  const mobile = useMobileLayout();
+  const [params] = useSearchParams();
+  const [rankingTab, setRankingTab] = useState('amount');
   const { user, isAuthenticated } = useAuth();
   const [favorites, setFavorites] = useState(getFavorites);
   const news = useRemote(useCallback((signal) => fetchNews(signal), []), true, { cacheKey: 'news', publicCache: true });
@@ -43,8 +48,9 @@ export default function Dashboard() {
   }, []);
 
   return (
-    <div className="flex flex-col gap-12">
-      {isAuthenticated && (
+    <div className="dashboard-page flex flex-col gap-12">
+      {mobile && <div className="mts-home-heading"><h1>시장</h1><Link to="/assets">내 자산 보기 →</Link></div>}
+      {isAuthenticated && !mobile && (
         <div>
           <h1 className="text-xl font-extrabold text-gray-900">
             {user?.user_name ? `${user.user_name}님, 안녕하세요` : '안녕하세요'}
@@ -66,9 +72,10 @@ export default function Dashboard() {
       {/* ── 실시간 랭킹 3열 ─────────────────────────────────────── */}
       <section>
         <SectionTitle spacious>실시간 랭킹</SectionTitle>
+        {mobile && <MobileSectionNav label="홈 랭킹 종류" items={rankings.map(col => [col.key, col.title])} value={rankingTab} onChange={setRankingTab} />}
         <div className="grid gap-8 lg:grid-cols-3">
           {rankings.map((col) => (
-            <div key={col.key} data-site-tour={`ranking-${col.key}`}>
+            <div key={col.key} hidden={mobile && !params.has('tour') && rankingTab !== col.key} data-site-tour={`ranking-${col.key}`}>
               <div className="mb-4">
                 <h3 className="text-base font-bold text-gray-700"><Link to={`/dashboard/rankings?type=${col.key}`} aria-label={`${col.title} 전체보기`} className="inline-flex items-center gap-2 py-1 focus-visible:outline-2 focus-visible:outline-brand-600">{col.title}<span aria-hidden="true" className="font-normal text-gray-500">&gt;</span></Link></h3>
               </div>
@@ -110,7 +117,7 @@ export default function Dashboard() {
       </section>
 
       {/* ── 뉴스 + 오른쪽 사이드 ────────────────────────────────── */}
-      <div className="grid gap-10 lg:grid-cols-3">
+      <div className="dashboard-secondary grid gap-10 lg:grid-cols-3">
         {/* 뉴스 */}
         <section className="lg:col-span-2" data-site-tour="news">
           <SectionTitle>오늘의 뉴스</SectionTitle>
