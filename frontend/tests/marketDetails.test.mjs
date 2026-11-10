@@ -15,7 +15,7 @@ const { default: api, clearRequestCache } = await server.ssrLoadModule('/src/api
 beforeEach(() => { localStorage.clear(); clearRequestCache(); });
 const container = document.getElementById('root');
 
-test('market tabs fetch only selected data, refresh, and clear data on symbol change', async () => {
+test('market tabs fetch only selected data without refresh buttons and clear data on symbol change', async () => {
   const calls = [];
   api.defaults.adapter = async config => {
     calls.push(config.url);
@@ -38,23 +38,22 @@ test('market tabs fetch only selected data, refresh, and clear data on symbol ch
     await select('일별');
     assert.match(container.textContent, /\+2.00%/);
     assert.equal(calls.at(-1), '/stocks/005930/chart');
-    const before = calls.length;
-    await React.act(async () => container.querySelector('[aria-label="일별 새로고침"]').click());
-    assert.equal(calls.length, before + 1);
+    assert.equal(container.querySelector('[aria-label="일별 새로고침"]'), null);
     await React.act(async () => root.render(render('')));
     assert.match(container.textContent, /종목을 선택/);
     assert.doesNotMatch(container.textContent, /51,000/);
   } finally { await React.act(async () => root.unmount()); }
 });
 
-test('unavailable market data shows a retry without fabricated rows', async () => {
+test('unavailable market data shows an error without manual retry or fabricated rows', async () => {
   api.defaults.adapter = async config => { throw Object.assign(new Error('Unavailable'), { config, response: { status: 503, data: { detail: '시장 조회 불가' } }, isAxiosError: true }); };
   const root = createRoot(container);
   try {
     await React.act(async () => root.render(React.createElement(AuthContext.Provider, { value: { user: null } }, React.createElement(MarketDetails, { code: '005930' }))));
     assert(container.querySelector('[role="alert"]'));
     assert.equal(container.querySelectorAll('tbody tr').length, 0);
-    assert.match(container.textContent, /다시 시도/);
+    assert.match(container.textContent, /시장 조회 불가/);
+    assert.doesNotMatch(container.textContent, /다시 시도/);
   } finally { await React.act(async () => root.unmount()); }
 });
 
