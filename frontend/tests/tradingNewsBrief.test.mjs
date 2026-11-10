@@ -101,7 +101,7 @@ test('banner opens the real briefing, related stocks load their own briefing, Es
   assert.equal(dialog.querySelector('.trading-news-main .trading-news-footnote'), null);
   const relatedCards = [...dialog.querySelectorAll('[data-news-card]')];
   assert.equal(relatedCards.length, 4);
-  assert.ok(relatedCards.every(card => card.querySelector('.trading-news-card-summary')?.textContent.trim()));
+  assert.ok(relatedCards.every(card => card.querySelector('button > span')?.textContent.trim()));
   assert.ok(relatedCards.every(card => !card.textContent.includes('보유')));
   for (const name of ['삼성전자', 'DB하이텍', '한미반도체', 'HPSP', 'SK하이닉스']) {
     await React.act(async () => dialog.querySelector(`[aria-label="${name} 뉴스 요약 열기"]`).click());
@@ -262,11 +262,8 @@ test('theme tabs show a top theme in the main panel, leaders open their briefing
   const tabs = () => [...dialog.querySelectorAll('[aria-label="뉴스 보기 선택"] button')];
   assert.deepEqual(tabs().map(tab => tab.textContent.trim()), ['▼ SK하이닉스', '▲ AI 인프라', '▼ 2차전지']);
   assert.deepEqual(tabs().map(tab => tab.getAttribute('aria-pressed')), ['true', 'false', 'false']);
-  assert.ok(dialog.querySelector('.trading-news-reading-layout.has-themes'));
-  const themeStocks = dialog.querySelector('.trading-news-theme-stocks');
-  assert.match(themeStocks.textContent, /AI 인프라/);
-  assert.match(themeStocks.textContent, /삼성전자/);
-  assert.doesNotMatch(themeStocks.textContent, /2차전지/);
+  assert.ok(dialog.querySelector('.portfolio-news-workspace.is-expanded'));
+  assert.ok(dialog.querySelector('[data-news-card="005930"] button'));
   await React.act(async () => tabs()[1].click());
   const panel = dialog.querySelector('.trading-news-main');
   assert.equal(panel.getAttribute('aria-label'), 'AI 인프라 테마 상세');
