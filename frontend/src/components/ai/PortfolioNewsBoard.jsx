@@ -2,12 +2,17 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { fetchStockBrief } from '../../api/data';
 import { readStockBrief, subscribeStockBrief } from '../../api/stockBriefCache';
 import { newsColumns, newsTheme, relatedNewsPairs } from '../../utils/newsThemes';
+import BannerTone from './BannerTone';
 import NewsSummaryBody, { hasNewsCitations, newsHeadline, newsParagraphs } from '../common/NewsSummaryBody';
 import { comma, rate, signTextClass } from '../../utils/format';
 import './PortfolioNewsBoard.css';
 import PortfolioNewsConnections from './PortfolioNewsConnections';
 
 const hasNews = news => Boolean(news?.title || newsParagraphs(news).length);
+// 카드에는 한 줄 요약(banner_summary)만 쓴다. 문장이나 기사 제목은 카드에 올리지 않는다.
+const cardSummary = news => (typeof news?.banner_summary === 'string' && news.banner_summary.length <= 30 ? news.banner_summary : '');
+// 상세 제목은 같은 소식을 더 자세히 쓴 banner_detail이 있으면 그것을, 없으면 한 줄 요약을 쓴다.
+const cardDetail = news => (cardSummary(news) && news.banner_detail) || cardSummary(news);
 const plainHeadline = text => (text || '').replace(/\s*\[\d+\]/g, '').trim();
 function stockInfo(stock, news) {
   const price = Number.isFinite(news?.price) && news.price > 0 ? news.price : stock.price;
@@ -68,7 +73,7 @@ export default function PortfolioNewsBoard({ stocks, records = [], status = {}, 
   for (const record of [...records].reverse()) {
     if (displayed[record.symbol_code] && record.headline) displayed[record.symbol_code] = {
       ...displayed[record.symbol_code], banner_title: displayed[record.symbol_code].banner_title || displayed[record.symbol_code].title, title: record.headline,
-      banner_summary: record.banner_summary || displayed[record.symbol_code].banner_summary,
+      banner_summary: displayed[record.symbol_code].banner_summary || record.banner_summary,
     };
   }
   const chosen = stocks.find(stock => stock.code === selected);
@@ -80,7 +85,7 @@ export default function PortfolioNewsBoard({ stocks, records = [], status = {}, 
     if (chosen && track.current) track.current.scrollLeft = 0;
   }, [selected, adjacentCodes]);
   const personal = chosen && records.find(item => item.symbol_code === selected);
-  const detailHeadline = brief ? newsHeadline(brief) : null;
+  const detailHeadline = brief ? cardDetail(brief) || newsHeadline(brief) : null;
   useEffect(() => {
     if (!autoGenerateReady || !chosen || !brief || (personal?.trend_guesses?.length && personal?.watch_points?.length && personal?.banner_summary) || status[selected]?.loading || attempted.current.has(selected)) return;
     attempted.current.add(selected);
@@ -159,7 +164,7 @@ export default function PortfolioNewsBoard({ stocks, records = [], status = {}, 
             {!publicOnly && chosen.quantity > 0 && <span className="text-xs text-gray-500">{comma(chosen.quantity)}주 보유</span>}
           </div>
           {!publicOnly && !hasNews(brief) && <p className="portfolio-news-stock-info">{stockInfo(chosen, brief)}</p>}
-          {detailHeadline && <div className="trading-news-summary"><p>{plainHeadline(detailHeadline)}</p></div>}
+          {detailHeadline && <div className="trading-news-summary"><p>{plainHeadline(detailHeadline)}{cardSummary(brief) && brief.banner_tone && <> <BannerTone tone={brief.banner_tone} rate={brief.change_rate} /></>}</p></div>}
         </header>
         {brief ? <div className="portfolio-news-detail-content trading-news-sections" key={`${selected}-${brief.generated_at}`}>
           <NewsSummaryBody brief={brief} />
@@ -176,11 +181,14 @@ export default function PortfolioNewsBoard({ stocks, records = [], status = {}, 
             <h3>{column.theme}{column.continued ? ' · 계속' : ''}</h3>
             {column.stocks.map(stock => {
               const news = displayed[stock.code];
-              const headline = news?.banner_title || (hasNews(news) ? newsHeadline(news) : '');
+              // 요약이 없으면 흐린 안내 문구를 보여 준다.
+              const headline = cardSummary(news);
+              const moveTitle = news && ('banner_title' in news ? news.banner_title : news.title);
+              const note = !news ? (errors[stock.code] ? '뉴스를 불러오지 못했어요 · 눌러서 확인' : '뉴스 요약을 불러오고 있어요…')
+                : !hasNews(news) ? '최근 확인되는 뉴스가 없어요' : moveTitle ? '회사 개별 소식 없음 · 시장 흐름' : '회사 개별 소식 없음';
               return <div className="portfolio-news-banner" data-news-card={stock.code} key={stock.code}>
                 <button type="button" onClick={() => select(stock.code)} aria-label={`${stock.name} 뉴스 요약 열기`} aria-expanded={false}>
-                  <div className="portfolio-news-banner-heading"><strong>{stock.name}</strong>{Number.isFinite(news?.change_rate ?? stock.change) && <b className={signTextClass(news?.change_rate ?? stock.change)}>{rate(news?.change_rate ?? stock.change)}</b>}</div><span title={plainHeadline(headline)}>{headline ? plainHeadline(headline) : news ? '최근 확인되는 뉴스가 없어요'
-                    : errors[stock.code] ? '뉴스를 불러오지 못했어요 · 눌러서 확인' : '뉴스 요약을 불러오고 있어요…'}</span>
+                  <div className="portfolio-news-banner-heading"><strong>{stock.name}</strong>{Number.isFinite(news?.change_rate ?? stock.change) && <b className={signTextClass(news?.change_rate ?? stock.change)}>{rate(news?.change_rate ?? stock.change)}</b>}{headline && <BannerTone tone={news?.banner_tone} rate={news?.change_rate ?? stock.change} />}</div><span title={headline ? plainHeadline(headline) : undefined} className={headline ? undefined : 'portfolio-news-banner-note'}>{headline ? plainHeadline(headline) : note}</span>
                   <i aria-hidden="true">›</i>
                 </button>
               </div>;

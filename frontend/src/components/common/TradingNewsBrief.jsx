@@ -15,6 +15,7 @@ import { comma, rate, signTextClass } from '../../utils/format';
 import { kstStamp } from '../../utils/kstStamp';
 import './TradingNewsBrief.css';
 import NewsSummaryBody, { newsHeadline } from './NewsSummaryBody';
+import BannerTone from '../ai/BannerTone';
 import { newsTheme } from '../../utils/newsThemes';
 
 // Show the browser copy at once, then replace it with the server result.
@@ -105,7 +106,7 @@ export default function TradingNewsBrief({ code, triggerLabel, initialBrief }) {
       onClick={() => { setPicked(false); setSelectedCode(code); setThemeId(null); setOpen(true); }} aria-haspopup="dialog" aria-expanded={open}>
       <span className="min-w-0 flex-1">{triggerLabel ? <span>{triggerLabel}</span> : <>
         <span className="trading-news-banner__label"><span className="trading-news-banner__icon"><Sparkles size={14} aria-hidden="true" /></span>{brief ? question(brief.change_rate) : 'AI 뉴스'}</span>
-        <span className="trading-news-banner__headline">{brief ? brief.banner_title || newsHeadline(brief) : '뉴스 요약을 불러오고 있어요…'}</span>
+        <span className="trading-news-banner__headline">{brief ? brief.banner_summary || brief.banner_title || newsHeadline(brief) : '뉴스 요약을 불러오고 있어요…'}</span>
       </>} </span>
       <ChevronRight size={18} className="shrink-0" aria-hidden="true" />
     </button>
@@ -135,7 +136,7 @@ export default function TradingNewsBrief({ code, triggerLabel, initialBrief }) {
             : <NewsDetail key={selectedCode} brief={activeBrief} loading={activeState.loading} autoFocus={picked} />}
           {relatedStocks.length > 0 && <section className="trading-news-related" aria-label="관련 종목">
             <h3 className="trading-news-eyebrow">관련 종목</h3>
-            {relatedStocks.map(stock => <RelatedCard key={stock.code} stock={stock} onSelect={selectStock} />)}
+            {relatedStocks.map(stock => <RelatedCard key={stock.code} stock={stock} owner={activeBrief?.name} onSelect={selectStock} />)}
           </section>}
         </StockConnections>
         {relatedThemes.length > 0 && <aside className="trading-news-theme-stocks" aria-label="관련 테마 종목">
@@ -154,14 +155,23 @@ export default function TradingNewsBrief({ code, triggerLabel, initialBrief }) {
   </>;
 }
 
-function RelatedCard({ stock, onSelect }) {
-  const fetched = useStockBrief(stock.code, !stock.title);
-  const summary = stock.title || (fetched.data ? fetched.data.banner_title || newsHeadline(fetched.data) : null);
+function RelatedCard({ stock, owner, onSelect }) {
+  // 브리핑이 준 관련 종목은 본 종목과의 관계를 첫 줄에 항상 보여 준다.
+  const related = owner && 'relation' in stock;
+  const fetched = useStockBrief(stock.code, !related && !stock.title);
+  const fetchedData = fetched.data;
+  const kind = /(제조사|업체)$/.test(stock.relation || '') && !/동종업체$/.test(stock.relation) ? 'peer' : stock.relation ? 'link' : 'none';
+  // 경쟁사·고객사처럼 누구 기준인지 필요한 관계는 '본 종목의 …'로, 제조사·업체는 그대로 쓴다. 회사 소식이 있으면 둘째 줄에 붙인다.
+  const relation = !related ? null
+    : kind === 'link' ? `${owner}의 ${stock.relation}` : kind === 'peer' ? stock.relation : null;
+  const summary = stock.banner_summary || (relation ? null : stock.title || (fetchedData ? fetchedData.banner_summary || fetchedData.banner_title || newsHeadline(fetchedData) : null));
+  const tone = stock.banner_summary ? stock.banner_tone : !stock.title && fetchedData?.banner_summary ? fetchedData.banner_tone : null;
   return <button type="button" className="trading-news-related-card" data-news-card={stock.code}
     onClick={() => onSelect(stock.code, stock.name, stock.change_rate)} aria-label={`${stock.name} 뉴스 요약 열기`}>
     <span className="flex flex-wrap items-baseline gap-2"><strong>{stock.name}</strong>
-      <span className={signTextClass(stock.change_rate)}>{rate(stock.change_rate)}</span></span>
-    <span className="trading-news-card-summary">{summary || (fetched.loading ? '뉴스 요약을 불러오고 있어요…' : '최근 확인되는 뉴스가 없어요')}</span>
+      <span className={signTextClass(stock.change_rate)}>{rate(stock.change_rate)}</span><BannerTone tone={tone} rate={stock.change_rate} /></span>
+    {relation && <span className="trading-news-card-relation">{relation}</span>}
+    {(summary || !relation) && <span className="trading-news-card-summary">{summary || (fetched.loading ? '뉴스 요약을 불러오고 있어요…' : '최근 확인되는 뉴스가 없어요')}</span>}
   </button>;
 }
 
@@ -176,7 +186,7 @@ function NewsDetail({ brief, loading, autoFocus }) {
         <div className="portfolio-news-detail-tools"><span>{newsTheme(brief)}</span></div>
         <div className="flex flex-wrap items-baseline gap-2"><h3 className="text-xl font-extrabold text-gray-900">{brief.name}</h3>
           <span className={`font-bold ${signTextClass(brief.change_rate)}`}>{rate(brief.change_rate)}</span></div>
-        <div className="trading-news-summary"><p>{newsHeadline(brief).replace(/\s*\[\d+\]/g, '')}</p></div>
+        <div className="trading-news-summary"><p>{((brief.banner_summary && brief.banner_detail) || brief.banner_summary || newsHeadline(brief)).replace(/\s*\[\d+\]/g, '')}{brief.banner_summary && brief.banner_tone && <> <BannerTone tone={brief.banner_tone} rate={brief.change_rate} /></>}</p></div>
       </header>
       <div className="trading-news-sections"><NewsSummaryBody brief={brief} />
         <BriefReport key={brief.generated_at} kind="stock" code={brief.symbol_code} generatedAt={brief.generated_at} />
