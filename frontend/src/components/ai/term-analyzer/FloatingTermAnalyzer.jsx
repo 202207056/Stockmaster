@@ -207,7 +207,7 @@ function Surface() {
         <X size={12} aria-hidden="true" />
       </button>
     </div>}
-    {open && <aside ref={panelRef} id="ocr-analysis-panel" className={`ocr-panel${closing ? ' is-closing' : ''}`}
+    {open && <aside ref={panelRef} id="ocr-analysis-panel" className={`ocr-panel${mobile ? ' is-compact' : ''}${closing ? ' is-closing' : ''}`}
       style={{ ...panelStyle, transformOrigin: closing ? '0 0' : growFrom, ...(closing && { '--sx': closing.sx, '--sy': closing.sy }) }}
       onPointerDownCapture={event => raiseFloatingPanel(event.currentTarget)}
       role="dialog" aria-modal="false" aria-labelledby="ocr-panel-title">
@@ -223,7 +223,7 @@ function Surface() {
       <PanelBoundary><Suspense fallback={<p className="ocr-note" role="status">분석 도구를 불러오고 있습니다…</p>}>
         <AnalysisPanel onCaptureVisibility={hideForCapture} showMarks={marksOn} searchSlot={searchSlot} />
       </Suspense></PanelBoundary>
-      {EDGES.map((edge) => <span key={edge} className={`ocr-resize ocr-resize-${edge}`} aria-hidden="true" data-drag={edge} {...pointer} />)}
+      {!mobile && EDGES.map((edge) => <span key={edge} className={`ocr-resize ocr-resize-${edge}`} aria-hidden="true" data-drag={edge} {...pointer} />)}
     </aside>}
   </div>, document.body);
 }

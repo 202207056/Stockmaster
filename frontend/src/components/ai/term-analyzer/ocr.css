@@ -162,3 +162,9 @@ dialog.ocr-editor[open]{display:flex;flex-direction:column}dialog.ocr-editor::ba
 @media(max-width:639px){.ocr-panel{transform-origin:bottom right!important}}
 /* Narrow screens: the panel opens from the edge tab without the button animation. */
 @media(max-width:639px){.ocr-minimize{opacity:1}.ocr-resize{display:none}.ocr-panel{border-radius:14px;animation:none}.ocr-panel-header{padding:10px}.ocr-panel-body{padding:12px 14px 20px}.ocr-panel button{min-height:44px}.ocr-panel input,.ocr-panel textarea{font-size:16px}}
+/* The search button stays inside the 40px search box even though panel buttons are 44px tall on phones. */
+@media(max-width:639px){.ocr-panel .ocr-search button{min-height:34px}}
+/* Narrow screens up to 767px open from the edge tab, so the panel does not grow out of the round button. */
+.ocr-panel.is-compact{animation:none}
+/* Space above a definition card sits outside the clipping box, so the card bottom is not cut off. */
+.ocr-panel-body .ocr-reveal{margin-top:14px}

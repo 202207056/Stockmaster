@@ -263,14 +263,14 @@ export default function TermAnalysisPanel({ onCaptureVisibility, showMarks = tru
   };
   // Same definition card as the glossary. The AI warning lives once on the experimental switch in My page, not on every card.
   const aiCard = (term, closing = false) => <div key={`ai:${term.term}`} className={`ocr-reveal${closing ? ' is-closing' : ''}`}><div className="ocr-reveal-clip">
-    <TermCard ref={definition} className="mt-3.5" categoryLabel={term.basis === 'data' ? '종목 데이터' : undefined} term={{ term: term.term, desc: term.meaning }} beforeDescription={<CompanyFacts term={term} />}>
+    <TermCard ref={definition} categoryLabel={term.basis === 'data' ? '종목 데이터' : undefined} term={{ term: term.term, desc: term.meaning }} beforeDescription={<CompanyFacts term={term} />}>
       {term.code && <Link className="relative z-10 mt-3 text-xs font-medium text-brand-600" to={`/trading?code=${encodeURIComponent(term.code)}`}>종목 보기 · {term.code} →</Link>}
     </TermCard>
   </div></div>;
   const emptyNote = tab === 'history' ? '검색한 말이 여기에 남아요. 위 검색창에 궁금한 말을 입력해 보세요.'
     : ai.status === 'done' ? '이 글에서는 더 찾은 말이 없어요.' : '아직 찾은 말이 없어요. 영역 선택 분석으로 궁금한 곳을 골라 보세요.';
   const searchBox = <form className="ocr-search" role="search" onSubmit={(event) => { event.preventDefault(); search(word); }}>
-    <input value={word} maxLength={40} aria-label="궁금한 말 검색" placeholder="궁금한 말 검색 (예: 듀레이션)"
+    <input value={word} maxLength={40} aria-label="궁금한 말 검색" placeholder="궁금한 말 검색 (예: 공매도)"
       onChange={(event) => setWord(event.target.value)} />
     <button type="submit" aria-label="검색" disabled={!word.trim()}><Search size={15} aria-hidden="true" /></button>
   </form>;
@@ -306,7 +306,7 @@ export default function TermAnalysisPanel({ onCaptureVisibility, showMarks = tru
     {searched?.status === 'done' && aiCard(searched.detail)}
     {aiEntry && aiCard(aiEntry, !selected)}
     {entry && <div key={selected ?? leaving} className={`ocr-reveal ${selected ? '' : 'is-closing'}`}><div className="ocr-reveal-clip">
-      <TermCard ref={definition} className="mt-3.5" categoryLabel={`기존 용어사전 · ${CATEGORIES[entry.category]}`} term={entry} onPickRelated={pick} />
+      <TermCard ref={definition} categoryLabel={`기존 용어사전 · ${CATEGORIES[entry.category]}`} term={entry} onPickRelated={pick} />
     </div></div>}
     <button type="button" className="ocr-reset" onClick={reset}>결과 초기화</button>
     {marksHere && <PageMarks marks={pageMarks} scan={capture.fresh ? capture : null} active={selected} onPick={toggle} describe={describe} />}
