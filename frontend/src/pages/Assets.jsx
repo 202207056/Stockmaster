@@ -72,7 +72,7 @@ export default function Assets() {
             <AssetStat label="평가손익" term="eval_pnl" value={totals?.unrealized != null ? wonSigned(totals.unrealized) : null} pending={pending} tone={totals?.unrealized != null ? signTextClass(totals.unrealized) : ''} onClick={() => setAdviceVisible(!adviceVisible)} expanded={adviceVisible} controls={adviceId} />
           </dl>
         </section></PracticeTarget>
-        {adviceVisible && totals?.unrealized != null && <AssetPnlAdvice key={`${accountId}:${Math.sign(totals.unrealized)}`} id={adviceId} amount={totals.unrealized} />}
+        {adviceVisible && totals?.unrealized != null && <AssetPnlAdvice key={`${accountId}:${Math.sign(totals.unrealized)}`} id={adviceId} amount={totals.unrealized} accountId={accountId} practice={!!practice} />}
         </div>
 
         {mobile && <MobileSectionNav label="자산 보기" items={[["holdings", "보유종목"], ["detail", "잔고 상세"], ["analysis", "자산 분석"]]} value={mobileSection} onChange={setMobileSection} />}

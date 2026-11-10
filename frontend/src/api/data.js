@@ -80,6 +80,22 @@ export const fetchPortfolioBrief = async (accountId, code, signal, profile = 'lu
   if (!isPortfolioBrief(data, code)) throw new Error('브리핑 응답 형식을 확인할 수 없습니다.');
   return withGuesses(data);
 };
+// 내 자산 AI 코치. 서버가 계좌 숫자를 직접 계산하므로 계좌 번호만 보낸다.
+const isText = value => typeof value === 'string' && value.trim();
+const isAssetCoach = data => data.status === 'ok' && isText(data.headline) && isText(data.intro) && isText(data.disclaimer)
+  && Number.isFinite(Date.parse(data.as_of)) && Array.isArray(data.checkpoints) && data.checkpoints.length === 3
+  && data.checkpoints.every(item => isText(item?.title) && isText(item?.body));
+// 덧붙임 문단, 한 줄 정리, 굵게 보여 줄 구절은 없어도 된다. 형식이 다르면 그 칸만 버린다.
+const withCoachExtras = data => ({ ...data,
+  checkpoints: data.checkpoints.map(item => ({ ...item, detail: isText(item.detail) ? item.detail : null })),
+  takeaway: isText(data.takeaway) ? data.takeaway : null,
+  emphasis: Array.isArray(data.emphasis) ? data.emphasis.filter(isText).slice(0, 4) : [] });
+export const fetchAssetCoach = async (accountId, signal) => {
+  const data = requireObject((await api.post('/ai/asset-coach', { account_id: accountId }, { signal })).data);
+  if (data.status === 'no_holdings') return data;
+  if (!isAssetCoach(data)) throw new Error('AI 조언 응답 형식을 확인할 수 없습니다.');
+  return withCoachExtras(data);
+};
 // Saved briefings (today back to three days ago) are read without generating anything.
 export const fetchPortfolioBriefHistory = async (accountId, signal) => {
   const data = requireObject((await api.get('/ai/portfolio-briefs', {
