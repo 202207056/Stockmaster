@@ -135,4 +135,3 @@ function GuessResult({ data }) {
     </div>}
   </>;
 }
-

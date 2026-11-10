@@ -29,4 +29,3 @@ export function SourceLink({ source, summarySource = false }) {
     <button type="button" className="portfolio-brief-cite-copy" onClick={copy} aria-label={`${label} 기사 링크 복사`}>{copied ? '복사됨' : '⧉'}</button>
   </span>;
 }
-
