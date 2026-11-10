@@ -1,52 +1,95 @@
-import { useId, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { ChevronRight, Sparkles } from 'lucide-react';
+import { fetchAssetCoach } from '../../api/data';
+import { kstStamp } from '../../utils/kstStamp';
 import { won, signTextClass } from '../../utils/format';
 import './AssetPnlAdvice.css';
 
-export default function AssetPnlAdvice({ amount, id }) {
+// 처음 펼칠 때 한 번만 계좌 조언을 요청한다. 접힌 상태에서는 AI를 부르지 않는다.
+export default function AssetPnlAdvice({ amount, id, accountId, practice = false }) {
   const [expanded, setExpanded] = useState(false);
+  const [coach, setCoach] = useState({ status: practice || !accountId ? 'general' : 'idle' });
+  const job = useRef(null);
   const bodyId = useId();
   const bannerRef = useRef(null);
   const loss = amount < 0;
   const neutral = amount === 0;
+  useEffect(() => () => job.current?.abort(), []);
+  function load() {
+    job.current?.abort();
+    const controller = new AbortController();
+    job.current = controller;
+    setCoach({ status: 'loading' });
+    fetchAssetCoach(accountId, controller.signal)
+      .then(data => { if (!controller.signal.aborted) setCoach(data.status === 'ok' ? { status: 'ok', data } : { status: 'general' }); })
+      .catch(() => { if (!controller.signal.aborted) setCoach({ status: 'error' }); });
+  }
+  function toggle() {
+    if (!expanded && coach.status === 'idle') load();
+    setExpanded(!expanded);
+  }
+  const advice = coach.data;
+  const meta = coach.status === 'loading' ? '분석 중'
+    : coach.status === 'ok' ? `${kstStamp(advice.as_of)} 기준 · 내 계좌 분석` : '기본 안내';
   return <section id={id} className="asset-pnl-advice" aria-label="AI 투자 코치" onKeyDown={event => {
     if (event.key === 'Escape' && expanded) { event.stopPropagation(); setExpanded(false); bannerRef.current?.focus({ preventScroll: true }); }
   }}>
-    <button ref={bannerRef} type="button" className="asset-pnl-advice-banner" aria-expanded={expanded} aria-controls={bodyId} onClick={() => setExpanded(!expanded)}>
+    <button ref={bannerRef} type="button" className="asset-pnl-advice-banner" aria-expanded={expanded} aria-controls={bodyId} onClick={toggle}>
       <Sparkles size={19} className="asset-pnl-advice-icon" aria-hidden="true" />
       <span className="asset-pnl-advice-headline"><strong className={signTextClass(amount)}>{won(Math.abs(amount))}</strong>{neutral ? '의 평가손익! 다음 투자는 어떻게 준비할까요? 🙂' : loss ? '의 손실! 어떻게 해야 할까요? 😢' : '의 수익! 어떻게 해야 현명한 투자자일까요? 😉'}</span>
       <ChevronRight size={18} className={`asset-pnl-advice-chevron${expanded ? ' is-open' : ''}`} aria-hidden="true" />
     </button>
     <div id={bodyId} className={`asset-pnl-advice-expansion${expanded ? ' is-open' : ''}`} inert={!expanded} aria-hidden={!expanded}>
-      <div className="asset-pnl-advice-clip"><article className="asset-pnl-advice-body">
-        <div className="asset-pnl-advice-meta"><span><Sparkles size={13} aria-hidden="true" /> AI 투자 코치</span><span>미리보기 · 예시 조언</span></div>
-        {loss ? <LossAdvice /> : <>
-        <h3>{neutral ? '다음 투자에도 나만의 기준을 세워보세요.' : '수익이 났을 때가 투자 원칙을 점검할 기회예요.'}</h3>
-        <p>{neutral ? '수익과 손실이 균형을 이루고 있어요. 다음 주문 전에 투자 이유와 감당할 수 있는 손실을 정해 보세요.' : loss ? '손실을 보면 마음이 급해질 수 있어요. 본전을 빨리 되찾기 위한 추가 매수보다는, 보유 이유와 투자 비중을 먼저 살펴보세요.' : '수익이 나서 기쁘시죠? 이번 결과만으로 투자금을 크게 늘리기보다, 어떤 판단이 도움이 됐는지 돌아보세요.'}</p>
-        <ol>
-          <li><h4>{loss ? '물타기 전에 매수 이유부터 확인해요' : '처음 세운 목표를 다시 확인해요'}</h4><p>{loss ? '가격이 내려갔다는 사실만으로 더 사지는 마세요. 처음 기대했던 실적과 사업 전망이 여전히 유효한지 확인한 뒤 추가 매수를 판단해요.' : '목표 수익률과 투자 기간에 가까워졌는지 살펴보세요. 단순히 올랐다는 이유보다는 앞으로도 보유할 근거가 있는지 점검해요.'}</p></li>
-          <li><h4>한 종목에 너무 많이 담고 있지는 않나요?</h4><p>{loss ? '특정 종목이나 업종에 몰려 있다면 추가 하락의 영향도 커질 수 있어요. 현재 평가금액 기준 비중을 확인하고, 부담이 크다면 일부 비중 조절을 검토해요.' : '주가가 오르면서 한 종목의 비중이 처음 계획보다 커졌을 수 있어요. 쏠림이 커졌다면 일부 이익 실현이나 현금 비중 조절을 검토해요.'}</p></li>
-          <li><h4>다음 결정을 숫자와 기록으로 남겨요</h4><p>감당할 수 있는 추가 손실과 보유 기간을 적어보세요. 개인·외국인·기관의 매매 동향은 실적과 뉴스와 함께 참고하되, 순매수만으로 상승을 확신하지 마세요.</p></li>
-        </ol>
+      <div className="asset-pnl-advice-clip"><article className="asset-pnl-advice-body" aria-busy={coach.status === 'loading'}>
+        <div className="asset-pnl-advice-meta"><span><Sparkles size={13} aria-hidden="true" /> AI 투자 코치</span><span>{meta}</span></div>
+        {coach.status === 'loading' ? <div className="asset-pnl-advice-loading" role="status">
+          <span /><span /><span />
+          <p>계좌 데이터를 살펴보는 중입니다…</p>
+        </div> : coach.status === 'ok' ? <>
+          <h3>{twoLines(advice.headline)}</h3>
+          <p>{advice.intro}</p>
+          <ol>{advice.checkpoints.map(item => <li key={item.title}><h4>{item.title}</h4><p>{emphasized(item.body, advice.emphasis)}</p>{item.detail && <p>{emphasized(item.detail, advice.emphasis)}</p>}</li>)}</ol>
+          {advice.takeaway && <p className="asset-pnl-advice-takeaway">{emphasized(advice.takeaway, advice.emphasis)}</p>}
+          <p className="asset-pnl-advice-note">{advice.disclaimer} 배너 금액은 조회 시점에 따라 본문과 조금 다를 수 있습니다.</p>
+        </> : <>
+          <GeneralAdvice loss={loss} neutral={neutral} />
+          {coach.status === 'error' ? <p className="asset-pnl-advice-note" role="status">AI 조언을 불러오지 못해 일반적인 점검 항목을 보여 드립니다. <button type="button" className="asset-pnl-advice-retry" onClick={load}>다시 시도</button></p>
+            : <p className="asset-pnl-advice-note">모의투자 연습용 설명이며 투자 권유가 아닙니다.</p>}
         </>}
-        <p className="asset-pnl-advice-note">실제 AI 분석 전의 목업입니다. 배너 금액은 계좌 평가손익이며, 본문은 개별 종목·뉴스·투자자 동향을 분석하지 않은 예시입니다.</p>
         <button type="button" className="asset-pnl-advice-close" onClick={() => { setExpanded(false); bannerRef.current?.focus({ preventScroll: true }); }}>조언 접기</button>
       </article></div>
     </div>
   </section>;
 }
 
-function LossAdvice() {
+// 제목이 쉼표로 이어진 두 절이면 쉼표 뒤에서 줄을 바꾼다.
+function twoLines(headline) {
+  const at = headline.indexOf(', ');
+  if (at < 6 || headline.length - at < 8) return headline;
+  return <>{headline.slice(0, at + 1)}<br />{headline.slice(at + 2)}</>;
+}
+
+// 서버가 알려 준 구절만 굵게 보여 준다. 글은 모두 텍스트로만 넣고 HTML로 해석하지 않는다.
+function emphasized(text, phrases = []) {
+  let parts = [text];
+  for (const phrase of phrases) {
+    parts = parts.flatMap((part, index) => {
+      const at = typeof part === 'string' ? part.indexOf(phrase) : -1;
+      return at < 0 ? [part] : [part.slice(0, at), <strong key={`${phrase}:${index}`}>{phrase}</strong>, part.slice(at + phrase.length)];
+    });
+  }
+  return parts;
+}
+
+// AI 조언을 쓸 수 없을 때(실패, 보유 종목 없음, 연습 화면) 보여 주는 일반 점검 항목.
+function GeneralAdvice({ loss, neutral }) {
   return <>
-    <p className="asset-pnl-advice-example">예시 계좌: 토마토 · 2026년 11월 10일 조회 기준</p>
-    <h3>260만 원을 서둘러 만회하기보다,<br />세 종목에 몰린 비중부터 살펴봐요.</h3>
-    <p>지금 예시 계좌에서는 추가 물타기를 잠시 멈추고, 집중된 투자 비중을 줄일지 먼저 검토하는 편이 좋겠어요. 손실을 빨리 복구하려고 투자금을 늘리기 전에 아래 세 가지를 확인해 보세요.</p>
+    <h3>{neutral ? '다음 투자에도 나만의 기준을 세워 보시기 바랍니다.' : loss ? '손실을 서둘러 만회하기보다 계좌부터 살펴봅니다.' : '수익이 났을 때가 투자 원칙을 점검할 기회입니다.'}</h3>
+    <p>{neutral ? '수익과 손실이 균형을 이루고 있습니다. 다음 주문 전에 투자 이유와 감당할 수 있는 손실을 정해 보시기 바랍니다.' : loss ? '손실을 보면 마음이 급해질 수 있습니다. 본전을 빨리 되찾으려 하기보다, 보유 이유와 투자 비중을 먼저 살펴보시기 바랍니다.' : '반가운 결과입니다. 이번 결과만으로 투자금을 크게 늘리기보다, 어떤 판단이 도움이 됐는지 돌아보시기 바랍니다.'}</p>
     <ol>
-      <li><h4>남은 현금 63만 원은 일단 보유해요</h4><p>가격이 떨어졌다는 이유만으로 추가 매수하지 마세요. 현금을 더 투입하기 전에, 지금 가진 종목을 계속 보유할 근거가 있는지부터 확인해요.</p></li>
-      <li><h4>SK하이닉스·삼성전기·삼성전자를 먼저 점검해요</h4><p>이 계좌는 <strong>매입금액의 약 85%가 세 종목에 집중</strong>돼 있어요. 각 종목에 대해 “지금 현금만 가지고 있어도 이 금액만큼 다시 살까?”를 생각해 보세요.</p><p>매수 이유가 깨졌거나 본전 회복만 기다리고 있다면 일부 비중을 줄일지 검토해요. 다만 최신 실적과 종목별 손실을 확인하지 않은 예시이므로, 어느 종목부터 팔아야 한다고 단정할 수는 없어요.</p></li>
-      <li><h4>추가로 감당할 수 있는 손실을 금액으로 정해요</h4><p>주식 평가금액 약 <strong>672만 원이 여기서 10% 더 하락하면 약 67만 원의 추가 손실</strong>이 생겨요. 하락을 예측하는 말이 아니라, 내 계좌의 위험을 가늠하기 위한 예시예요.</p><p>그 정도의 추가 손실도 부담스럽다면, 주식 비중을 낮추고 현금을 확보하는 방향을 검토해 보세요.</p></li>
+      <li><h4>{loss ? '더 사기 전에 매수 이유부터 확인합니다' : '처음 세운 목표를 다시 확인합니다'}</h4><p>{loss ? '가격이 내려갔다는 사실만으로 판단하기보다, 처음 기대했던 실적과 사업 전망이 여전히 유효한지 먼저 확인해 보시기 바랍니다.' : '목표 수익률과 투자 기간에 가까워졌는지 살펴보시기 바랍니다. 단순히 올랐다는 이유보다는 앞으로도 보유할 근거가 있는지 점검합니다.'}</p></li>
+      <li><h4>한 종목에 너무 많이 담고 있는지 확인합니다</h4><p>{loss ? '특정 종목이나 업종에 몰려 있다면 추가 하락의 영향도 커질 수 있습니다. 현재 평가금액 기준 비중을 확인하고, 그 비중이 감당할 수 있는 수준인지 검토해 보시기 바랍니다.' : '주가가 오르면서 한 종목의 비중이 처음 계획보다 커졌을 수 있습니다. 쏠림이 커졌다면 계좌 전체의 주식 비중과 현금 비중을 어떻게 둘지 검토해 보시기 바랍니다.'}</p></li>
+      <li><h4>다음 결정을 숫자와 기록으로 남깁니다</h4><p>감당할 수 있는 추가 손실과 보유 기간을 적어 보시기 바랍니다. 개인·외국인·기관의 매매 동향은 실적과 뉴스와 함께 참고하고, 순매수만으로 상승을 확신하지 않는 것이 좋습니다.</p></li>
     </ol>
-    <p>분산과 현금 비중 조절이 손실을 막아주지는 않지만, 특정 종목 때문에 계좌 전체가 크게 흔들릴 위험을 줄이는 데 도움이 될 수 있어요. <a href="https://www.investor.gov/introduction-investing/getting-started/asset-allocation" target="_blank" rel="noopener noreferrer">SEC 투자자 안내 ↗</a></p>
-    <p className="asset-pnl-advice-takeaway">모의투자인 지금은 본전 회복보다 <strong>매수·보유·매도 기준을 세우는 연습</strong>에 집중해 보세요. “손실이니까 무조건 버틴다”거나 “무서우니까 전부 판다”는 마음 대신, 다음 결정을 내릴 근거를 기록해요.</p>
   </>;
 }
