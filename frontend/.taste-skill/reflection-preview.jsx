@@ -1,1 +1,0 @@
-import React from 'react';import {createRoot} from 'react-dom/client';import Reflection from '/src/components/learn/OrderReflection.jsx';import '/src/index.css';import '/src/theme.css';createRoot(document.getElementById('root')).render(<main style={{padding:24,maxWidth:600}}><Reflection scope="title-browser-check" order={{order_id:27}} onClose={()=>{}}/></main>);
