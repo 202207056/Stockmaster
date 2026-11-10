@@ -68,3 +68,15 @@ export function collectPageMarks(area, glossary, aiTerms, root = document.body, 
   let dictionary = 0, ai = 0;
   return marks.map((mark) => ({ ...mark, order: mark.ai ? ai++ : dictionary++ }));
 }
+
+// One box per line the word sits on, so a word wrapped onto the next line is marked in full.
+export function lineBoxes(range) {
+  const lines = [];
+  for (const box of range.getClientRects()) {
+    if (box.width <= 0 || box.height <= 0) continue;
+    const line = lines.find((rect) => Math.abs(rect.top - box.top) < 2);
+    if (!line) { lines.push({ left: box.left, top: box.top, right: box.right, bottom: box.bottom }); continue; }
+    line.left = Math.min(line.left, box.left); line.right = Math.max(line.right, box.right); line.bottom = Math.max(line.bottom, box.bottom);
+  }
+  return lines.map((rect) => ({ ...rect, width: rect.right - rect.left, height: rect.bottom - rect.top }));
+}

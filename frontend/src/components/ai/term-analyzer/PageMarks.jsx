@@ -3,19 +3,20 @@ import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import { X } from 'lucide-react';
 import CompanyFacts from './CompanyFacts';
+import { lineBoxes } from './pageMarkRanges';
 import TermCard from '../../learn/TermCard';
 
 const POP_WIDTH = 288;
 const POP_HEIGHT = 150;
-// The word's box, but only while the word itself is what is drawn there: words scrolled under a sticky
+// The word's boxes, but only where the word itself is what is drawn there: words scrolled under a sticky
 // header, clipped by a scroll box or covered by the analysis panel are not marked.
-function visibleRect(range) {
-  const rect = [...range.getClientRects()].find((box) => box.width > 0 && box.height > 0);
-  if (!rect) return null;
-  const x = rect.left + rect.width / 2, y = rect.top + rect.height / 2;
-  if (x < 0 || y < 0 || x > window.innerWidth || y > window.innerHeight) return null;
-  const hit = document.elementsFromPoint(x, y).find((element) => !element.closest('.ocr-page-marks'));
-  return hit?.contains(range.startContainer) ? rect : null;
+function visibleRects(range) {
+  return lineBoxes(range).filter((rect) => {
+    const x = rect.left + rect.width / 2, y = rect.top + rect.height / 2;
+    if (x < 0 || y < 0 || x > window.innerWidth || y > window.innerHeight) return false;
+    const hit = document.elementsFromPoint(x, y).find((element) => !element.closest('.ocr-page-marks'));
+    return !!hit && (hit.contains(range.startContainer) || hit.contains(range.endContainer) || range.intersectsNode(hit));
+  });
 }
 
 function popPlace(rect) {
@@ -42,11 +43,12 @@ export default function PageMarks({ marks, scan, active, onPick, describe }) {
   // A word picked in the panel that is off screen is scrolled into view so its box can be seen.
   useEffect(() => {
     const same = marks.filter((mark) => mark.id === active);
-    if (!same.length || same.some((mark) => visibleRect(mark.range))) return;
+    if (!same.length || same.some((mark) => visibleRects(mark.range).length)) return;
     same[0].range.startContainer.parentElement?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }, [active, marks]);
 
-  const shown = marks.map((mark) => ({ mark, rect: visibleRect(mark.range) })).filter(({ rect }) => rect);
+  const shown = marks.map((mark) => ({ mark, rects: visibleRects(mark.range) })).filter(({ rects }) => rects.length)
+    .map((item) => ({ ...item, rect: item.rects[0] }));
   const open = shown.find(({ mark }) => mark.key === opened && mark.id === active);
   const info = open && describe(open.mark.id);
   const press = (mark) => {
@@ -59,10 +61,11 @@ export default function PageMarks({ marks, scan, active, onPick, describe }) {
     {scan && <div key={scan.key} className={`ocr-page-scan is-${scan.kind}`} aria-hidden="true" style={{
       left: scan.area.left, top: scan.area.top, width: scan.area.right - scan.area.left, height: scan.area.bottom - scan.area.top,
     }}><span /></div>}
-    {shown.map(({ mark, rect }) => <button type="button" key={mark.key}
-      className={`ocr-page-mark is-${mark.tier}${mark.ai ? ' is-ai' : ''}${mark.basic ? ' is-basic' : ''}${mark.id === active ? ' is-active' : ''}`} aria-pressed={mark.id === active && mark.key === opened}
-      aria-label={`${mark.range.toString()} 뜻 보기`} onClick={() => press(mark)}
-      style={{ left: rect.left - 2, top: rect.top - 1, width: rect.width + 4, height: rect.height + 2, '--i': mark.order }} />)}
+    {shown.flatMap(({ mark, rects }) => rects.map((rect, part) => <button type="button" key={`${mark.key}:${part}`}
+      className={`ocr-page-mark is-${mark.tier}${mark.ai ? ' is-ai' : ''}${mark.basic ? ' is-basic' : ''}${mark.id === active ? ' is-active' : ''}${rects.length > 1 ? ' is-split' : ''}`}
+      aria-pressed={mark.id === active && mark.key === opened} aria-hidden={part > 0 || undefined} tabIndex={part > 0 ? -1 : undefined}
+      aria-label={`${mark.range.toString().replace(/\s+/gu, '')} 뜻 보기`} onClick={() => press(mark)}
+      style={{ left: rect.left - 2, top: rect.top - 1, width: rect.width + 4, height: rect.height + 2, '--i': mark.order }} />))}
     {info && <div className="ocr-page-pop" role="dialog" aria-label={`${info.term} 뜻`} style={popPlace(open.rect)}>
       <div className="ocr-page-pop-head"><span>{info.label}</span>
         <button type="button" aria-label="뜻 닫기" onClick={() => onPick(open.mark.id)}><X size={14} aria-hidden="true" /></button></div>

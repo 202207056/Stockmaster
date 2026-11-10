@@ -59,3 +59,13 @@ export function writeJson(key, value) {
 export const validAnchor = (value) => ['left', 'right'].includes(value?.h) && ['top', 'bottom'].includes(value?.v)
   && Number.isFinite(value.dx) && Number.isFinite(value.dy);
 export const validSize = (value) => Number.isFinite(value?.w) && Number.isFinite(value?.h);
+
+// The panel is placed by its top-left corner, so the header with the search box stays put while the
+// content grows and shrinks below it. Only when there is no room below is the whole panel pushed up.
+export function placePanel(pos, width, height, view) {
+  const room = view.height - MARGIN * 2;
+  const tall = Math.min(height || 0, room);
+  const x = Math.max(MARGIN, Math.min(pos.x, view.width - width - MARGIN));
+  const y = Math.max(MARGIN, Math.min(pos.y, view.height - MARGIN - Math.max(tall, 120)));
+  return { left: `${x}px`, top: `${y}px`, right: 'auto', bottom: 'auto', width: `${width}px`, maxHeight: `${room}px`, ...(height && { height: `${tall}px` }) };
+}

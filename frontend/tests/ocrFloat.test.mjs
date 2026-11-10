@@ -31,3 +31,13 @@ test('resizing keeps the opposite edges and the minimum size', () => {
   assert.deepEqual(resizeRect(start, 'w', -1000, 0, wide), { x: 8, y: 200, w: 822, h: 600 });
   assert.deepEqual(clampRect({ x: -50, y: 2000, w: 56, h: 56 }, wide), { x: 8, y: 936, w: 56, h: 56 });
 });
+
+test('the panel keeps its top-left corner and is pushed up only when there is no room below', async () => {
+  const { placePanel } = await import('../src/components/ai/term-analyzer/floatGeometry.js');
+  const view = { width: 1200, height: 800 };
+  assert.equal(placePanel({ x: 300, y: 100 }, 380, 400, view).top, '100px');
+  assert.equal(placePanel({ x: 300, y: 600 }, 380, 400, view).top, '392px');
+  const huge = placePanel({ x: 1100, y: 600 }, 380, 2000, view);
+  assert.deepEqual([huge.left, huge.top, huge.height], ['812px', '8px', '784px']);
+  assert.equal(placePanel({ x: -50, y: -50 }, 380, 0, view).height, undefined);
+});

@@ -88,9 +88,9 @@ test('company facts are kept short and only for companies', () => {
     { term: '엔비디아', tier: 'company', meaning: '반도체', listing: '미국 나스닥', index: 'S&P 500', sector: '반도체', size: '초대형', basis: 'knowledge' },
     { term: '페이허브', tier: 'company', meaning: '이 글에서는 PG사', listing: '가'.repeat(30), size: '거대', basis: 'context', listing_checked: true },
     { term: '호재', tier: 'invest', meaning: '좋은 소식', listing: '코스피', basis: 'context' }] });
-  assert.deepEqual(nvidia.facts, { listing: '미국 나스닥', index: 'S&P 500', sector: '반도체', size: '초대형', checked: false });
+  assert.deepEqual(nvidia.facts, { listing: '미국 나스닥', index: 'S&P 500', sector: '반도체', size: '대기업', group: '', parent: '', checked: false });
   assert.equal(pay.basis, 'context');
-  assert.deepEqual(pay.facts, { listing: '', index: '', sector: '', size: '', checked: true });
+  assert.deepEqual(pay.facts, { listing: '', index: '', sector: '', size: '', group: '', parent: '', checked: true });
   assert.equal(word.facts, null);
   assert.equal(word.basis, 'knowledge');
   assert.equal(validateDetected({ terms: [{ term: '삼성생명', tier: 'company', meaning: '코스피 상장', basis: 'data' }] })[0].basis, 'data');
@@ -122,7 +122,7 @@ test('invalid company metadata is safely normalized', () => {
   assert.equal(rows.length, 1);
   assert.equal(rows[0].basis, 'knowledge');
   assert.equal(rows[0].code, null);
-  assert.deepEqual(rows[0].facts, { listing: '', index: '', sector: '', size: '', checked: false });
+  assert.deepEqual(rows[0].facts, { listing: '', index: '', sector: '', size: '', group: '', parent: '', checked: false });
 });
 test('broken capture is discarded and unknown page terms do not survive', () => {
   const storage = memory();
@@ -140,4 +140,11 @@ test('the analyzer stays off until it is turned on in My page', async () => {
   assert.equal(readEnabled(store('false')), false);
   assert.equal(readEnabled(store('true')), true);
   assert.equal(readEnabled({ getItem: () => { throw new Error('blocked'); } }), false);
+});
+
+test('a word wrapped onto the next line gets one mark box per line', async () => {
+  const { lineBoxes } = await import('../src/components/ai/term-analyzer/pageMarkRanges.js');
+  const box = (left, top, width) => ({ left, top, right: left + width, bottom: top + 18, width, height: 18 });
+  const range = { getClientRects: () => [box(800, 100, 14), box(0, 122, 30), box(30, 122.5, 12), box(5, 140, 0)] };
+  assert.deepEqual(lineBoxes(range).map(({ left, top, width }) => [left, top, width]), [[800, 100, 14], [0, 122, 42]]);
 });

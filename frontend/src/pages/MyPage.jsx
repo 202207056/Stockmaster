@@ -59,7 +59,7 @@ export default function MyPage() {
           <section className="settings-panel" aria-labelledby="tools-title"><h3 id="tools-title">편의 기능</h3>
             <SwitchRow id="mini-assets" title="미니 내 자산 탭" description="어느 화면에서든 내 자산을 빠르게 확인합니다." value={miniAssetsEnabled} onChange={setMiniAssetsEnabled} />
             <SwitchRow id="tutorial" title="튜토리얼 자동 안내" description="매수·차트·내 자산·미수거래를 처음 이용할 때 안내합니다." value={tutorialsEnabled} onChange={setTutorialsEnabled} />
-            <SwitchRow id="term-analyzer" title="AI 용어 분석 · 실험 기능" description="화면의 어려운 투자 용어를 찾아 설명합니다. 실험 중인 기능으로 결과가 정확하지 않을 수 있습니다." value={termAnalyzerEnabled} onChange={setTermAnalyzerEnabled} />
+            <SwitchRow id="term-analyzer" title="AI 용어 분석 · 실험 기능" description="화면의 어려운 투자 용어를 찾거나 궁금한 말을 검색해 설명합니다. 실험 중인 기능으로 결과가 정확하지 않을 수 있습니다." value={termAnalyzerEnabled} onChange={setTermAnalyzerEnabled} />
             <p className="settings-caption">옵션은 변경 즉시 적용됩니다. 저장 공간을 사용할 수 없으면 현재 세션에만 유지됩니다.</p>
           </section>
           <section className="settings-panel"><h3>이용 안내</h3><Link className="settings-link-row" to="/dashboard?tour=start"><span>사이트 둘러보기 다시 시작</span><ChevronRight size={17} aria-hidden="true" /></Link><Link className="settings-link-row" to="/learn"><span>투자 학습 및 도움말</span><ChevronRight size={17} aria-hidden="true" /></Link></section>
