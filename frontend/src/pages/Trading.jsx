@@ -37,7 +37,6 @@ import MisuTutorial from './MisuTutorial';
 import { estimateMisu } from '../utils/misu';
 import MarketDetails from '../components/common/MarketDetails';
 import useAutoRefresh from '../hooks/useAutoRefresh';
-import { quotePreviousClose } from '../api/normalize';
 import { learningScope } from '../utils/learning';
 import './Trading.css';
 import useMobileLayout from '../hooks/useMobileLayout';
