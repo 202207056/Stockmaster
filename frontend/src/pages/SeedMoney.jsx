@@ -62,7 +62,7 @@ export default function SeedMoney() {
       <div className="flex items-center justify-between gap-2">
         <div className="inline-flex items-center gap-2">
         <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-600 text-xs font-extrabold text-white">MI</span>
-        <span className="text-sm font-extrabold text-gray-900">프로젝트</span>
+        <span className="text-sm font-extrabold text-gray-900">모의투자</span>
         </div>
       </div>
     <section className="mt-8">

@@ -214,7 +214,8 @@ test('personal generation preserves the common news and cited guesses, is saved 
   await press(byLabel('테스트전자 뉴스 요약 열기'));
   assert.equal(calls, 1);
   assert.equal(db.items.length, 1);
-  assert.equal(container.querySelector('.portfolio-news-detail .trading-news-summary p').textContent, '기존 보유종목 브리핑의 첫 제목');
+  // 한 줄 요약이 있으면 상세 제목은 그 요약(또는 더 자세한 banner_detail)을 쓴다.
+  assert.equal(container.querySelector('.portfolio-news-detail .trading-news-summary p').textContent, '공급계약·생산계획');
   assert.equal(container.querySelector('.portfolio-news-detail .trading-news-summary a'), null);
   assert.equal(container.querySelector('.portfolio-brief-keywords span').textContent, '계약 후속 공시');
   assert.equal(container.querySelector('.portfolio-brief-guess .portfolio-brief-keywords'), null);
@@ -229,10 +230,18 @@ test('personal generation preserves the common news and cited guesses, is saved 
   assert.equal(guess.querySelector('.portfolio-brief-guess-note').textContent, '기사와 가격 흐름을 보고 추정한 내용이며, 확인된 사실이 아닙니다.');
   assert.equal(container.querySelector('.trading-news-footnote'), null);
   await press(byLabel('뉴스 요약 접기'));
-  assert.match(byLabel('테스트전자 뉴스 요약 열기').textContent, /반도체 공급 계약 확인/);
+  // 카드에는 한 줄 요약을 보여 준다.
+  assert.match(byLabel('테스트전자 뉴스 요약 열기').textContent, /공급계약·생산계획/);
   assert.doesNotMatch(byLabel('테스트전자 뉴스 요약 열기').textContent, /기존 보유종목 브리핑의 첫 제목/);
   await press(byLabel('테스트전자 뉴스 요약 열기'));
   assert.equal(calls, 1, 'saved guesses are reused when reopening');
+});
+
+test('without a summary the legacy portfolio title stays as the detail title', async () => {
+  db.items = [{ ...brief('005930', '원래 보유종목 요약 제목', ago(1)), id: 1, trend_guesses: ['기존 추정'], watch_points: ['후속 공시'] }];
+  await render();
+  await press(byLabel('테스트전자 뉴스 요약 열기'));
+  assert.equal(container.querySelector('.portfolio-news-detail .trading-news-summary p').textContent, '원래 보유종목 요약 제목');
 });
 
 test('legacy portfolio titles survive newer public news and match the AI news window', async () => {
@@ -241,9 +250,10 @@ test('legacy portfolio titles survive newer public news and match the AI news wi
   await render();
   const bannerBefore = byLabel('테스트전자 뉴스 요약 열기').textContent;
   await press(byLabel('테스트전자 뉴스 요약 열기'));
-  assert.equal(container.querySelector('.portfolio-news-detail .trading-news-summary p').textContent, '원래 보유종목 요약 제목');
+  // 요약이 있으면 보드와 AI 뉴스 창 모두 같은 요약을 상세 제목으로 쓴다.
+  assert.equal(container.querySelector('.portfolio-news-detail .trading-news-summary p').textContent, '요약 문구');
   await press(container.querySelector('.portfolio-news-toolbar .trading-news-banner'));
-  assert.equal(document.querySelector('[role="dialog"] .trading-news-summary p').textContent, '원래 보유종목 요약 제목');
+  assert.equal(document.querySelector('[role="dialog"] .trading-news-summary p').textContent, '요약 문구');
   assert.equal(document.querySelector('[role="dialog"] .shared-news-copy').textContent, container.querySelector('.portfolio-news-detail .shared-news-copy').textContent);
   await press(document.querySelector('[role="dialog"] [aria-label="닫기"]'));
   await press(byLabel('뉴스 요약 접기'));

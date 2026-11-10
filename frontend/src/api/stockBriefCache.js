@@ -23,7 +23,8 @@ export function publishStockBrief(brief) {
   let shared = previousTime > incomingTime ? previous : brief;
   if (previousTime === incomingTime && previous) {
     const portfolioHeadline = brief.portfolio_headline || previous.portfolio_headline;
-    shared = { ...brief, banner_summary: brief.banner_summary || previous.banner_summary,
+    // 한 줄 요약과 상세 제목은 같은 소식을 설명하므로 함께 가져온다.
+    shared = { ...brief, ...(brief.banner_summary ? {} : { banner_summary: previous.banner_summary, banner_detail: previous.banner_detail }),
       banner_title: Object.hasOwn(brief, 'banner_title') ? brief.banner_title : previous.banner_title || brief.title,
       ...(portfolioHeadline ? { title: portfolioHeadline, portfolio_headline: portfolioHeadline } : {}),
       citations: Object.keys(brief.citations || {}).length ? brief.citations : previous.citations };
@@ -33,7 +34,9 @@ export function publishStockBrief(brief) {
   const heading = readResource(headingKey(brief.symbol_code))?.data;
   if (heading) shared = { ...shared, banner_title: shared.banner_title || shared.title,
     title: heading.headline, portfolio_headline: heading.headline,
-    banner_summary: heading.banner_summary || shared.banner_summary };
+    banner_summary: heading.banner_summary || shared.banner_summary,
+    // 저장된 보유종목 요약이 공용 요약과 다르면 공용 상세 제목은 다른 소식이므로 쓰지 않는다.
+    banner_detail: heading.banner_summary && heading.banner_summary !== shared.banner_summary ? null : shared.banner_detail };
   if (JSON.stringify(previous) !== JSON.stringify(shared)) {
     writeResource(key(brief.symbol_code), shared, true);
     if (typeof window !== 'undefined') window.dispatchEvent(new window.CustomEvent(EVENT, { detail: shared }));

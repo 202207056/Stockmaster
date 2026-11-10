@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { ArrowUpRight } from 'lucide-react';
 import AssetsTour from '../components/learn/AssetsTour';
 import HelpIconButton from '../components/learn/HelpIconButton';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useId, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import useAuth from '../hooks/useAuth';
 import { comma, won, wonSigned, signTextClass, rate } from '../utils/format';
@@ -18,6 +18,7 @@ import StockLogo from '../components/common/StockLogo';
 import AssetCharts from '../components/common/AssetCharts';
 import RemoteState from '../components/common/RemoteState';
 import PortfolioBriefCard from '../components/ai/PortfolioBriefCard';
+import AssetPnlAdvice from '../components/ai/AssetPnlAdvice';
 import './Assets.css';
 import useMobileLayout from '../hooks/useMobileLayout';
 import MobileSectionNav from '../components/common/MobileSectionNav';
@@ -33,6 +34,11 @@ export default function Assets() {
   const [tourOverride,setTourOpen] = useState(null);
   const tourOpen = !params.has('tour') && (tourOverride ?? (tutorialsEnabled || params.get('practice') === 'account'));
   const { accounts = [], account, accountId, isAuthenticated, hasCachedSession } = useAuth();
+  const [advice, setAdvice] = useState({ accountId, visible: false });
+  if (advice.accountId !== accountId) setAdvice({ accountId, visible: false });
+  const adviceVisible = advice.accountId === accountId && advice.visible;
+  const setAdviceVisible = visible => setAdvice({ accountId, visible });
+  const adviceId = useId();
   const resource = useSiteResource('portfolio', useCallback((signal) => fetchValuedPortfolio(accountId, signal), [accountId]), isAuthenticated && !!accountId, { keepPreviousData: true, cacheKey: JSON.stringify(['portfolio', accountId]), cachePreview: true });
   const totals = portfolioTotals(resource.data);
 
@@ -55,7 +61,7 @@ export default function Assets() {
       {holdings.some(holding => holding.quoteError) && <div role="status" className="assets-notice"><strong>일부 시세를 불러오지 못했어요.</strong><p>누락된 시세가 있어 총자산과 평가손익을 표시하지 않습니다.</p><ul>{holdings.filter(holding => holding.quoteError).map(holding => <li key={holding.portfolio_id ?? holding.symbol_code}>{holding.security_name || holding.symbol_code}: {holding.quoteError}</li>)}</ul><button disabled={resource.loading} onClick={resource.reload}>시세 다시 조회</button></div>}
 
       <div className={`assets-overview${!resource.data ? ' is-pending' : ''}`}>
-        <PracticeTarget id="asset-total"><section data-assets-tour="total" className="assets-balance">
+        <div className="assets-balance-column"><PracticeTarget id="asset-total"><section data-assets-tour="total" className="assets-balance">
           <div className="assets-section-title"><h2>총자산 <HelpIcon termId="total_asset" /></h2></div>
           <p className="assets-total">{totals?.total != null ? won(totals.total) : <span className="assets-pending">{pending}</span>}</p>
           {resource.data && (resource.stale || resource.preview) && <p className="assets-stale" role="status">이전 조회 결과입니다.</p>}
@@ -63,9 +69,11 @@ export default function Assets() {
           <dl className="assets-stats">
             <AssetStat label="예수금" term="deposit" value={cash !== null ? won(cash) : null} pending={pending} />
             <AssetStat label="주문가능금액" term="orderable_cash" value={numberOrNull(account?.withdrawable_cash) !== null ? won(account.withdrawable_cash) : null} pending={pending} />
-            <AssetStat label="평가손익" term="eval_pnl" value={totals?.unrealized != null ? wonSigned(totals.unrealized) : null} pending={pending} tone={totals?.unrealized != null ? signTextClass(totals.unrealized) : ''} />
+            <AssetStat label="평가손익" term="eval_pnl" value={totals?.unrealized != null ? wonSigned(totals.unrealized) : null} pending={pending} tone={totals?.unrealized != null ? signTextClass(totals.unrealized) : ''} onClick={() => setAdviceVisible(!adviceVisible)} expanded={adviceVisible} controls={adviceId} />
           </dl>
         </section></PracticeTarget>
+        {adviceVisible && totals?.unrealized != null && <AssetPnlAdvice key={`${accountId}:${Math.sign(totals.unrealized)}`} id={adviceId} amount={totals.unrealized} />}
+        </div>
 
         {mobile && <MobileSectionNav label="자산 보기" items={[["holdings", "보유종목"], ["detail", "잔고 상세"], ["analysis", "자산 분석"]]} value={mobileSection} onChange={setMobileSection} />}
         <PracticeTarget id="asset-investment"><section hidden={mobile && mobileSection !== 'detail' && !tourOpen && !params.has('tour')} data-assets-tour="investment" className="assets-investment">
@@ -104,8 +112,9 @@ export default function Assets() {
   );
 }
 
-function AssetStat({ label, term, value, pending, tone = '' }) {
-  return <div><dt>{label}<HelpIcon termId={term} /></dt><dd className={value !== null ? tone : 'assets-missing'}>{value ?? <span aria-label={pending}>—</span>}</dd></div>;
+function AssetStat({ label, term, value, pending, tone = '', onClick, expanded, controls }) {
+  const trigger = { type: 'button', className: 'assets-pnl-trigger', onClick, disabled: value === null, 'aria-expanded': expanded, 'aria-controls': controls };
+  return <div><dt>{onClick ? <button {...trigger}>{label}</button> : label}<HelpIcon termId={term} /></dt><dd className={value !== null ? tone : 'assets-missing'}>{onClick ? <button {...trigger} aria-label={`${label} ${value ?? pending}, AI 투자 조언`}>{value ?? <span aria-label={pending}>—</span>}</button> : value ?? <span aria-label={pending}>—</span>}</dd></div>;
 }
 
 function InvestmentRow({ label, term, value, pending, tone = '' }) {

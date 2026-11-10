@@ -45,7 +45,7 @@ export default function Landing() {
             <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-600 text-sm font-extrabold text-white">
               MI
             </span>
-            <span className="hidden text-base font-extrabold text-gray-900 sm:inline">프로젝트</span>
+            <span className="hidden text-base font-extrabold text-gray-900 sm:inline">모의투자</span>
           </span>
 
           <div className="flex shrink-0 items-center gap-3 sm:gap-4">
@@ -75,7 +75,7 @@ export default function Landing() {
             <p className="text-sm font-bold text-brand-600">투자, 배우면서 시작하세요</p>
 
             <h1 className="mt-4 inline-block max-w-3xl border-b-4 border-gray-900 pb-3 text-3xl leading-tight font-extrabold text-gray-900 sm:text-5xl">
-              (가제)모의투자 프로젝트
+              모의투자 프로젝트
             </h1>
           </div>
 

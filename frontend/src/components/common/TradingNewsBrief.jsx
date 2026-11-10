@@ -14,8 +14,8 @@ import { useAuth } from '../../hooks/useAuth';
 import { comma, rate, signTextClass } from '../../utils/format';
 import { kstStamp } from '../../utils/kstStamp';
 import './TradingNewsBrief.css';
-import NewsSummaryBody, { newsHeadline } from './NewsSummaryBody';
-import { newsTheme } from '../../utils/newsThemes';
+import { newsHeadline } from './NewsSummaryBody';
+import PortfolioNewsBoard from '../ai/PortfolioNewsBoard';
 
 // Show the browser copy at once, then replace it with the server result.
 // The server shares one briefing per stock for three hours, so this rarely generates.
@@ -74,7 +74,7 @@ export default function TradingNewsBrief({ code, triggerLabel, initialBrief }) {
   const [themeId, setThemeId] = useState(null);
   const themes = useThemes(open);
   const [picked, setPicked] = useState(false);
-  const activeState = useStockBrief(selectedCode, open && selectedCode !== code);
+  const activeState = useStockBrief(selectedCode, open && !!selectedCode && selectedCode !== code);
   if (!isAuthenticated || (!main.data && !main.loading) || (main.data && !main.data.ai_available)) return null;
 
   const brief = main.data;
@@ -84,16 +84,22 @@ export default function TradingNewsBrief({ code, triggerLabel, initialBrief }) {
   ] : [];
   const themeList = themes ? [...themes.rising, ...themes.falling] : [];
   const theme = themeList.find(item => item.id === themeId);
-  const activeBrief = selectedCode === code ? brief : activeState.data;
+  const activeBrief = selectedCode === code ? brief : activeState.data?.symbol_code === selectedCode ? activeState.data : null;
   const relatedStocks = (activeBrief?.related?.length ? activeBrief.related : stocks).filter(stock => stock.code !== selectedCode);
   const relatedCodes = new Set([selectedCode, ...relatedStocks.map(stock => stock.code)]);
   const relatedThemes = themeList.filter(item => item.leaders.some(stock => relatedCodes.has(stock.code))
     && item.leaders.some(stock => stock.code !== selectedCode));
+  const boardStocks = [...new Map([
+    ...stocks, ...relatedStocks,
+    ...relatedThemes.flatMap(item => item.leaders),
+    ...(pickedStock ? [{ code: pickedStock.code, name: pickedStock.name, change_rate: pickedStock.changeRate }] : []),
+  ].map(stock => [stock.code, { ...stock, change: stock.change_rate }])).values()];
   const selectStock = (next, name, changeRate) => {
+    const stock = boardStocks.find(item => item.code === next);
     setPicked(true);
     setThemeId(null);
     setSelectedCode(next);
-    setPickedStock({ code: next, name, changeRate });
+    if (next) setPickedStock({ code: next, name: name || stock?.name || next, changeRate: changeRate ?? stock?.change });
   };
   const selectTheme = (id) => {
     setPicked(true);
@@ -105,7 +111,7 @@ export default function TradingNewsBrief({ code, triggerLabel, initialBrief }) {
       onClick={() => { setPicked(false); setSelectedCode(code); setThemeId(null); setOpen(true); }} aria-haspopup="dialog" aria-expanded={open}>
       <span className="min-w-0 flex-1">{triggerLabel ? <span>{triggerLabel}</span> : <>
         <span className="trading-news-banner__label"><span className="trading-news-banner__icon"><Sparkles size={14} aria-hidden="true" /></span>{brief ? question(brief.change_rate) : 'AI 뉴스'}</span>
-        <span className="trading-news-banner__headline">{brief ? brief.banner_title || newsHeadline(brief) : '뉴스 요약을 불러오고 있어요…'}</span>
+        <span className="trading-news-banner__headline">{brief ? brief.banner_summary || brief.banner_title || newsHeadline(brief) : '뉴스 요약을 불러오고 있어요…'}</span>
       </>} </span>
       <ChevronRight size={18} className="shrink-0" aria-hidden="true" />
     </button>
@@ -129,60 +135,18 @@ export default function TradingNewsBrief({ code, triggerLabel, initialBrief }) {
           <Direction changeRate={item.change_rate} /> {item.name}
         </button>)}
       </div>}
-      <div className={`trading-news-reading-layout${relatedThemes.length ? ' has-themes' : ''}`}>
-        <StockConnections enabled={!theme}>
-          {theme ? <ThemeDetail key={theme.id} theme={theme} data={themes} autoFocus={picked} onStock={selectStock} />
-            : <NewsDetail key={selectedCode} brief={activeBrief} loading={activeState.loading} autoFocus={picked} />}
-          {relatedStocks.length > 0 && <section className="trading-news-related" aria-label="관련 종목">
-            <h3 className="trading-news-eyebrow">관련 종목</h3>
-            {relatedStocks.map(stock => <RelatedCard key={stock.code} stock={stock} onSelect={selectStock} />)}
-          </section>}
-        </StockConnections>
-        {relatedThemes.length > 0 && <aside className="trading-news-theme-stocks" aria-label="관련 테마 종목">
-          <h3 className="trading-news-eyebrow">관련 테마 종목</h3>
-          {relatedThemes.map(item => <section key={item.id}>
-            <h4><button type="button" onClick={() => selectTheme(item.id)}>{item.name}</button></h4>
-            {item.leaders.filter(stock => stock.code !== selectedCode).map(stock => <RelatedCard key={stock.code} stock={stock} onSelect={selectStock} />)}
-          </section>)}
-        </aside>}
-      </div>
+      {theme ? <ThemeDetail key={theme.id} theme={theme} data={themes} autoFocus={picked} onStock={selectStock} />
+        : <PortfolioNewsBoard stocks={boardStocks} selected={selectedCode} onSelect={selectStock}
+          title={null} publicOnly autoFocus={picked}
+          initialBriefs={{ [code]: brief, ...(activeBrief ? { [activeBrief.symbol_code]: activeBrief } : {}) }}
+          renderNewsFooter={news => <BriefReport key={`${news.symbol_code}-${news.generated_at}`} kind="stock"
+            code={news.symbol_code} generatedAt={news.generated_at} />} />}
 
       {themes && <aside className="trading-news-themes mt-6" aria-label="오늘의 테마 AI 분석">
         <ThemeContent data={themes} showMetadata={false} onSelect={selectTheme} />
       </aside>}
     </Modal>}
   </>;
-}
-
-function RelatedCard({ stock, onSelect }) {
-  const fetched = useStockBrief(stock.code, !stock.title);
-  const summary = stock.title || (fetched.data ? fetched.data.banner_title || newsHeadline(fetched.data) : null);
-  return <button type="button" className="trading-news-related-card" data-news-card={stock.code}
-    onClick={() => onSelect(stock.code, stock.name, stock.change_rate)} aria-label={`${stock.name} 뉴스 요약 열기`}>
-    <span className="flex flex-wrap items-baseline gap-2"><strong>{stock.name}</strong>
-      <span className={signTextClass(stock.change_rate)}>{rate(stock.change_rate)}</span></span>
-    <span className="trading-news-card-summary">{summary || (fetched.loading ? '뉴스 요약을 불러오고 있어요…' : '최근 확인되는 뉴스가 없어요')}</span>
-  </button>;
-}
-
-function NewsDetail({ brief, loading, autoFocus }) {
-  const ref = useRef(null);
-  useEffect(() => {
-    if (autoFocus) ref.current?.focus({ preventScroll: true });
-  }, [autoFocus, brief?.symbol_code]);
-  return <article ref={ref} tabIndex={-1} className="portfolio-news-detail trading-news-main" aria-label={`${brief?.name || ''} 뉴스 상세`}>
-    {!brief ? <p className="trading-news-pending">{loading ? '뉴스 요약을 불러오고 있어요…' : '뉴스를 불러오지 못했어요.'}</p> : <>
-      <header>
-        <div className="portfolio-news-detail-tools"><span>{newsTheme(brief)}</span></div>
-        <div className="flex flex-wrap items-baseline gap-2"><h3 className="text-xl font-extrabold text-gray-900">{brief.name}</h3>
-          <span className={`font-bold ${signTextClass(brief.change_rate)}`}>{rate(brief.change_rate)}</span></div>
-        <div className="trading-news-summary"><p>{newsHeadline(brief).replace(/\s*\[\d+\]/g, '')}</p></div>
-      </header>
-      <div className="trading-news-sections"><NewsSummaryBody brief={brief} />
-        <BriefReport key={brief.generated_at} kind="stock" code={brief.symbol_code} generatedAt={brief.generated_at} />
-      </div>
-    </>}
-  </article>;
 }
 
 // Today's top themes, not the themes this stock belongs to.
@@ -224,48 +188,4 @@ function ThemeDetail({ autoFocus, data, onStock, theme }) {
       <p className="trading-news-footnote">{data.source} · {kstStamp(data.as_of)} 기준 · {data.disclaimer}</p>
     </div>
   </article>;
-}
-
-
-function StockConnections({ children, enabled }) {
-  const ref = useRef(null);
-  const [path, setPath] = useState('');
-  useEffect(() => {
-    if (!enabled) return undefined;
-    const root = ref.current;
-    const main = root.querySelector('.trading-news-main');
-    const cards = [...root.querySelectorAll('.trading-news-related-card')];
-    if (!main || !cards.length) return undefined;
-    const measure = () => {
-      const bounds = root.getBoundingClientRect();
-      const source = main.getBoundingClientRect();
-      const title = main.querySelector('h3');
-      const heading = title?.getBoundingClientRect() || source;
-      const targets = cards.map(card => card.getBoundingClientRect());
-      const stacked = targets[0].top >= source.bottom;
-      const x = stacked ? 12 : (source.right + targets[0].left) / 2 - bounds.left;
-      const y = heading.top + heading.height / 2 - bounds.top;
-      const centers = targets.map(target => target.top + target.height / 2 - bounds.top);
-      const startX = (stacked ? source.left : source.right) - bounds.left;
-      setPath(`M ${startX} ${y} H ${x} M ${x} ${Math.min(y, ...centers)} V ${Math.max(y, ...centers)} ` +
-        targets.map((target, index) => `M ${x} ${centers[index]} H ${target.left - bounds.left}`).join(' '));
-    };
-    measure();
-    const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(measure);
-    [root, main, ...cards].forEach(element => observer?.observe(element));
-    const dialog = root.closest('[role="dialog"]');
-    dialog?.addEventListener('animationend', measure);
-    root.addEventListener('transitionend', measure);
-    window.addEventListener('resize', measure);
-    return () => {
-      observer?.disconnect();
-      dialog?.removeEventListener('animationend', measure);
-      root.removeEventListener('transitionend', measure);
-      window.removeEventListener('resize', measure);
-    };
-  }, [children, enabled]);
-  return <div ref={ref} className={`trading-news-connections${enabled ? ' is-connected' : ''}`}>
-    {enabled && <svg className="trading-news-connector" aria-hidden="true" focusable="false"><path d={path} /></svg>}
-    {children}
-  </div>;
 }

@@ -101,7 +101,7 @@ test('banner opens the real briefing, related stocks load their own briefing, Es
   assert.equal(dialog.querySelector('.trading-news-main .trading-news-footnote'), null);
   const relatedCards = [...dialog.querySelectorAll('[data-news-card]')];
   assert.equal(relatedCards.length, 4);
-  assert.ok(relatedCards.every(card => card.querySelector('.trading-news-card-summary')?.textContent.trim()));
+  assert.ok(relatedCards.every(card => card.querySelector('button > span')?.textContent.trim()));
   assert.ok(relatedCards.every(card => !card.textContent.includes('보유')));
   for (const name of ['삼성전자', 'DB하이텍', '한미반도체', 'HPSP', 'SK하이닉스']) {
     await React.act(async () => dialog.querySelector(`[aria-label="${name} 뉴스 요약 열기"]`).click());
@@ -177,7 +177,8 @@ test('an open AI news view immediately follows the shared portfolio snapshot and
   serve();
   await render();
   await React.act(async () => document.querySelector('.trading-news-banner').click());
-  const newer = { ...main, title: '공통 제목 갱신', banner_summary: '새 배너 요약',
+  // 요약이 없는 스냅샷에서는 보유종목 제목 유지 규칙을 그대로 따른다.
+  const newer = { ...main, title: '공통 제목 갱신',
     recent_issues: ['새 공통 뉴스 본문'], generated_at: '2026-11-03T12:40:00+09:00' };
   await React.act(async () => publishStockBrief(newer));
   assert.equal(document.querySelector('.trading-news-summary p').textContent, newer.title);
@@ -204,9 +205,37 @@ test('server stock headline restores the original banner even when the saved ban
     banner_title: '잘못 덮인 배너 제목', banner_summary: '새로 만든 요약' }, true);
   serve();
   await render();
-  assert.equal(document.querySelector('.trading-news-banner__headline').textContent, main.title);
+  // 잘못 덮인 배너 제목은 쓰지 않고, 같은 스냅샷에 남아 있던 한 줄 요약이 배너와 상세 제목이 된다.
+  assert.equal(document.querySelector('.trading-news-banner__headline').textContent, '새로 만든 요약');
   await React.act(async () => document.querySelector('.trading-news-banner').click());
-  assert.equal(document.querySelector('.trading-news-summary p').textContent, '기존 보유종목 본문 제목');
+  assert.equal(document.querySelector('.trading-news-summary p').textContent, '새로 만든 요약');
+});
+
+test('a summary with a detail title is shown on the banner and the detail header with its tone', async () => {
+  const { publishStockBrief } = await server.ssrLoadModule('/src/api/stockBriefCache.js');
+  serve();
+  await render();
+  await React.act(async () => document.querySelector('.trading-news-banner').click());
+  await React.act(async () => publishStockBrief({ ...main, title: '공통 제목', banner_summary: 'HBM 증설 지연 시 자금 부담',
+    banner_detail: 'HBM 증설이 늦어지면 소부장 업체의 자금 부담이 커질 수 있다는 우려가 나왔습니다.', banner_tone: '악재',
+    generated_at: '2026-11-05T12:40:00+09:00' }));
+  assert.equal(document.querySelector('.trading-news-banner__headline').textContent, 'HBM 증설 지연 시 자금 부담');
+  const header = document.querySelector('.trading-news-summary p');
+  assert.match(header.textContent, /^HBM 증설이 늦어지면 소부장 업체의 자금 부담이 커질 수 있다는 우려가 나왔습니다\./);
+  // 주가가 내렸으므로 악재 칩은 그대로 '악재'로 보인다.
+  assert.equal(header.querySelector('.banner-tone').textContent, '악재');
+});
+
+test('a detail title is dropped when a saved holding summary replaces the shared summary', async () => {
+  const { publishStockBrief, rememberPortfolioHeadline } = await server.ssrLoadModule('/src/api/stockBriefCache.js');
+  const shared = { ...main, banner_summary: '공용 요약', banner_detail: '공용 요약을 자세히 풀어 쓴 상세 제목입니다.' };
+  const same = { symbol_code: main.symbol_code, headline: '보유종목 제목', generated_at: main.generated_at };
+  rememberPortfolioHeadline({ ...same, banner_summary: '공용 요약' });
+  assert.equal(publishStockBrief(shared).banner_detail, shared.banner_detail);
+  rememberPortfolioHeadline({ ...same, banner_summary: '보유종목 요약' });
+  const mixed = publishStockBrief(shared);
+  assert.equal(mixed.banner_summary, '보유종목 요약');
+  assert.equal(mixed.banner_detail, null);
 });
 
 test('unsafe evidence links are shown as text only', async () => {
@@ -233,11 +262,8 @@ test('theme tabs show a top theme in the main panel, leaders open their briefing
   const tabs = () => [...dialog.querySelectorAll('[aria-label="뉴스 보기 선택"] button')];
   assert.deepEqual(tabs().map(tab => tab.textContent.trim()), ['▼ SK하이닉스', '▲ AI 인프라', '▼ 2차전지']);
   assert.deepEqual(tabs().map(tab => tab.getAttribute('aria-pressed')), ['true', 'false', 'false']);
-  assert.ok(dialog.querySelector('.trading-news-reading-layout.has-themes'));
-  const themeStocks = dialog.querySelector('.trading-news-theme-stocks');
-  assert.match(themeStocks.textContent, /AI 인프라/);
-  assert.match(themeStocks.textContent, /삼성전자/);
-  assert.doesNotMatch(themeStocks.textContent, /2차전지/);
+  assert.ok(dialog.querySelector('.portfolio-news-workspace.is-expanded'));
+  assert.ok(dialog.querySelector('[data-news-card="005930"] button'));
   await React.act(async () => tabs()[1].click());
   const panel = dialog.querySelector('.trading-news-main');
   assert.equal(panel.getAttribute('aria-label'), 'AI 인프라 테마 상세');
