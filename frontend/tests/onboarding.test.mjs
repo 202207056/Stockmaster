@@ -17,6 +17,7 @@ const { MemoryRouter, Routes, Route, useLocation } = await import('react-router-
 const server = await createServer({ server: { middlewareMode: true, hmr: false }, appType: 'custom' });
 after(async () => { await server.close(); dom.window.close(); });
 const { default: Tour } = await server.ssrLoadModule('/src/components/learn/SiteTour.jsx');
+const { default: Landing } = await server.ssrLoadModule('/src/pages/Landing.jsx');
 const { SITE_TOUR_STEPS } = await server.ssrLoadModule('/src/constants/siteTour.js');
 const { default: SeedMoney } = await server.ssrLoadModule('/src/pages/SeedMoney.jsx');
 const { AuthContext } = await server.ssrLoadModule('/src/contexts/auth-context.js');
@@ -33,6 +34,31 @@ const click = async label => {
   assert(button, label);
   await React.act(async () => button.click());
 };
+
+test('landing browse immediately opens the introduction only when tutorial guidance is enabled', async () => {
+  for (const enabled of [true, false]) {
+    localStorage.setItem('stockmaster:tutorials-enabled', String(enabled));
+    const root = createRoot(document.getElementById('root'));
+    try {
+      await React.act(async () => root.render(h(MemoryRouter, { initialEntries: ['/'] },
+        h(AuthContext.Provider, { value: { user: null, isAuthenticated: false } },
+          h(Routes, null,
+            h(Route, { path: '/', element: h(Landing) }),
+            h(Route, { path: '/dashboard', element: h(Tour) }))), h(Location))));
+      const browse = [...document.querySelectorAll('a')].find(link => link.textContent.trim() === '둘러보기');
+      assert(browse);
+      await React.act(async () => browse.click());
+      assert.equal(document.querySelector('output').textContent, enabled ? '/dashboard?tour=start' : '/dashboard');
+      assert.equal(Boolean(document.querySelector('.site-tour-intro')?.open), enabled);
+      if (enabled) {
+        await click('시작하기');
+        assert.equal(document.querySelector('output').textContent, '/dashboard?tour=0');
+        assert(document.querySelector('.site-tour-note'));
+      }
+    } finally { await React.act(async () => root.unmount()); }
+  }
+  localStorage.removeItem('stockmaster:tutorials-enabled');
+});
 
 test('tour visits all real routes, supports previous and closes on completion', async () => {
   onboarding.setOnboarding(100, 'tour:0');

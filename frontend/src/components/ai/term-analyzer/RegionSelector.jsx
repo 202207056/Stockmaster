@@ -69,10 +69,10 @@ export default function RegionSelector({ onSelect, onCancel }) {
   };
 
   return createPortal(<div ref={layer} className="ocr-region" data-ocr-widget tabIndex={-1}
-    aria-label="분석할 영역 선택. 드래그해서 고르고 Esc로 취소해요." onPointerDown={down} onPointerMove={move} onPointerUp={up}
+    aria-label="분석할 영역 선택. 드래그해서 고르고 Esc 또는 취소 버튼으로 취소해요." onPointerDown={down} onPointerMove={move} onPointerUp={up}
     onContextMenu={(event) => event.preventDefault()}>
     {[0, 1, 2, 3].map((index) => <div key={index} ref={(element) => { shades.current[index] = element; }} className="ocr-region-shade" />)}
     <div ref={frame} className="ocr-region-box" />
-    <p className="ocr-region-hint">드래그해서 분석할 영역을 선택하세요 · <kbd>Esc</kbd> 취소</p>
+    <p className="ocr-region-hint">드래그해서 분석할 영역을 선택하세요 · <kbd>Esc</kbd><button type="button" className="ocr-region-cancel" onPointerDown={event => event.stopPropagation()} onPointerUp={event => event.stopPropagation()} onClick={onCancel}>취소</button></p>
   </div>, document.body);
 }

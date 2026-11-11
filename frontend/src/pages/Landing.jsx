@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { ChartCandlestick, ClipboardList, Target } from 'lucide-react';
 import Footer from '../components/layout/Footer';
+import useTutorialSetting from '../hooks/useTutorialSetting';
 
 /**
  * 첫 화면
@@ -31,6 +32,7 @@ const FEATURES = [
 ];
 
 export default function Landing() {
+  const [tutorialsEnabled] = useTutorialSetting();
   return (
     <div className="flex min-h-screen flex-col bg-white">
       <div className="relative flex flex-1 flex-col overflow-hidden">
@@ -93,7 +95,7 @@ export default function Landing() {
               가입하고 시작하기
             </Link>
             <Link
-              to="/dashboard"
+              to={tutorialsEnabled ? '/dashboard?tour=start' : '/dashboard'}
               className="rounded-lg border border-gray-300 px-7 py-3 text-sm font-bold text-gray-700 transition hover:bg-gray-50"
             >
               둘러보기
