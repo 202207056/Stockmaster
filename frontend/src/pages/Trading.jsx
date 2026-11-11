@@ -1,4 +1,5 @@
 import MarketIndexPanel from '../components/common/MarketIndexPanel';
+import StockCommunity from '../components/community/StockCommunity';
 import NumberInput from '../components/common/NumberInput';
 import useTutorialSetting from '../hooks/useTutorialSetting';
 import { RefreshCw } from 'lucide-react';
@@ -67,7 +68,7 @@ export default function Trading() {
   const selectStock = selected => { const next = new URLSearchParams(params); next.delete('market'); next.set('code', selected); setParams(next); setPickerOpen(false); setMobileTab('chart'); if (mobile) window.scrollTo({ top: 0 }); };
   return <div className={`trading-page flex flex-col gap-6 ${mobile ? 'trading-mobile' : ''}`}>
     <div className="trading-page-heading border-b border-gray-200 pb-4"><h1 className="text-xl font-extrabold">트레이딩</h1>{mobile && (code || market) && <button type="button" onClick={() => setPickerOpen(true)} aria-haspopup="dialog">종목 변경</button>}</div>
-    <div className="grid gap-4 lg:grid-cols-4 lg:items-start">
+    <div className={`trading-layout grid gap-4 lg:grid-cols-4 lg:items-start ${!market && !practice ? 'trading-layout-with-community' : ''}`}>
       <MobileTradingSheet enabled={mobile && !!(code || market)} open={pickerOpen} onClose={() => setPickerOpen(false)} title="종목 선택">
       <aside className="trading-stock-sidebar rounded-xl border border-gray-200 p-4 lg:col-span-1">
         <div className="mb-3 flex items-center justify-between"><h2 className="text-sm font-bold text-gray-700">관심종목</h2><Link to="/favorites" className="text-xs text-gray-400 hover:text-gray-700">관리 &gt;</Link></div>
@@ -85,6 +86,7 @@ export default function Trading() {
       </aside>
       </MobileTradingSheet>
       {market ? <MarketIndexPanel market={market} /> : <StockPanel key={`chart:${user?.user_id ?? 'guest'}:${code}`} mobile={mobile} mobileTab={mobileTab} setMobileTab={setMobileTab} code={code} favorite={favorites.includes(code)} onFavoriteChange={() => practice?.toggleFavorite(code)} />}
+      {!market && !practice && <StockCommunity key={`opinions:${user?.user_id ?? 'guest'}:${code}`} code={code} />}
       {code && !practice && <div className="lg:col-span-4" hidden={mobile && mobileTab !== 'info'}><StockCoach key={`coach:${user?.user_id ?? 'guest'}:${code}`} code={code} /></div>}
       {!market && (isAuthenticated || hasCachedSession) && <div className="lg:col-span-4" hidden={mobile && mobileTab !== 'orders'}><OrderHistory key={`${user?.user_id}:${code}`} code={code} /></div>}
       {mobile && code && mobileTab === 'orders' && !isAuthenticated && !hasCachedSession && <p className="py-8 text-sm">주문내역은 <Link to="/login" className="underline">로그인</Link> 후 확인할 수 있어요.</p>}
