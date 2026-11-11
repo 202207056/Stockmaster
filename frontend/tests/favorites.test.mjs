@@ -91,3 +91,15 @@ test('storage failure is reported for explicit changes and does not break stock 
   assert.throws(() => favorites.saveFavoriteGroups('A', []));
   assert.doesNotThrow(() => favorites.recordRecentStock('A'));
 });
+
+
+test('account library restores immediately from session-scoped storage without allowing offline edits', async () => {
+  const { writeResource, resourceKey } = await import('../src/api/resourceCache.js');
+  storage.set('stockmaster:cache-session', 'saved-session');
+  writeResource(resourceKey('favorites', 'saved-session', 73), { revision: 4, codes: ['SAVED'], groups: [] }, true);
+  favorites.setFavoritesOwner(73);
+  assert.deepEqual(favorites.getFavorites(), ['SAVED']);
+  favorites.setFavoritesOwner(74);
+  assert.deepEqual(favorites.getFavorites(), []);
+  favorites.setFavoritesOwner(null);
+});

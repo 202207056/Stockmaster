@@ -38,10 +38,10 @@ body:has(.trading-page) [role="dialog"] .help-icon-button {
   .trading-market-panel .market-details th, .trading-market-panel .market-details td { padding: 9px 6px; }
 }
 
-.trading-stock-list { max-height: 500px; overflow-y: auto; }
+.trading-stock-sidebar { max-height: 640px; overflow-y: auto; overscroll-behavior-y: contain; }
+.trading-stock-list { overflow: visible; }
 @media (max-width: 1023px) {
-  .trading-stock-list { max-height: 240px; overscroll-behavior-y: contain; }
-  .trading-stock-sidebar > ul { max-height: 180px; overflow-y: auto; }
+  .trading-stock-sidebar { max-height: 480px; }
 }
 @media (max-width: 639px) {
   .trading-workspace .trading-order-stepper { height: 46px; }
@@ -50,8 +50,7 @@ body:has(.trading-page) [role="dialog"] .help-icon-button {
   .trading-workspace .trading-order-tabs button { min-height: 44px; }
 }
 @media (min-width: 1024px) {
-  .trading-stock-sidebar { display: flex; flex-direction: column; align-self: stretch; min-height: 0; }
-  .trading-stock-list { flex: 1; min-height: 200px; max-height: none; contain: size; }
+  .trading-stock-sidebar { align-self: stretch; min-height: 0; max-height: min(760px, calc(100dvh - 160px)); }
 }
 
 .trading-workspace[hidden], .trading-market-panel[hidden], .mobile-trading-sheet-backdrop[hidden] { display: none !important; }
@@ -62,6 +61,7 @@ body:has(.trading-page) [role="dialog"] .help-icon-button {
 .mobile-trading-sheet-heading button { display: grid; place-items: center; width: 44px; height: 44px; flex-shrink: 0; }
 .mobile-trading-sheet-content { min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 12px 16px max(20px, env(safe-area-inset-bottom)); }
 .mobile-trading-sheet .trading-order-panel, .mobile-trading-sheet .trading-stock-sidebar { border: 0; padding: 0; }
+.mobile-trading-sheet .trading-stock-sidebar { max-height: none; overflow: visible; }
 .mobile-trading-sheet .trading-stock-list { max-height: none; }
 .mobile-trading-sheet .trading-order { border: 0; }
 .mobile-trading-sheet .trading-order-body { min-height: 0; padding: 0; gap: 12px; }

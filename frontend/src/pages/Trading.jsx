@@ -1,3 +1,4 @@
+import MarketIndexPanel from '../components/common/MarketIndexPanel';
 import NumberInput from '../components/common/NumberInput';
 import useTutorialSetting from '../hooks/useTutorialSetting';
 import { RefreshCw } from 'lucide-react';
@@ -49,9 +50,11 @@ export default function Trading() {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [mobileTab, setMobileTab] = useState('chart');
   const [params, setParams] = useSearchParams();
-  const code = params.get('code') || '';
+  const market = practice ? '' : params.get('market') || '';
+  const code = market ? '' : params.get('code') || '';
   const search = params.get('search') || '';
   const { user, isAuthenticated, hasCachedSession } = useAuth();
+  const [favoritesExpanded, setFavoritesExpanded] = useState(false);
   const [savedFavorites, setFavorites] = useState(getFavorites);
   const favorites = practice ? practice.favorites : savedFavorites;
   useEffect(() => {
@@ -61,14 +64,15 @@ export default function Trading() {
     return () => { window.removeEventListener(FAVORITES_EVENT, sync); window.removeEventListener('storage', sync); };
   }, []);
   const stocks = useSiteResource('stocks', useCallback((signal) => fetchStocks(search, signal), [search]), true, { cacheKey: JSON.stringify(['stocks', search]), publicCache: true });
-  const selectStock = selected => { const next = new URLSearchParams(params); next.set('code', selected); setParams(next); setPickerOpen(false); setMobileTab('chart'); if (mobile) window.scrollTo({ top: 0 }); };
+  const selectStock = selected => { const next = new URLSearchParams(params); next.delete('market'); next.set('code', selected); setParams(next); setPickerOpen(false); setMobileTab('chart'); if (mobile) window.scrollTo({ top: 0 }); };
   return <div className={`trading-page flex flex-col gap-6 ${mobile ? 'trading-mobile' : ''}`}>
-    <div className="trading-page-heading border-b border-gray-200 pb-4"><h1 className="text-xl font-extrabold">트레이딩</h1>{mobile && code && <button type="button" onClick={() => setPickerOpen(true)} aria-haspopup="dialog">종목 변경</button>}</div>
+    <div className="trading-page-heading border-b border-gray-200 pb-4"><h1 className="text-xl font-extrabold">트레이딩</h1>{mobile && (code || market) && <button type="button" onClick={() => setPickerOpen(true)} aria-haspopup="dialog">종목 변경</button>}</div>
     <div className="grid gap-4 lg:grid-cols-4 lg:items-start">
-      <MobileTradingSheet enabled={mobile && !!code} open={pickerOpen} onClose={() => setPickerOpen(false)} title="종목 선택">
+      <MobileTradingSheet enabled={mobile && !!(code || market)} open={pickerOpen} onClose={() => setPickerOpen(false)} title="종목 선택">
       <aside className="trading-stock-sidebar rounded-xl border border-gray-200 p-4 lg:col-span-1">
         <div className="mb-3 flex items-center justify-between"><h2 className="text-sm font-bold text-gray-700">관심종목</h2><Link to="/favorites" className="text-xs text-gray-400 hover:text-gray-700">관리 &gt;</Link></div>
-        {favorites.length ? <ul className="mb-4 divide-y divide-gray-100">{favorites.map((favoriteCode) => <li key={favoriteCode} className="py-2.5"><StockQuote code={favoriteCode} variant="trading" onSelect={() => selectStock(favoriteCode)} /></li>)}</ul> : <p className="py-8 text-center text-xs leading-relaxed text-gray-400">담아 둔 종목이 없어요.<br />종목을 담으면 여기에 표시됩니다.</p>}
+        {favorites.length ? <ul id="trading-favorites" className="mb-4 divide-y divide-gray-100">{favorites.slice(0, favoritesExpanded ? undefined : 5).map((favoriteCode) => <li key={favoriteCode} className="py-2.5"><StockQuote code={favoriteCode} variant="trading" onSelect={() => selectStock(favoriteCode)} /></li>)}</ul> : <p className="py-8 text-center text-xs leading-relaxed text-gray-400">담아 둔 종목이 없어요.<br />종목을 담으면 여기에 표시됩니다.</p>}
+        {favorites.length > 5 && <button type="button" aria-expanded={favoritesExpanded} aria-controls="trading-favorites" onClick={() => setFavoritesExpanded(value => !value)} className="mb-4 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-600 hover:bg-gray-50">{favoritesExpanded ? '관심종목 접기' : `관심종목 더보기 (${favorites.length - 5}개)`}</button>}
     <PracticeTarget id="search"><form className="mb-4 flex gap-2" onSubmit={(event) => { event.preventDefault(); const next = new URLSearchParams(params); const query = new FormData(event.currentTarget).get('search').trim(); next.set('search', query); setParams(next); if (query && ('예시전자 990001'.includes(query))) practice?.event('search'); }}>
       <input key={search} name="search" defaultValue={search} aria-label="종목명 또는 코드 검색" placeholder="종목명 또는 코드 검색" className="min-w-0 flex-1 rounded-lg border border-gray-300 px-4 py-2" maxLength={100} />
       <button className="rounded-lg bg-brand-600 px-5 py-2 font-bold text-white">검색</button>
@@ -80,9 +84,9 @@ export default function Trading() {
         </RemoteState></div>
       </aside>
       </MobileTradingSheet>
-      <StockPanel key={`chart:${user?.user_id ?? 'guest'}:${code}`} mobile={mobile} mobileTab={mobileTab} setMobileTab={setMobileTab} code={code} favorite={favorites.includes(code)} onFavoriteChange={() => practice?.toggleFavorite(code)} />
+      {market ? <MarketIndexPanel market={market} /> : <StockPanel key={`chart:${user?.user_id ?? 'guest'}:${code}`} mobile={mobile} mobileTab={mobileTab} setMobileTab={setMobileTab} code={code} favorite={favorites.includes(code)} onFavoriteChange={() => practice?.toggleFavorite(code)} />}
       {code && !practice && <div className="lg:col-span-4" hidden={mobile && mobileTab !== 'info'}><StockCoach key={`coach:${user?.user_id ?? 'guest'}:${code}`} code={code} /></div>}
-      {(isAuthenticated || hasCachedSession) && <div className="lg:col-span-4" hidden={mobile && mobileTab !== 'orders'}><OrderHistory key={`${user?.user_id}:${code}`} code={code} /></div>}
+      {!market && (isAuthenticated || hasCachedSession) && <div className="lg:col-span-4" hidden={mobile && mobileTab !== 'orders'}><OrderHistory key={`${user?.user_id}:${code}`} code={code} /></div>}
       {mobile && code && mobileTab === 'orders' && !isAuthenticated && !hasCachedSession && <p className="py-8 text-sm">주문내역은 <Link to="/login" className="underline">로그인</Link> 후 확인할 수 있어요.</p>}
     </div>
   </div>;
@@ -100,7 +104,7 @@ function StockPanel({ code, favorite, onFavoriteChange, mobile = false, mobileTa
   if (funding.enabled && funding.accountId !== accountId) setFunding({ accountId: null, enabled: false });
   const misuEnabled = funding.enabled && funding.accountId === accountId;
   const misuActive = !practice && (misuOpen || tutorialParams.get('misuTour') === '1');
-  const misu = useSiteResource('misu', useCallback(signal => fetchMisu(accountId, signal), [accountId]), isAuthenticated && !!accountId && !practice);
+  const misu = useSiteResource('misu', useCallback(signal => fetchMisu(accountId, signal), [accountId]), isAuthenticated && !!accountId && !practice, { cacheKey: JSON.stringify(['misu', accountId]), cachePreview: !practice });
   const closeMisu = () => {
     setMisuOpen(false);
     if (tutorialParams.get('misuTour') === '1') { const next = new URLSearchParams(tutorialParams); next.delete('misuTour'); setTutorialParams(next, { replace: true }); }
@@ -150,7 +154,7 @@ function StockPanel({ code, favorite, onFavoriteChange, mobile = false, mobileTa
   const [kind, setKind] = useState('매수');
   const [priceType, setPriceType] = useState('시장가');
   const [limitPrice, setLimitPrice] = useState('');
-  const book = useSiteResource('book', useCallback(signal => fetchOrderBook(code, signal), [code]), !!code && isAuthenticated && !practice && needsBook(priceType));
+  const book = useSiteResource('book', useCallback(signal => fetchOrderBook(code, signal), [code]), !!code && isAuthenticated && !practice && needsBook(priceType), { cacheKey: JSON.stringify(['book', code]) });
   const [quantity, setQuantity] = useState('1');
   const [busy, setBusy] = useState(false);
   const submitting = useRef(false);

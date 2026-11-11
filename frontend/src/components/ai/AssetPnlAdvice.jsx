@@ -1,33 +1,25 @@
-import { useEffect, useId, useRef, useState } from 'react';
+import { useCallback, useId, useRef, useState } from 'react';
 import { ChevronRight, Sparkles } from 'lucide-react';
 import { fetchAssetCoach } from '../../api/data';
 import { kstStamp } from '../../utils/kstStamp';
 import { won, signTextClass } from '../../utils/format';
+import useRemote from '../../hooks/useRemote';
 import './AssetPnlAdvice.css';
 
 // 처음 펼칠 때 한 번만 계좌 조언을 요청한다. 접힌 상태에서는 AI를 부르지 않는다.
 export default function AssetPnlAdvice({ amount, id, accountId, practice = false }) {
   const [expanded, setExpanded] = useState(false);
-  const [coach, setCoach] = useState({ status: practice || !accountId ? 'general' : 'idle' });
-  const job = useRef(null);
+  const [requested, setRequested] = useState(false);
+  const resource = useRemote(useCallback(signal => fetchAssetCoach(accountId, signal), [accountId]), requested && !practice && !!accountId,
+    { cacheKey: JSON.stringify(['asset-coach', accountId]), cachePreview: !practice && !!accountId });
+  const coach = resource.data?.status === 'ok' ? { status: 'ok', data: resource.data }
+    : { status: practice || !accountId ? 'general' : resource.loading ? 'loading' : resource.error ? 'error' : 'general' };
   const bodyId = useId();
   const bannerRef = useRef(null);
   const loss = amount < 0;
   const neutral = amount === 0;
-  useEffect(() => () => job.current?.abort(), []);
-  function load() {
-    job.current?.abort();
-    const controller = new AbortController();
-    job.current = controller;
-    setCoach({ status: 'loading' });
-    fetchAssetCoach(accountId, controller.signal)
-      .then(data => { if (!controller.signal.aborted) setCoach(data.status === 'ok' ? { status: 'ok', data } : { status: 'general' }); })
-      .catch(() => { if (!controller.signal.aborted) setCoach({ status: 'error' }); });
-  }
-  function toggle() {
-    if (!expanded && coach.status === 'idle') load();
-    setExpanded(!expanded);
-  }
+  const load = resource.reload;
+  function toggle() { setRequested(true); setExpanded(!expanded); }
   const advice = coach.data;
   const meta = coach.status === 'loading' ? '분석 중'
     : coach.status === 'ok' ? `${kstStamp(advice.as_of)} 기준 · 내 계좌 분석` : '기본 안내';

@@ -11,7 +11,7 @@ import HelpIcon from '../components/learn/HelpIcon';
 import useSiteResource from '../hooks/useSiteResource';
 import { useSitePractice } from '../contexts/site-practice';
 import { PracticeTarget } from '../components/learn/SitePractice';
-import { fetchValuedPortfolio } from '../api/data';
+import { fetchValuedPortfolio, isIncompletePortfolio } from '../api/data';
 import { numberOrNull, portfolioTotals, quotePrice } from '../api/normalize';
 import AccountPicker from '../components/common/AccountPicker';
 import StockLogo from '../components/common/StockLogo';
@@ -39,7 +39,7 @@ export default function Assets() {
   const adviceVisible = advice.accountId === accountId && advice.visible;
   const setAdviceVisible = visible => setAdvice({ accountId, visible });
   const adviceId = useId();
-  const resource = useSiteResource('portfolio', useCallback((signal) => fetchValuedPortfolio(accountId, signal), [accountId]), isAuthenticated && !!accountId, { keepPreviousData: true, cacheKey: JSON.stringify(['portfolio', accountId]), cachePreview: true });
+  const resource = useSiteResource('portfolio', useCallback((signal) => fetchValuedPortfolio(accountId, signal), [accountId]), isAuthenticated && !!accountId, { keepPreviousData: true, cacheKey: JSON.stringify(['portfolio', accountId]), cachePreview: true, isIncomplete: isIncompletePortfolio });
   const totals = portfolioTotals(resource.data);
 
   const pending = !isAuthenticated ? '로그인 후 확인' : !accountId ? '계좌 선택 후 확인' : resource.loading ? '불러오는 중' : '조회 불가';

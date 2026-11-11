@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ChevronRight, Sparkles } from 'lucide-react';
 import Modal from './Modal';
 import HelpIconButton from '../learn/HelpIconButton';
@@ -10,6 +10,7 @@ import { fetchStockBrief, fetchThemeBrief } from '../../api/data';
 import { safeExternalUrl } from '../../api/normalize';
 import { readResource, resourceKey, writeResource } from '../../api/resourceCache';
 import { readStockBrief, subscribeStockBrief } from '../../api/stockBriefCache';
+import useRemote from '../../hooks/useRemote';
 import { useAuth } from '../../hooks/useAuth';
 import { comma, rate, signTextClass } from '../../utils/format';
 import { kstStamp } from '../../utils/kstStamp';
@@ -41,14 +42,7 @@ function useStockBrief(code, enabled) {
 }
 
 function useThemes(enabled) {
-  const [data, setData] = useState(null);
-  useEffect(() => {
-    if (!enabled) return undefined;
-    const controller = new AbortController();
-    fetchThemeBrief(controller.signal).then(setData).catch(() => { /* The theme column hides itself. */ });
-    return () => controller.abort();
-  }, [enabled]);
-  return data;
+  return useRemote(useCallback(signal => fetchThemeBrief(signal), []), enabled, { cacheKey: 'theme-brief', cachePreview: enabled }).data;
 }
 
 // ▲ up, ▼ down, — flat or unknown, matching the theme tabs.

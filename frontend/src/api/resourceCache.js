@@ -1,8 +1,9 @@
 // Bounded best-effort storage; persistence must never break a successful read.
 export const CACHE_STORAGE_KEY = 'stockmaster:resources:v1';
-export const CACHE_MAX_AGE = 24 * 60 * 60 * 1000;
-const MAX_ENTRIES = 100;
-const MAX_CHARS = 1_500_000;
+// Retain snapshots until replaced, evicted for storage space, or cleared on logout.
+export const CACHE_MAX_AGE = Infinity;
+export const MAX_ENTRIES = 500;
+const MAX_CHARS = 3_000_000;
 function entries() {
   try {
     const value = JSON.parse(localStorage.getItem(CACHE_STORAGE_KEY));
@@ -21,7 +22,10 @@ export function writeResource(key, data, isPrivate = false) {
     if (JSON.stringify(entry).length > MAX_CHARS) return;
     const next = [...entries().filter(item => item.key !== key), entry].slice(-MAX_ENTRIES);
     while (JSON.stringify(next).length > MAX_CHARS) next.shift();
-    localStorage.setItem(CACHE_STORAGE_KEY, JSON.stringify(next));
+    while (next.length) {
+      try { localStorage.setItem(CACHE_STORAGE_KEY, JSON.stringify(next)); break; }
+      catch { next.shift(); }
+    }
   } catch { /* Disabled storage, quota limits or non-serializable data. */ }
 }
 export function removeResource(key) {

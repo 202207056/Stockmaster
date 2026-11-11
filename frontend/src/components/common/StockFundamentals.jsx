@@ -33,7 +33,7 @@ export default function StockFundamentals({ code, active = true }) {
     const { data } = await api.get(`/stocks/${encodeURIComponent(code)}/fundamentals`, { signal, cache: false, ...(import.meta.env.DEV ? { baseURL: '/api' } : {}) });
     if (data?.symbol_code !== code || !data.metrics) throw new Error('투자 지표 응답을 확인할 수 없습니다.');
     return data;
-  }, [code]), !!code, { keepPreviousData: true });
+  }, [code]), !!code, { cacheKey: JSON.stringify(['fundamentals', code]), publicCache: true });
   useAutoRefresh(resource, 300_000, active && !!code);
   const { data, loading, error } = resource;
   return <section className="stock-fundamentals" aria-label="투자 지표" aria-busy={loading}>

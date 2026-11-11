@@ -1,3 +1,4 @@
+import { readResource, writeResource, removeResource, resourceKey, canRetainResource } from '../api/resourceCache.js';
 /** Account libraries live on the server; guest favorites and recent views stay local. */
 const KEY = 'gp_favorites';
 export const FAVORITES_EVENT = 'favorites:change';
@@ -5,6 +6,9 @@ let owner = null;
 let session = null;
 const storageKey = () => owner == null ? KEY : `${KEY}:user:${owner}`;
 const notify = () => window.dispatchEvent(new CustomEvent(FAVORITES_EVENT));
+const snapshotKey = () => {
+  try { const id = localStorage.getItem('stockmaster:cache-session'); return owner != null && id ? resourceKey('favorites', id, owner) : null; } catch { return null; }
+};
 const empty = () => ({ revision: 0, codes: [], groups: [] });
 const readArray = key => {
   try { const value = JSON.parse(localStorage.getItem(key) || '[]'); return Array.isArray(value) ? value : []; }
@@ -28,7 +32,7 @@ export function setFavoritesOwner(id) {
   if (next === owner && session) return;
   session?.controller.abort();
   owner = next;
-  session = next == null ? null : { data: empty(), ready: false, loading: false, error: '', controller: new AbortController(), queue: Promise.resolve(), loadingPromise: null };
+  session = next == null ? null : { data: readResource(snapshotKey())?.data || empty(), ready: false, loading: false, error: '', controller: new AbortController(), queue: Promise.resolve(), loadingPromise: null };
   notify();
   if (session) void syncFavorites().catch(() => {});
 }
@@ -54,6 +58,7 @@ async function saveChange(state, change) {
       const saved = await remote.putFavoriteLibrary(draft, state.controller.signal);
       checkSession(state);
       state.data = saved;
+      writeResource(snapshotKey(), saved, true);
       return result;
     } catch (error) {
       checkSession(state);
@@ -61,6 +66,7 @@ async function saveChange(state, change) {
       const latest = await remote.fetchFavoriteLibrary(state.controller.signal);
       checkSession(state);
       state.data = latest;
+      writeResource(snapshotKey(), latest, true);
     }
   }
 }
@@ -80,6 +86,7 @@ export function syncFavorites() {
     const data = await remote.fetchFavoriteLibrary(state.controller.signal);
     checkSession(state);
     state.data = data;
+    writeResource(snapshotKey(), data, true);
     let migrated = false;
     try { migrated = localStorage.getItem(`${key}:migrated`) === 'true'; } catch { /* No legacy storage. */ }
     if (!migrated) {
@@ -94,6 +101,7 @@ export function syncFavorites() {
     }
     state.ready = true;
   }).catch(error => {
+    if (state === session && !canRetainResource(error)) { removeResource(snapshotKey()); state.data = empty(); state.ready = false; }
     if (state === session) state.error = error.userMessage || '관심종목을 불러오지 못했습니다. 다시 시도해 주세요.';
     throw error;
   }).finally(() => {

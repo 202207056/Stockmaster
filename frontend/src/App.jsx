@@ -8,6 +8,7 @@ import ProtectedRoute from './components/routing/ProtectedRoute';
 import OnboardingGate from './components/routing/OnboardingGate';
 import ApiStatusBanner from './components/system/ApiStatusBanner';
 import FloatingAssets from './components/common/FloatingAssets';
+import FloatingTutorial from './components/common/FloatingTutorial';
 import FloatingTermAnalyzer from './components/ai/term-analyzer/FloatingTermAnalyzer';
 
 import Landing from './pages/Landing';
@@ -21,6 +22,7 @@ import TradingLesson from './pages/TradingLesson';
 import GuideTutorial from './pages/GuideTutorial';
 import Dashboard from './pages/Dashboard';
 import Rankings from './pages/Rankings';
+import News from './pages/News';
 import Trading from './pages/Trading';
 import Assets from './pages/Assets';
 import Favorites from './pages/Favorites';
@@ -94,6 +96,7 @@ function AuthenticatedApp() {
             <Route element={<ProtectedRoute />}>
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/dashboard/rankings" element={<Rankings />} />
+              <Route path="/dashboard/news" element={<News />} />
               <Route path="/trading" element={<Trading />} />
               <Route path="/assets" element={<Assets />} />
               <Route path="/favorites" element={<Favorites />} />
@@ -105,6 +108,7 @@ function AuthenticatedApp() {
           </Route>
         </Routes></OnboardingGate>
         <FloatingAssets />
+        <FloatingTutorial />
         <FloatingTermAnalyzer />
 
 

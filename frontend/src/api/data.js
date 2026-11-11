@@ -207,6 +207,7 @@ export const saveSurvey = async (answers) => {
 };
 
 // Fetch sequentially: one request per holding, no burst polling against the upstream provider.
+export const isIncompletePortfolio = data => data?.holdings?.some(holding => holding.quoteError);
 async function loadValuedPortfolio(signal, accountId) {
   const portfolio = await fetchPortfolio(accountId, signal);
   const holdings = [];

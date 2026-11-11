@@ -43,8 +43,8 @@ export default function PostComposer({ onSaved, initialSymbol = null, quote = nu
   const [query, setQuery] = useState('');
   const [tradeAccountId, setTradeAccountId] = useState(accountId);
   const fileInput = useRef(null);
-  const stocks = useRemote(useCallback(signal => fetchStocks(query, signal), [query]), panel === 'symbol' && !!query);
-  const orders = useRemote(useCallback(signal => fetchShareableOrders(tradeAccountId, signal), [tradeAccountId]), panel === 'trade' && tradeAccountId != null);
+  const stocks = useRemote(useCallback(signal => fetchStocks(query, signal), [query]), panel === 'symbol' && !!query, { cacheKey: JSON.stringify(['stocks', query]), publicCache: true });
+  const orders = useRemote(useCallback(signal => fetchShareableOrders(tradeAccountId, signal), [tradeAccountId]), panel === 'trade' && tradeAccountId != null, { cacheKey: JSON.stringify(['shareable-orders', tradeAccountId]) });
   const filledOrders = orders.data?.filter(order => order.status === '체결') || [];
   const photos = async event => {
     const files = Array.from(event.target.files || []); event.target.value = '';

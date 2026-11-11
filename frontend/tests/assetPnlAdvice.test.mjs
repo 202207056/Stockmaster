@@ -9,8 +9,10 @@ Object.assign(globalThis, { window: dom.window, document: dom.window.document,
   IS_REACT_ACT_ENVIRONMENT: true });
 const React = await import('react');
 const { act } = React;
-const { createRoot } = await import('react-dom/client');
+const { createRoot: reactCreateRoot } = await import('react-dom/client');
+const createRoot = container => { const root = reactCreateRoot(container); return { unmount: () => root.unmount(), render: tree => root.render(React.createElement(AuthContext.Provider, { value: { user: { user_id: 1 }, isAuthenticated: true } }, tree)) }; };
 const server = await createServer({ server: { middlewareMode: true, hmr: false }, appType: 'custom', envFile: false });
+const { AuthContext } = await server.ssrLoadModule('/src/contexts/auth-context.js');
 after(async () => { await server.close(); dom.window.close(); });
 const { default: Advice } = await server.ssrLoadModule('/src/components/ai/AssetPnlAdvice.jsx');
 const { fetchAssetCoach } = await server.ssrLoadModule('/src/api/data.js');

@@ -96,7 +96,7 @@ export default function MarketStrip() {
     el.classList.remove('is-sliding');
     dragRef.current = { active: true, lastX: e.clientX, moved: 0 };
     el.classList.add('is-dragging');
-    el.setPointerCapture?.(e.pointerId);
+
   };
 
   const onPointerMove = (e) => {
@@ -109,6 +109,7 @@ export default function MarketStrip() {
     drag.moved += Math.abs(dx);
 
     // 상대 이동량으로 움직이므로 되돌림(wrap)이 일어나도 기준점이 어긋나지 않습니다.
+    if (drag.moved > 5) el.setPointerCapture?.(e.pointerId);
     el.scrollLeft -= dx;
     wrap();
   };
@@ -150,6 +151,7 @@ export default function MarketStrip() {
         onPointerMove={onPointerMove}
         onPointerUp={endDrag}
         onPointerCancel={endDrag}
+        onClickCapture={event => { if (event.detail !== 0 && dragRef.current.moved > 5) { event.preventDefault(); event.stopPropagation(); } }}
         onDragStart={(e) => e.preventDefault()}
       >
         {items.map((idx) => (
@@ -171,8 +173,11 @@ export function MarketCard({ item, ...rest }) {
   const change = numberOrNull(item.change_rate);
   const direction = value === null ? 0 : change ?? 0;
   return (
-    <article
-      className={`mr-4 flex h-36 w-72 shrink-0 items-center justify-between gap-4 rounded-xl border p-5 ${signBgClass(direction)} ${signBorderClass(direction)}`}
+    <a
+      href={`/trading?market=${encodeURIComponent(item.code || item.name)}`}
+      aria-label={`${item.name} 트레이딩 정보 보기`}
+      tabIndex={rest['aria-hidden'] ? -1 : undefined}
+      className={`mr-4 flex h-36 w-72 shrink-0 items-center justify-between gap-4 rounded-xl border p-5 focus-visible:outline-2 focus-visible:outline-brand-600 ${signBgClass(direction)} ${signBorderClass(direction)}`}
       {...rest}
     >
       <div className="flex min-w-0 flex-col justify-between self-stretch">
@@ -188,7 +193,7 @@ export function MarketCard({ item, ...rest }) {
       </div>
 
       <MarketChangeChart name={item.name} change={direction} intraday={item.intraday} />
-    </article>
+    </a>
   );
 }
 

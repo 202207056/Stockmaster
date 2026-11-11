@@ -120,9 +120,9 @@ export default function Dashboard() {
       <div className="dashboard-secondary grid gap-10 lg:grid-cols-3">
         {/* 뉴스 */}
         <section className="lg:col-span-2" data-site-tour="news">
-          <SectionTitle>오늘의 뉴스</SectionTitle>
+          <SectionTitle to="/dashboard/news">오늘의 뉴스</SectionTitle>
           <RemoteState resource={news} requiresAuth={false} empty={!news.data?.length}>
-          <ul className="flex flex-col gap-5 rounded-xl border border-gray-100 bg-gray-50 p-6">
+          <ul id="dashboard-news" className="flex flex-col gap-5 rounded-xl border border-gray-100 bg-gray-50 p-6">
             {news.data?.slice(0, 3).map((n, index) => (
               <li key={`${n.url}-${index}`} className="flex gap-5">
                 <NewsThumbnail url={n.image_url} />

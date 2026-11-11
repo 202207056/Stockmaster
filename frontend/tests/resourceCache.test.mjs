@@ -24,7 +24,7 @@ const privateKey = (owner, key) => cache.resourceKey(client.API_BASE_URL, [clien
 const deferred = () => { let resolve, reject; const promise = new Promise((a, b) => { resolve = a; reject = b; }); return { promise, resolve, reject }; };
 beforeEach(() => localStorage.clear());
 
-test('storage expires, bounds entries, isolates API/session/account keys and tolerates invalid storage', () => {
+test('storage retains old snapshots, bounds entries, isolates API/session/account keys and tolerates invalid storage', () => {
   cache.writeResource(publicKey('price:A'), { price: 100 });
   cache.writeResource(cache.resourceKey('other-api', 'public', 'price:A'), { price: 200 });
   assert.equal(cache.readResource(publicKey('price:A')).data.price, 100);
@@ -37,11 +37,11 @@ test('storage expires, bounds entries, isolates API/session/account keys and tol
   client.setToken('session-two');
   assert.equal(cache.readResource(privateKey(1, 'portfolio:7')), null);
   assert.equal(cache.readResource(publicKey('price:A')).data.price, 100);
-  const expired = [{ key: 'old', data: [], private: false, savedAt: Date.now() - cache.CACHE_MAX_AGE - 1 }];
+  const expired = [{ key: 'old', data: [], private: false, savedAt: Date.now() - 365 * 86400000 }];
   localStorage.setItem(cache.CACHE_STORAGE_KEY, JSON.stringify(expired));
-  assert.equal(cache.readResource('old'), null);
-  for (let i = 0; i < 110; i++) cache.writeResource(String(i), []);
-  assert.equal(JSON.parse(localStorage.getItem(cache.CACHE_STORAGE_KEY)).length, 100);
+  assert.deepEqual(cache.readResource('old').data, []);
+  for (let i = 0; i < cache.MAX_ENTRIES + 10; i++) cache.writeResource(String(i), []);
+  assert.equal(JSON.parse(localStorage.getItem(cache.CACHE_STORAGE_KEY)).length, cache.MAX_ENTRIES);
   localStorage.setItem(cache.CACHE_STORAGE_KEY, 'corrupt');
   assert.equal(cache.readResource('old'), null);
   const storage = globalThis.localStorage;
@@ -194,5 +194,24 @@ test('an explicit authorization rejection clears restored session data', async (
     assert.equal(auth.hasCachedSession, false);
     assert.equal(client.getToken(), null);
     assert(!JSON.parse(localStorage.getItem(cache.CACHE_STORAGE_KEY)).some(entry => entry.private));
+  } finally { await act(async () => root.unmount()); }
+});
+
+
+test('partial refresh preserves a complete saved snapshot and its original timestamp', async () => {
+  const key = publicKey('partial');
+  cache.writeResource(key, { value: 100 });
+  const savedAt = cache.readResource(key).savedAt;
+  let latest;
+  const loader = async () => ({ value: null, incomplete: true });
+  const isIncomplete = data => data.incomplete;
+  function Probe() { latest = useRemote(loader, true, { cacheKey: 'partial', publicCache: true, isIncomplete }); return null; }
+  const root = createRoot(container);
+  try {
+    await act(async () => root.render(React.createElement(AuthContext.Provider, { value: { user: null } }, React.createElement(Probe))));
+    assert.equal(latest.data.value, 100);
+    assert.equal(latest.savedAt, savedAt);
+    assert(latest.stale && latest.error);
+    assert.equal(cache.readResource(key).data.value, 100);
   } finally { await act(async () => root.unmount()); }
 });

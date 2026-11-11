@@ -22,7 +22,7 @@ export default function AssetCharts({ accountId, resource, practice }) {
   const history = useRemote(useCallback(signal => fetchAssetRange(accountId, startDate, endDate, signal), [accountId, startDate, endDate]), enabled,
     { cacheKey: JSON.stringify(['asset-range', accountId, startDate, endDate]) });
   const slices = resource.data ? portfolioSlices(resource.data.holdings) : null;
-  const ready = !history.loading && !history.stale && !history.error;
+  const ready = history.data != null;
   const last = ready ? assetComparison(history.data?.rows, endDate, 0, history.data?.previous) : null;
   const comparison = last ? assetComparison(history.data?.rows, startDate, last.previous, history.data?.previous) : null;
   return <div className="assets-charts" data-assets-tour="charts" data-site-tour="asset-charts">

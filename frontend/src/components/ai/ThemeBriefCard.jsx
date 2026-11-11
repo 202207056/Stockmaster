@@ -1,8 +1,9 @@
-import { useEffect, useId, useState } from 'react';
+import { useCallback, useId, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { fetchThemeBrief } from '../../api/data';
-import { getSessionId } from '../../api/client';
+import { getSessionId, getToken } from '../../api/client';
 import { safeExternalUrl } from '../../api/normalize';
+import useRemote from '../../hooks/useRemote';
 import useAuth from '../../hooks/useAuth';
 import { useSitePractice } from '../../contexts/site-practice';
 import { comma, rate, signTextClass } from '../../utils/format';
@@ -25,32 +26,16 @@ function asOfLabel(value) {
 }
 
 export default function ThemeBriefCard() {
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, hasCachedSession, user } = useAuth();
   const practice = useSitePractice();
-  if (!isAuthenticated || practice) return null;
-  return <ThemeRequest key={`${getSessionId()}:${user?.user_id}`} />;
+  if ((!isAuthenticated && !hasCachedSession) || practice) return null;
+  return <ThemeRequest enabled={isAuthenticated} key={`${getSessionId()}:${user?.user_id}`} />;
 }
 
-function ThemeRequest() {
-  const [state, setState] = useState({ loading: true, data: null });
-  useEffect(() => {
-    const controller = new AbortController();
-    async function load() {
-      // 개발 모드의 effect 재실행에서도 취소된 요청은 전송하지 않는다.
-      await Promise.resolve();
-      if (controller.signal.aborted) return;
-      try {
-        const data = await fetchThemeBrief(controller.signal);
-        if (!controller.signal.aborted) setState({ loading: false, data });
-      } catch {
-        if (!controller.signal.aborted) setState({ loading: false, data: null });
-      }
-    }
-    load();
-    return () => controller.abort();
-  }, []);
+function ThemeRequest({ enabled }) {
+  const state = useRemote(useCallback(signal => fetchThemeBrief(signal), []), enabled && !!getToken(), { cacheKey: 'theme-brief', cachePreview: true });
 
-  if (state.loading) return <LearningCard title="오늘의 테마">
+  if (state.loading && !state.data) return <LearningCard title="오늘의 테마">
     <div role="status" aria-label="테마 브리핑 불러오는 중" className="grid animate-pulse gap-4 sm:grid-cols-2">
       {[0, 1].map(key => <div key={key} className="h-32 rounded-lg bg-gray-100" />)}
     </div>

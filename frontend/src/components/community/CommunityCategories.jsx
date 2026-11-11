@@ -13,7 +13,7 @@ export default function CommunityCategories({ categories, onSave, selected, onSe
   const [search, setSearch] = useState('');
   const [query, setQuery] = useState('');
   const [error, setError] = useState(null);
-  const resource = useRemote(useCallback(signal => fetchStocks(query, signal), [query]), adding && !!query);
+  const resource = useRemote(useCallback(signal => fetchStocks(query, signal), [query]), adding && !!query, { cacheKey: JSON.stringify(['stocks', query]), publicCache: true });
   const save = next => {
     try { onSave(next); setError(null); return true; } catch { setError(new Error('카테고리를 저장하지 못했습니다. 브라우저 저장 공간을 확인해 주세요.')); return false; }
   };

@@ -21,9 +21,9 @@ export default function AutomationOrders({ code, embedded = false, execution, si
   const token = getToken();
   const alive = useRef(true);
   useEffect(() => { alive.current = true; return () => { alive.current = false; }; }, []);
-  const capabilities = useRemote(useCallback(signal => fetchAutomationCapabilities(signal), []));
-  const history = useRemote(useCallback(signal => fetchAutomations(accountId, signal), [accountId]), !!accountId);
-  const quote = useRemote(useCallback(signal => fetchPrice(code, signal), [code]), !!code);
+  const capabilities = useRemote(useCallback(signal => fetchAutomationCapabilities(signal), []), true, { cacheKey: 'automation-capabilities' });
+  const history = useRemote(useCallback(signal => fetchAutomations(accountId, signal), [accountId]), !!accountId, { cacheKey: JSON.stringify(['automations', accountId]) });
+  const quote = useRemote(useCallback(signal => fetchPrice(code, signal), [code]), !!code, { cacheKey: JSON.stringify(['price', code]), publicCache: true });
   const [form, setForm] = useState(() => ({ kind: 'scheduled', side: '매수', quantity: '1', operator: 'lte', trigger: '',
     scheduled: koreaInput(Date.now() + 3600000), expires: koreaInput(Date.now() + 7 * 86400000) }));
   const [pending, setPending] = useState(null);
@@ -39,7 +39,7 @@ export default function AutomationOrders({ code, embedded = false, execution, si
   const lock = useRef(false);
   const [cancelling, setCancelling] = useState(null);
   const seenExecutions = useRef(new Set());
-  const ready = ENABLE_ORDER_SUBMISSION && capabilities.data?.enabled && !capabilities.error;
+  const ready = ENABLE_ORDER_SUBMISSION && capabilities.data?.enabled && !capabilities.stale && !capabilities.error;
   const change = key => event => setForm(previous => ({ ...previous, [key]: event.target.value }));
   const refreshHistory = history.reload;
   const refreshCapabilities = capabilities.reload;

@@ -1,35 +1,19 @@
 import { comma } from '../../utils/format';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { TrendingUp } from 'lucide-react';
 import { fetchPopularStocks } from '../../api/data';
+import useRemote from '../../hooks/useRemote';
+import useAutoRefresh from '../../hooks/useAutoRefresh';
 import RankingRow from './PopularStockRow';
 
 export default function PopularStocks() {
-  const [rows, setRows] = useState([]);
-  const [status, setStatus] = useState('loading');
+  const resource = useRemote(useCallback(signal => fetchPopularStocks(signal), []), true, { cacheKey: 'popular-stocks', publicCache: true });
+  useAutoRefresh(resource, 60_000);
+  const rows = resource.data || [];
+  const status = resource.loading ? 'loading' : resource.error ? 'error' : 'ready';
   const [position, setPosition] = useState({ index: 0, previous: null });
   const [paused, setPaused] = useState(false);
-
-  useEffect(() => {
-    const controller = new AbortController();
-    let timer;
-    const refresh = async () => {
-      try {
-        const data = await fetchPopularStocks(controller.signal);
-        if (controller.signal.aborted) return;
-        setRows(data);
-        setStatus(data.length ? 'ready' : 'empty');
-      } catch {
-        if (controller.signal.aborted) return;
-        setRows([]);
-        setStatus('error');
-      }
-      timer = setTimeout(refresh, 60_000);
-    };
-    refresh();
-    return () => { controller.abort(); clearTimeout(timer); };
-  }, []);
 
   useEffect(() => {
     if (paused || rows.length < 2) return;

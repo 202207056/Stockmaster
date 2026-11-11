@@ -21,7 +21,7 @@ export default function Community() {
   const symbolCode = params.get('symbol') || '';
   const { categories, save } = useCommunityCategories(user?.user_id);
   const savedCategory = categories.find(item => item.symbol_code === symbolCode);
-  const selectedStock = useRemote(useCallback(signal => fetchStock(symbolCode, signal), [symbolCode]), !!symbolCode && !savedCategory);
+  const selectedStock = useRemote(useCallback(signal => fetchStock(symbolCode, signal), [symbolCode]), !!symbolCode && !savedCategory, { cacheKey: JSON.stringify(['stock', symbolCode]), publicCache: true });
   const selectedCategory = savedCategory || (symbolCode ? { symbol_code: symbolCode, name: selectedStock.data?.name || '선택한 종목' } : null);
   const resource = useRemote(useCallback(signal => fetchPosts(page, signal, 20, symbolCode), [page, symbolCode]), isAuthenticated, { cacheKey: JSON.stringify(['posts-v2', page, 20, symbolCode]), cachePreview: true });
   const [composer, setComposer] = useState(null);

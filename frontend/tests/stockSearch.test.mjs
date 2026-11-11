@@ -1,4 +1,4 @@
-import test, { after } from 'node:test';
+import test, { after, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { JSDOM } from 'jsdom';
 import { createServer } from 'vite';
@@ -9,6 +9,7 @@ globalThis.document = dom.window.document;
 globalThis.localStorage = dom.window.localStorage;
 globalThis.FormData = dom.window.FormData;
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+beforeEach(() => localStorage.clear());
 const React = await import('react');
 const { act } = React;
 const { createRoot } = await import('react-dom/client');

@@ -10,9 +10,11 @@ globalThis.localStorage = dom.window.localStorage;
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 const React = await import('react');
 const { act } = React;
-const { createRoot } = await import('react-dom/client');
+const { createRoot: reactCreateRoot } = await import('react-dom/client');
+const createRoot = container => { const root = reactCreateRoot(container); return { unmount: () => root.unmount(), render: tree => root.render(React.createElement(AuthContext.Provider, { value: { user: { user_id: 1 }, isAuthenticated: true } }, tree)) }; };
 const { MemoryRouter } = await import('react-router-dom');
 const server = await createServer({ server: { middlewareMode: true, hmr: false }, appType: 'custom' });
+const { AuthContext } = await server.ssrLoadModule('/src/contexts/auth-context.js');
 after(async () => { await server.close(); dom.window.close(); });
 const { default: PopularStocks } = await server.ssrLoadModule('/src/components/common/PopularStocks.jsx');
 const { default: client } = await server.ssrLoadModule('/src/api/client.js');
@@ -31,8 +33,7 @@ test('popular ranking links to the selected stock and handles unavailable data',
     try {
       await act(async () => root.render(React.createElement(MemoryRouter, null, React.createElement(PopularStocks))));
       if (fail) {
-        assert.match(container.textContent, /조회 불가/);
-        assert.equal(container.querySelector('a'), null);
+        assert.equal(container.querySelector('a')?.getAttribute('href'), '/trading?code=005930', 'saved ranking survives outage');
       } else {
         assert.match(container.textContent, /삼성전자/);
         assert.equal(container.querySelector('a').getAttribute('href'), '/trading?code=005930');
@@ -71,5 +72,23 @@ test('rates use directional colors and ranking slides upward through the last it
     await act(async () => tick());
     assert.equal(link.getAttribute('href'), '/trading?code=005930');
     assert.match(container.querySelector('.ticker-out').textContent, /Flat/);
+  } finally { await act(async () => root.unmount()); }
+});
+
+
+test('saved ranking renders immediately while refresh is pending, then survives failure', async () => {
+  const cache = await server.ssrLoadModule('/src/api/resourceCache.js');
+  const { API_BASE_URL } = await server.ssrLoadModule('/src/api/client.js');
+  localStorage.clear();
+  cache.writeResource(cache.resourceKey(API_BASE_URL, 'public', 'popular-stocks'), [{ rank: 1, name: 'Saved stock', symbol_code: '005930' }]);
+  let reject;
+  client.defaults.adapter = () => new Promise((resolve, fail) => { reject = fail; });
+  const container = document.getElementById('root');
+  const root = createRoot(container);
+  try {
+    await act(async () => root.render(React.createElement(MemoryRouter, null, React.createElement(PopularStocks))));
+    assert.match(container.textContent, /Saved stock/);
+    await act(async () => reject(new Error('offline')));
+    assert.match(container.textContent, /Saved stock/);
   } finally { await act(async () => root.unmount()); }
 });

@@ -3,6 +3,7 @@ import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { UserRound, SlidersHorizontal, Wallet, ShieldCheck, ChevronRight, Sun, Moon } from 'lucide-react';
 import ProfileSettings from '../components/common/ProfileSettings';
 import useTutorialSetting from '../hooks/useTutorialSetting';
+import useTutorialPopupSetting from '../hooks/useTutorialPopupSetting';
 import useAuth from '../hooks/useAuth';
 import { num, won } from '../utils/format';
 import HelpIcon from '../components/learn/HelpIcon';
@@ -30,6 +31,7 @@ export default function MyPage() {
   const { user, account, isAuthenticated, logout } = useAuth();
   const navigate = useNavigate();
   const [tutorialsEnabled, setTutorialsEnabled] = useTutorialSetting();
+  const [tutorialPopupEnabled, setTutorialPopupEnabled] = useTutorialPopupSetting();
   const [miniAssetsEnabled, setMiniAssetsEnabled] = useMiniAssetsSetting();
   const [termAnalyzerEnabled, setTermAnalyzerEnabled] = useTermAnalyzerSetting();
   const theme = useSyncExternalStore(subscribeTheme, getTheme, () => 'light');
@@ -37,7 +39,7 @@ export default function MyPage() {
   const [notice, setNotice] = useState('');
   const select = id => { setParams(previous => { const next = new URLSearchParams(previous); next.set('section', id); return next; }); setNotice(''); setResetting(false); };
   const reset = () => {
-    setTheme('light'); setTutorialsEnabled(true); setMiniAssetsEnabled(true); setTermAnalyzerEnabled(false);
+    setTheme('light'); setTutorialsEnabled(true); setTutorialPopupEnabled(true); setMiniAssetsEnabled(true); setTermAnalyzerEnabled(false);
     setResetting(false); setNotice('화면 옵션을 초기화했어요.');
   };
   return <div className="mypage-page settings-page">
@@ -59,11 +61,12 @@ export default function MyPage() {
           <section className="settings-panel" aria-labelledby="tools-title"><h3 id="tools-title">편의 기능</h3>
             <SwitchRow id="mini-assets" title="미니 내 자산 탭" description="어느 화면에서든 내 자산을 빠르게 확인합니다." value={miniAssetsEnabled} onChange={setMiniAssetsEnabled} />
             <SwitchRow id="tutorial" title="튜토리얼 자동 안내" description="매수·차트·내 자산·미수거래를 처음 이용할 때 안내합니다." value={tutorialsEnabled} onChange={setTutorialsEnabled} />
+            <SwitchRow id="tutorial-popup" title="튜토리얼 빠른 설정 팝업" description="떠다니는 팝업에서 자동 안내를 바로 켜거나 끕니다. 팝업을 숨겨도 자동 안내 설정은 유지됩니다." value={tutorialPopupEnabled} onChange={setTutorialPopupEnabled} />
             <SwitchRow id="term-analyzer" title="AI 용어 분석 · 실험 기능" description="화면의 어려운 투자 용어를 찾거나 궁금한 말을 검색해 설명합니다. 실험 중인 기능으로 결과가 정확하지 않을 수 있습니다." value={termAnalyzerEnabled} onChange={setTermAnalyzerEnabled} />
             <p className="settings-caption">옵션은 변경 즉시 적용됩니다. 저장 공간을 사용할 수 없으면 현재 세션에만 유지됩니다.</p>
           </section>
           <section className="settings-panel"><h3>이용 안내</h3><Link className="settings-link-row" to="/dashboard?tour=start"><span>사이트 둘러보기 다시 시작</span><ChevronRight size={17} aria-hidden="true" /></Link><Link className="settings-link-row" to="/learn"><span>투자 학습 및 도움말</span><ChevronRight size={17} aria-hidden="true" /></Link></section>
-          <section className="settings-reset"><div><h3>화면 옵션 초기화</h3><p>라이트 테마, 자산 탭·튜토리얼 켜짐, AI 용어 분석 꺼짐으로 돌아갑니다.</p></div><button type="button" className="settings-button" onClick={() => setResetting(true)}>초기화</button>
+          <section className="settings-reset"><div><h3>화면 옵션 초기화</h3><p>라이트 테마, 자산 탭·튜토리얼·빠른 설정 팝업 켜짐, AI 용어 분석 꺼짐으로 돌아갑니다.</p></div><button type="button" className="settings-button" onClick={() => setResetting(true)}>초기화</button>
             {resetting && <div className="settings-reset-confirm"><p>화면 옵션을 초기화할까요? 프로필과 투자 기록은 유지됩니다.</p><div><button type="button" className="settings-button" onClick={() => setResetting(false)}>취소</button><button type="button" className="settings-button settings-button-primary" onClick={reset}>초기화하기</button></div></div>}
             <p role="status" className="settings-feedback">{notice}</p>
           </section>

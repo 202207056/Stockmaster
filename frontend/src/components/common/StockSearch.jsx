@@ -2,7 +2,12 @@ import { useEffect, useId, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search } from 'lucide-react';
 import { fetchPopularStocks, fetchStocks } from '../../api/data';
+import { API_BASE_URL } from '../../api/client';
+import { readResource, resourceKey, writeResource, canRetainResource, removeResource } from '../../api/resourceCache';
 import PopularStockRow from './PopularStockRow';
+const ranked = rows => [...(rows || [])].sort((a, b) => a.rank - b.rank).slice(0, 10);
+const searchKey = query => resourceKey(API_BASE_URL, 'public', JSON.stringify(['stocks', query]));
+const popularKey = resourceKey(API_BASE_URL, 'public', 'popular-stocks');
 
 export default function StockSearch() {
   const navigate = useNavigate();
@@ -11,18 +16,22 @@ export default function StockSearch() {
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(-1);
   const [result, setResult] = useState({ query: '', rows: [], error: false });
-  const [popular, setPopular] = useState({ rows: [], status: 'loading' });
+  const [popular, setPopular] = useState(() => ({ rows: ranked(readResource(popularKey)?.data), status: readResource(popularKey) ? 'ready' : 'loading' }));
   const keyword = query.trim();
-  const ready = keyword ? result.query === keyword : popular.status !== 'loading';
-  const rows = keyword ? (ready ? result.rows : []) : popular.rows;
+  const saved = readResource(searchKey(keyword))?.data;
+  const ready = keyword ? result.query === keyword || saved != null : popular.status !== 'loading';
+  const rows = keyword ? (result.query === keyword ? result.rows : saved?.slice(0, 8) || []) : popular.rows;
 
   useEffect(() => {
     if (!open || keyword) return;
     const controller = new AbortController();
     fetchPopularStocks(controller.signal).then(data => {
-      if (!controller.signal.aborted) setPopular({ rows: [...data].sort((a, b) => a.rank - b.rank).slice(0, 10), status: 'ready' });
-    }).catch(() => {
-      if (!controller.signal.aborted) setPopular({ rows: [], status: 'error' });
+      if (!controller.signal.aborted) { writeResource(popularKey, data); setPopular({ rows: [...data].sort((a, b) => a.rank - b.rank).slice(0, 10), status: 'ready' }); }
+    }).catch(error => {
+      if (!controller.signal.aborted) {
+        if (!canRetainResource(error)) removeResource(popularKey);
+        setPopular({ rows: ranked(readResource(popularKey)?.data), status: 'error' });
+      }
     });
     return () => controller.abort();
   }, [open, keyword]);
@@ -37,9 +46,12 @@ export default function StockSearch() {
     const timer = setTimeout(async () => {
       try {
         const data = await fetchStocks(keyword, controller.signal);
-        if (!controller.signal.aborted) setResult({ query: keyword, rows: data.slice(0, 8), error: false });
-      } catch {
-        if (!controller.signal.aborted) setResult({ query: keyword, rows: [], error: true });
+        if (!controller.signal.aborted) { writeResource(searchKey(keyword), data); setResult({ query: keyword, rows: data.slice(0, 8), error: false }); }
+      } catch (error) {
+        if (!controller.signal.aborted) {
+          if (!canRetainResource(error)) removeResource(searchKey(keyword));
+          setResult({ query: keyword, rows: readResource(searchKey(keyword))?.data?.slice(0, 8) || [], error: true });
+        }
       }
     }, 300);
     return () => { clearTimeout(timer); controller.abort(); };

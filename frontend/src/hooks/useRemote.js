@@ -5,7 +5,7 @@ import { canRetainResource, readResource, removeResource, resourceKey, writeReso
 import { requireFreshRequest } from '../api/requestCache';
 
 // Explicit keys include every loader parameter. Unkeyed reads remain network-only.
-export default function useRemote(loader, enabled = true, { keepPreviousData = false, cacheKey, publicCache = false, cachePreview = false } = {}) {
+export default function useRemote(loader, enabled = true, { keepPreviousData = false, cacheKey, publicCache = false, cachePreview = true, isIncomplete } = {}) {
   const { user, hasCachedSession } = useAuth();
   const owner = user?.user_id ?? null;
   const token = getToken();
@@ -35,8 +35,17 @@ export default function useRemote(loader, enabled = true, { keepPreviousData = f
       try {
         const data = await loader(controller.signal);
         if (!valid()) return;
-        writeResource(key, data, !publicCache);
-        setState({ loader, owner, token, key, revision, data, savedAt: Date.now(), error: null });
+        const incomplete = isIncomplete?.(data);
+        if (!incomplete) writeResource(key, data, !publicCache);
+        setState(previous => {
+          const matching = previous?.key === key && previous?.owner === owner && previous?.token === token && previous?.loader === loader;
+          const fallback = matching ? previous : cached;
+          if (incomplete && fallback?.data != null) return {
+            loader, owner, token, key, revision, data: fallback.data, savedAt: fallback.savedAt,
+            error: new Error('Some data could not be refreshed.'),
+          };
+          return { loader, owner, token, key, revision, data, savedAt: Date.now(), error: null };
+        });
       } catch (error) {
         if (!valid()) return;
         const retain = canRetainResource(error);
@@ -51,7 +60,7 @@ export default function useRemote(loader, enabled = true, { keepPreviousData = f
     };
     run();
     return () => controller.abort();
-  }, [loader, enabled, owner, token, key, revision, keepPreviousData, publicCache, cached]);
+  }, [loader, enabled, owner, token, key, revision, keepPreviousData, publicCache, cached, isIncomplete]);
   useEffect(() => {
     if (!enabled) return;
     window.addEventListener('online', reload);

@@ -1,0 +1,7 @@
+.floating-tutorial { position: fixed; z-index: 40; width: 78px; filter: drop-shadow(0 4px 8px rgb(15 23 42 / 12%)); }
+.floating-tutorial[data-floating-active="true"] { z-index: 45; }
+.floating-tutorial-switch { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 78px; height: 44px; padding: 6px 10px; border: 1px solid var(--theme-cbd5e1, #cbd5e1); border-radius: 10px; background: var(--theme-f1f5f9, #f1f5f9); color: var(--theme-64748b, #64748b); font-size: 12px; font-weight: 600; touch-action: none; user-select: none; cursor: grab; }
+.floating-tutorial-switch i { width: 16px; height: 16px; border: 2px solid currentColor; border-radius: 50%; }
+.floating-tutorial-switch[aria-checked="true"] { color: var(--theme-accent, #4338ca); background: var(--theme-eef2ff, #eef2ff); }
+.floating-tutorial-switch[aria-checked="true"] i { background: currentColor; }
+.floating-tutorial-switch:focus-visible { outline: 2px solid var(--theme-accent, #4338ca); outline-offset: 2px; }

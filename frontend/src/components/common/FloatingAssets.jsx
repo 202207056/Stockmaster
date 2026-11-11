@@ -4,7 +4,7 @@ import { GripVertical, RefreshCw, Wallet, X } from 'lucide-react';
 import useAuth from '../../hooks/useAuth';
 import useRemote from '../../hooks/useRemote';
 import useMiniAssetsSetting from '../../hooks/useMiniAssetsSetting';
-import { fetchValuedPortfolio } from '../../api/data';
+import { fetchValuedPortfolio, isIncompletePortfolio } from '../../api/data';
 import { numberOrNull, portfolioTotals, quotePrice } from '../../api/normalize';
 import { rate, signTextClass, won, wonSigned } from '../../utils/format';
 import StockLogo from './StockLogo';
@@ -40,7 +40,7 @@ function FloatingAssetsPanel() {
   const gesture = useRef(null);
   const suppressClick = useRef(false);
   const { isAuthenticated, hasCachedSession, accountId, account } = useAuth();
-  const resource = useRemote(useCallback((signal) => fetchValuedPortfolio(accountId, signal), [accountId]), open && isAuthenticated && !!accountId, { keepPreviousData: true, cacheKey: JSON.stringify(['portfolio', accountId]), cachePreview: true });
+  const resource = useRemote(useCallback((signal) => fetchValuedPortfolio(accountId, signal), [accountId]), open && isAuthenticated && !!accountId, { keepPreviousData: true, cacheKey: JSON.stringify(['portfolio', accountId]), cachePreview: true, isIncomplete: isIncompletePortfolio });
   const { reload } = resource;
   const totals = portfolioTotals(resource.data);
 

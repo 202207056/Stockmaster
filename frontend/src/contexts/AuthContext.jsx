@@ -52,6 +52,10 @@ export function AuthProvider({ children }) {
     return initialSnapshot ? (initialSnapshot.accounts.find(account => account.account_id === saved)?.account_id ?? initialSnapshot.accounts[0]?.account_id ?? null) : saved;
   });
 
+  useEffect(() => {
+    if (initialSnapshot && getToken()) setFavoritesOwner(initialSnapshot.user.user_id);
+  }, [initialSnapshot]);
+
   const session = useRef(0);
   const [accountError, setAccountError] = useState(null);
   const [sessionError, setSessionError] = useState(null);

@@ -33,7 +33,7 @@ import { getOnboarding, setOnboarding } from '../utils/onboarding';
  */
 export default function Survey() {
   const { user, isAuthenticated } = useAuth();
-  const resource = useRemote(useCallback((signal) => fetchSurvey(signal), []), isAuthenticated);
+  const resource = useRemote(useCallback((signal) => fetchSurvey(signal), []), isAuthenticated, { cacheKey: 'survey', cachePreview: true });
   return <RemoteState resource={resource} authenticated={isAuthenticated}>{resource.data && <SurveyForm key={user?.user_id} answers={resource.data} />}</RemoteState>;
 }
 

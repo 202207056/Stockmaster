@@ -62,7 +62,7 @@ export default function PortfolioNewsBoard({ stocks, records = [], status = {}, 
   }, [codes, retry]);
 
   // A generated personal brief carries the exact public snapshot it was based on.
-  const displayed = { ...briefs };
+  const displayed = { ...Object.fromEntries(stocks.map(stock => [stock.code, readStockBrief(stock.code)])), ...briefs };
   for (const record of [...records].reverse()) {
     if (hasNewsCitations(displayed[record.symbol_code]) && !hasNewsCitations(record.news_brief)) continue;
     if (record.news_brief && (!displayed[record.symbol_code]

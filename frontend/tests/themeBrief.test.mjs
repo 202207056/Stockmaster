@@ -89,7 +89,7 @@ test('authenticated card uses one Backend GET, KST time, signed two-digit rates 
   assert.equal(calls, 1, 'expanding does not request theme briefing');
   await act(async () => window.dispatchEvent(new dom.window.Event('online')));
   await render();
-  assert.equal(calls, 1, 'no online retry or rerender request');
+  assert.equal(calls, 2, 'reconnection refreshes the saved theme');
 });
 
 test('no reason means all themes collapsed and no AI text line', async () => {
