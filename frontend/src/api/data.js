@@ -173,7 +173,13 @@ export const createPost = async (payload) => {
   return (await api.post('/community/posts', payload)).data;
 };
 export const createComment = async (id, content) => (await api.post(`/community/posts/${id}/comments`, { content })).data;
-export const updatePost = async (id, payload) => (await api.put(`/community/posts/${id}`, payload)).data;
+export const updatePost = async (id, payload) => {
+  if (['images', 'poll', 'trade_id', 'quote_post_id', 'symbol_code'].some(key => Object.hasOwn(payload, key))) {
+    const { data } = await api.get('/community/capabilities', { cache: false });
+    if (!data?.edit_attachments) throw new Error('서버 업데이트 후 첨부 내용을 수정할 수 있습니다. 작성 내용은 유지됩니다.');
+  }
+  return (await api.put(`/community/posts/${id}`, payload)).data;
+};
 export const deletePost = async (id) => (await api.delete(`/community/posts/${id}`)).data;
 export const toggleLike = async (id) => (await api.post(`/community/posts/${id}/like`)).data;
 export const votePost = async (id, option_index) => (await api.put(`/community/posts/${id}/vote`, { option_index })).data;

@@ -10,11 +10,14 @@ export function TradeCard({ trade }) {
   const hasProfit = Number.isFinite(profit) && Number.isFinite(rate);
   const amount = hasProfit ? Math.round(profit) : null;
   const date = String(trade.filled_at || trade.created_at || '').replace('T', ' ').slice(0, 16);
-  return <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 text-sm">
-    <div className="flex items-start justify-between gap-3"><strong className="min-w-0 break-words">{trade.name || trade.security_name || '종목명 확인 불가'}</strong><span className={`shrink-0 font-bold ${sale ? 'text-blue-500' : 'text-red-500'}`}>{trade.order_type}</span></div>
+  return <div className="flex items-start gap-3 rounded-xl border border-gray-200 bg-gray-50 p-4 text-sm">
+    <span className={`flex size-12 shrink-0 items-center justify-center whitespace-nowrap font-bold ${sale ? 'bg-blue-50 text-blue-500' : 'bg-red-50 text-red-500'}`}>{trade.order_type}</span>
+    <div className="min-w-0 flex-1 break-words">
+    <strong>{trade.name || trade.security_name || '종목명 확인 불가'}</strong>
     {sale && <p className="mt-2 font-bold text-blue-500" title="매도 당시 평균 매수가 대비 손익 · 수수료 및 세금 제외">{hasProfit ? `${amount > 0 ? '+' : amount < 0 ? '-' : ''}${Math.abs(amount).toLocaleString('ko-KR')}원(${comma(rate, 1)}%)` : '손익 정보 없음'}</p>}
     <p className="mt-2 text-gray-700">{Number(trade.quantity).toLocaleString()}주 · 주당 {Number(trade.price).toLocaleString()}원</p>
     {!sale && date && <p className="mt-1 text-xs text-gray-400">{date}</p>}
+    </div>
   </div>;
 }
 

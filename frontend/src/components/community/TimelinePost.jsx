@@ -24,7 +24,7 @@ export default function TimelinePost({ post, authenticated, onOpen, onQuote, onC
   const share = async () => {
     setShareMessage('');
     try {
-      if (navigator.share) { await navigator.share({ title: post.title, url: link }); return; }
+      if (navigator.share) { await navigator.share({ title: post.title || post.attachments?.poll?.question, url: link }); return; }
       if (navigator.clipboard?.writeText) { await navigator.clipboard.writeText(link); setShareMessage('게시글 링크를 복사했어요.'); return; }
       shareDialog.current.showModal();
     } catch (err) { if (err.name !== 'AbortError') shareDialog.current.showModal(); }
@@ -33,7 +33,7 @@ export default function TimelinePost({ post, authenticated, onOpen, onQuote, onC
     <Avatar name={post.author_name} src={post.author_profile_image} />
     <div className="min-w-0">
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm"><span className="break-all font-semibold text-gray-800">{post.author_name}</span>{post.symbol_code && <><ChevronRight size={14} className="text-gray-300" aria-hidden="true" /><span className="font-semibold text-brand-600">{post.attachments?.symbol_name || post.symbol_code}</span></>}<time dateTime={post.created_at} className="ml-auto text-[11px] text-gray-400">{String(post.created_at || '').replace('T', ' ').slice(0, 16)}</time><PostMenu post={post} authenticated={authenticated} onChanged={onChanged} onDeleted={onDeleted} onShare={share} /></div>
-      <button type="button" onClick={onOpen} className="mt-4 block w-full text-left"><h2 className="break-words text-lg font-bold leading-relaxed text-gray-900">{post.title}</h2></button>
+      <button type="button" onClick={onOpen} className="mt-4 block w-full text-left"><h2 className="break-words text-lg font-bold leading-relaxed text-gray-900">{post.title || post.attachments?.poll?.question}</h2></button>
       <p className="mt-2 whitespace-pre-wrap break-words text-sm leading-7 text-gray-600">{post.content}</p>
       {post.detailUnavailable && <button type="button" onClick={onOpen} className="mt-2 text-xs text-brand-600">본문을 불러오지 못했어요. 게시글 열기</button>}
       <PostAttachments post={post} authenticated={authenticated} onChanged={onChanged} showSymbol={false} />
