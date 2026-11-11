@@ -22,27 +22,28 @@ import PortfolioNewsBoard from '../ai/PortfolioNewsBoard';
 // The server shares one briefing per stock for three hours, so this rarely generates.
 function useStockBrief(code, enabled) {
   const key = resourceKey('stock-brief', null, code);
-  const [state, setState] = useState(() => ({ data: readResource(key)?.data ?? null, loading: enabled, error: false }));
+  const [state, setState] = useState(null);
   useEffect(() => subscribeStockBrief(update => {
     const data = update || readStockBrief(code);
-    if (data?.symbol_code === code) setState({ data, loading: false, error: false });
+    if (data?.symbol_code === code) setState({ code, data, loading: false, error: false });
   }), [code]);
   useEffect(() => {
     if (!enabled) return undefined;
     const controller = new AbortController();
     fetchStockBrief(code, controller.signal).then(data => {
+      if (controller.signal.aborted) return;
       writeResource(key, data, true);
-      setState({ data, loading: false, error: false });
+      setState({ code, data, loading: false, error: false });
     }).catch(() => {
-      if (!controller.signal.aborted) setState(value => ({ ...value, loading: false, error: true }));
+      if (!controller.signal.aborted) setState(value => ({ code, data: value?.code === code ? value.data : readStockBrief(code), loading: false, error: true }));
     });
     return () => controller.abort();
   }, [code, enabled, key]);
-  return state;
+  return state?.code === code ? state : { data: readResource(key)?.data ?? null, loading: enabled, error: false };
 }
 
-function useThemes(enabled) {
-  return useRemote(useCallback(signal => fetchThemeBrief(signal), []), enabled, { cacheKey: 'theme-brief', cachePreview: enabled }).data;
+function useThemes(open, authenticated) {
+  return useRemote(useCallback(signal => fetchThemeBrief(signal), []), open && authenticated, { cacheKey: 'theme-brief', cachePreview: open }).data;
 }
 
 // ▲ up, ▼ down, — flat or unknown, matching the theme tabs.
@@ -55,7 +56,7 @@ function Direction({ changeRate }) {
 const question = changeRate => changeRate > 0 ? '왜 올랐을까?' : changeRate < 0 ? '왜 내렸을까?' : '최근 뉴스 정리';
 
 export default function TradingNewsBrief({ code, triggerLabel, initialBrief }) {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, hasCachedSession } = useAuth();
   const fetchedMain = useStockBrief(code, isAuthenticated && !initialBrief);
   const sharedInitial = initialBrief && (Date.parse(fetchedMain.data?.generated_at) >= Date.parse(initialBrief.generated_at) ? fetchedMain.data : initialBrief);
   const main = sharedInitial ? { data: sharedInitial, loading: false, error: false } : fetchedMain;
@@ -66,10 +67,10 @@ export default function TradingNewsBrief({ code, triggerLabel, initialBrief }) {
   const [pickedStock, setPickedStock] = useState(null);
   // null shows the selected stock; a theme id shows that theme in the main panel.
   const [themeId, setThemeId] = useState(null);
-  const themes = useThemes(open);
+  const themes = useThemes(open, isAuthenticated);
   const [picked, setPicked] = useState(false);
-  const activeState = useStockBrief(selectedCode, open && !!selectedCode && selectedCode !== code);
-  if (!isAuthenticated || (!main.data && !main.loading) || (main.data && !main.data.ai_available)) return null;
+  const activeState = useStockBrief(selectedCode, isAuthenticated && open && !!selectedCode && selectedCode !== code);
+  if ((!isAuthenticated && !hasCachedSession) || (!main.data && !main.loading) || (main.data && !main.data.ai_available)) return null;
 
   const brief = main.data;
   const stocks = brief ? [
@@ -130,7 +131,7 @@ export default function TradingNewsBrief({ code, triggerLabel, initialBrief }) {
         </button>)}
       </div>}
       {theme ? <ThemeDetail key={theme.id} theme={theme} data={themes} autoFocus={picked} onStock={selectStock} />
-        : <PortfolioNewsBoard stocks={boardStocks} selected={selectedCode} onSelect={selectStock}
+        : <PortfolioNewsBoard enabled={isAuthenticated} stocks={boardStocks} selected={selectedCode} onSelect={selectStock}
           title={null} publicOnly autoFocus={picked}
           initialBriefs={{ [code]: brief, ...(activeBrief ? { [activeBrief.symbol_code]: activeBrief } : {}) }}
           renderNewsFooter={news => <BriefReport key={`${news.symbol_code}-${news.generated_at}`} kind="stock"

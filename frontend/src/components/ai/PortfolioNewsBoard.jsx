@@ -21,7 +21,7 @@ function stockInfo(stock, news) {
 }
 
 export default function PortfolioNewsBoard({ stocks, records = [], status = {}, selected, onSelect, onGenerate, renderGuesses, autoGenerateReady = false,
-  renderOverview, title = 'AI 보유종목 브리핑', publicOnly = false, initialBriefs = {}, renderNewsFooter, autoFocus = false }) {
+  renderOverview, title = 'AI 보유종목 브리핑', publicOnly = false, initialBriefs = {}, renderNewsFooter, autoFocus = false, enabled = true }) {
   const [briefs, setBriefs] = useState(initialBriefs);
   const [errors, setErrors] = useState({});
   const [retry, setRetry] = useState(0);
@@ -41,6 +41,7 @@ export default function PortfolioNewsBoard({ stocks, records = [], status = {}, 
   }), [codes]);
 
   useEffect(() => {
+    if (!enabled) return;
     const controller = new AbortController();
     // One request at a time, with one public server snapshot shared by both screens.
     (async () => {
@@ -59,7 +60,7 @@ export default function PortfolioNewsBoard({ stocks, records = [], status = {}, 
       }
     })();
     return () => controller.abort();
-  }, [codes, retry]);
+  }, [codes, retry, enabled]);
 
   // A generated personal brief carries the exact public snapshot it was based on.
   const displayed = { ...Object.fromEntries(stocks.map(stock => [stock.code, readStockBrief(stock.code)])), ...briefs };

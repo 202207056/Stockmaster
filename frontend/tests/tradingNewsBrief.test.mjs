@@ -305,3 +305,31 @@ test('missing title uses the shared news body and never an account-specific save
   await render({ ...auth, accountId: 8 });
   assert.equal(document.querySelector('.trading-news-banner__headline').textContent, main.recent_issues[0]);
 });
+
+test('saved AI news opens before session verification and remains visible while refreshing or offline', async () => {
+  serve();
+  await render();
+  await React.act(async () => root.unmount());
+  root = null;
+  let resolveRefresh;
+  serve({ '/ai/stock-brief/000660': config => new Promise(resolve => { resolveRefresh = data => resolve(response(config, data)); }) });
+  const restoring = { ...auth, isAuthenticated: false, hasCachedSession: true };
+  await render(restoring);
+  assert.equal(document.querySelector('.trading-news-banner__headline').textContent, main.title);
+  assert.equal(calls.length, 0);
+  await React.act(async () => document.querySelector('.trading-news-banner').click());
+  assert.match(document.querySelector('.shared-news-copy').textContent, new RegExp(main.recent_issues[0]));
+  assert.equal(calls.length, 0, 'cached news remains readable without sending requests before authentication');
+  await render();
+  assert.equal(document.querySelector('.trading-news-banner__headline').textContent, main.title);
+  const updated = { ...main, title: '새로 조회한 뉴스', generated_at: '2026-11-12T12:00:00+09:00' };
+  await React.act(async () => resolveRefresh(updated));
+  assert.equal(document.querySelector('.trading-news-banner__headline').textContent, updated.title);
+  await React.act(async () => root.unmount());
+  root = null;
+  serve({ '/ai/stock-brief/000660': () => Promise.reject(new Error('offline')) });
+  await render();
+  assert.equal(document.querySelector('.trading-news-banner__headline').textContent, updated.title);
+  await render({ isAuthenticated: false, hasCachedSession: false, user: null });
+  assert.equal(document.querySelector('.trading-news-banner'), null);
+});

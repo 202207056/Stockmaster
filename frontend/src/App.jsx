@@ -6,7 +6,6 @@ import AuthProvider from './contexts/AuthContext';
 import Layout from './components/layout/Layout';
 import ProtectedRoute from './components/routing/ProtectedRoute';
 import OnboardingGate from './components/routing/OnboardingGate';
-import ApiStatusBanner from './components/system/ApiStatusBanner';
 import FloatingAssets from './components/common/FloatingAssets';
 import FloatingTutorial from './components/common/FloatingTutorial';
 import FloatingTermAnalyzer from './components/ai/term-analyzer/FloatingTermAnalyzer';
@@ -112,8 +111,6 @@ function AuthenticatedApp() {
         <FloatingTermAnalyzer />
 
 
-      {/* 콜드스타트 안내는 라우트와 무관하게 항상 떠 있어야 합니다. */}
-      <ApiStatusBanner />
     </AuthProvider>
   );
 }
