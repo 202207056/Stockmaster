@@ -18,6 +18,7 @@ const { AuthContext } = await server.ssrLoadModule('/src/contexts/auth-context.j
 const { AuthProvider } = await server.ssrLoadModule('/src/contexts/AuthContext.jsx');
 const { default: useRemote } = await server.ssrLoadModule('/src/hooks/useRemote.js');
 const { default: RemoteState } = await server.ssrLoadModule('/src/components/common/RemoteState.jsx');
+const { fetchPrice } = await server.ssrLoadModule('/src/api/data.js');
 const container = document.getElementById('root');
 const publicKey = key => cache.resourceKey(client.API_BASE_URL, 'public', key);
 const privateKey = (owner, key) => cache.resourceKey(client.API_BASE_URL, [client.getSessionId(), owner], key);
@@ -213,5 +214,69 @@ test('partial refresh preserves a complete saved snapshot and its original times
     assert.equal(latest.savedAt, savedAt);
     assert(latest.stale && latest.error);
     assert.equal(cache.readResource(key).data.value, 100);
+  } finally { await act(async () => root.unmount()); }
+});
+
+test('same resource keeps its newest in-memory value across loader changes, missing responses and transient failures', async () => {
+  let latest;
+  const key = publicKey('retained');
+  cache.writeResource(key, [{ id: 'old' }]);
+  function Probe({ loader }) {
+    latest = useRemote(loader, true, { cacheKey: 'retained', publicCache: true });
+    return React.createElement(RemoteState, { resource: latest, requiresAuth: false }, JSON.stringify(latest.data));
+  }
+  const root = createRoot(container);
+  const tree = loader => React.createElement(AuthContext.Provider, { value: {} }, React.createElement(Probe, { loader }));
+  try {
+    await act(async () => root.render(tree(async () => [{ id: 'new' }])));
+    // Simulate a stale persistent copy while the mounted view has newer data.
+    cache.writeResource(key, [{ id: 'old' }]);
+    const request = deferred();
+    await act(async () => root.render(tree(() => request.promise)));
+    assert.deepEqual(latest.data, [{ id: 'new' }]);
+    await act(async () => request.resolve(null));
+    assert.deepEqual(latest.data, [{ id: 'new' }]);
+    assert(latest.error);
+    for (const status of [400, 408, 422, 429, 500, 503]) {
+      await act(async () => root.render(tree(async () => { throw { response: { status } }; })));
+      assert.deepEqual(latest.data, [{ id: 'new' }]);
+      assert(!container.textContent.includes('갱신'));
+    }
+    // A valid empty list represents deletion, not a connection failure.
+    await act(async () => root.render(tree(async () => [])));
+    assert.deepEqual(latest.data, []);
+    assert.deepEqual(cache.readResource(key).data, []);
+    await act(async () => root.render(tree(async () => { throw { response: { status: 404 } }; })));
+    assert.equal(latest.data, null);
+    assert.equal(cache.readResource(key), null);
+    await act(async () => root.render(tree(() => new Promise(() => {}))));
+    assert.equal(latest.data, null);
+  } finally { await act(async () => root.unmount()); }
+});
+
+test('session revalidation does not hide already loaded content', async () => {
+  const root = createRoot(container);
+  try {
+    for (const auth of [{ isLoading: true }, { sessionError: new Error('offline') }]) {
+      await act(async () => root.render(React.createElement(AuthContext.Provider, { value: auth },
+        React.createElement(RemoteState, { resource: { data: [1], loading: true }, authenticated: true }, 'SAVED CONTENT'))));
+      assert.equal(container.textContent, 'SAVED CONTENT');
+    }
+  } finally { await act(async () => root.unmount()); }
+});
+
+test('missing stock prices cannot overwrite the cached valid quote', async () => {
+  client.clearRequestCache();
+  cache.writeResource(publicKey('price-check'), { current_price: 70000 });
+  client.default.defaults.adapter = async config => ({ data: { current_price: null }, status: 200, headers: {}, config });
+  let latest;
+  const loader = signal => fetchPrice('005930', signal, { cache: false });
+  function Probe() { latest = useRemote(loader, true, { cacheKey: 'price-check', publicCache: true }); return null; }
+  const root = createRoot(container);
+  try {
+    await act(async () => root.render(React.createElement(AuthContext.Provider, { value: {} }, React.createElement(Probe))));
+    assert.equal(latest.data.current_price, 70000);
+    assert.equal(cache.readResource(publicKey('price-check')).data.current_price, 70000);
+    assert(latest.error);
   } finally { await act(async () => root.unmount()); }
 });

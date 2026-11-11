@@ -8,7 +8,11 @@ export const fetchPopularStocks = async signal => requireArray((await api.get('/
 export const fetchStocks = async (search, signal) => requireArray(await get('/stocks', { search: search || undefined }, signal));
 export const fetchStock = async (code, signal) => requireObject(await get(`/stocks/${encodeURIComponent(code)}`, undefined, signal));
 export const fetchStockLogo = async (code, signal) => requireObject(await get(`/stocks/${encodeURIComponent(code)}/logo`, undefined, signal));
-export const fetchPrice = async (code, signal, options = {}) => requireObject((await api.get(`/stocks/${encodeURIComponent(code)}/price`, { signal, ...options })).data);
+export const fetchPrice = async (code, signal, options = {}) => {
+  const data = requireObject((await api.get(`/stocks/${encodeURIComponent(code)}/price`, { signal, ...options })).data);
+  if (quotePrice(data) == null) throw new Error(data.message || '유효한 현재가를 받지 못했습니다.');
+  return data;
+};
 export const fetchChart = async (code, signal, period = 'D') => chartRows(await get(`/stocks/${encodeURIComponent(code)}/chart`, { period }, signal));
 export const fetchRanking = async (type, signal, { limit = 10 } = {}) => requireArray(await get(`/stocks/ranking/${type}`, { limit }, signal));
 export const fetchNews = async (signal) => {

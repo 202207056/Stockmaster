@@ -36,5 +36,6 @@ export function clearPrivateResources() {
 }
 export function canRetainResource(error) {
   const status = error?.response?.status;
-  return !status || status === 408 || status === 429 || status >= 500;
+  // Only a definitive denial/deletion invalidates the last successful read.
+  return ![401, 403, 404, 410].includes(status);
 }

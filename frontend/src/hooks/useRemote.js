@@ -4,6 +4,9 @@ import { API_BASE_URL, getSessionId, getToken } from '../api/client';
 import { canRetainResource, readResource, removeResource, resourceKey, writeResource } from '../api/resourceCache';
 import { requireFreshRequest } from '../api/requestCache';
 
+const matchesSnapshot = (state, loader, owner, token, key) => state?.owner === owner
+  && state?.token === token && state?.key === key && (key != null || state?.loader === loader);
+
 // Explicit keys include every loader parameter. Unkeyed reads remain network-only.
 export default function useRemote(loader, enabled = true, { keepPreviousData = false, cacheKey, publicCache = false, cachePreview = true, isIncomplete } = {}) {
   const { user, hasCachedSession } = useAuth();
@@ -28,18 +31,20 @@ export default function useRemote(loader, enabled = true, { keepPreviousData = f
       await Promise.resolve();
       if (!valid()) return;
       setState(previous => {
-        const matching = previous?.loader === loader && previous?.owner === owner && previous?.token === token && previous?.key === key;
-        const fallback = matching && (key || keepPreviousData) ? previous : cached;
+        const matching = matchesSnapshot(previous, loader, owner, token, key);
+        const fallback = matching && (key || keepPreviousData) ? previous : readResource(key);
         return { loader, owner, token, key, revision, pending: true, data: fallback?.data ?? null, savedAt: fallback?.savedAt, error: null };
       });
       try {
         const data = await loader(controller.signal);
         if (!valid()) return;
+        // No response is not a successful empty list. Keep the last good snapshot.
+        if (data == null) throw new Error('서버 응답을 확인할 수 없습니다.');
         const incomplete = isIncomplete?.(data);
         if (!incomplete) writeResource(key, data, !publicCache);
         setState(previous => {
-          const matching = previous?.key === key && previous?.owner === owner && previous?.token === token && previous?.loader === loader;
-          const fallback = matching ? previous : cached;
+          const matching = matchesSnapshot(previous, loader, owner, token, key);
+          const fallback = matching ? previous : readResource(key);
           if (incomplete && fallback?.data != null) return {
             loader, owner, token, key, revision, data: fallback.data, savedAt: fallback.savedAt,
             error: new Error('Some data could not be refreshed.'),
@@ -51,8 +56,8 @@ export default function useRemote(loader, enabled = true, { keepPreviousData = f
         const retain = canRetainResource(error);
         if (!retain) removeResource(key);
         setState(previous => {
-          const matching = previous?.loader === loader && previous?.owner === owner && previous?.token === token && previous?.key === key;
-          const fallback = matching && (key || keepPreviousData) ? previous : cached;
+          const matching = matchesSnapshot(previous, loader, owner, token, key);
+          const fallback = matching && (key || keepPreviousData) ? previous : readResource(key);
           return { loader, owner, token, key, revision, data: retain ? fallback?.data ?? null : null,
             savedAt: retain ? fallback?.savedAt : null, error };
         });
@@ -72,7 +77,7 @@ export default function useRemote(loader, enabled = true, { keepPreviousData = f
   }, [enabled, key, publicCache, reload]);
   const matching = state?.loader === loader && state?.owner === owner && state?.token === token && state?.key === key;
   const current = visible && matching && state.revision === revision && !state.pending;
-  const retained = visible && matching && (key || keepPreviousData);
+  const retained = visible && matchesSnapshot(state, loader, owner, token, key) && (key || keepPreviousData);
   const selected = visible ? (current || retained ? state : cached) : null;
   const data = selected?.data ?? null;
   return { data, error: current ? state.error : null, loading: enabled && !current,

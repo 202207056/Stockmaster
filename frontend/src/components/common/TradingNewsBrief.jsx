@@ -35,7 +35,7 @@ function useStockBrief(code, enabled) {
       writeResource(key, data, true);
       setState({ code, data, loading: false, error: false });
     }).catch(() => {
-      if (!controller.signal.aborted) setState(value => ({ code, data: value?.code === code ? value.data : readStockBrief(code), loading: false, error: true }));
+      if (!controller.signal.aborted) setState(value => ({ code, data: (value?.code === code ? value.data : null) ?? readStockBrief(code) ?? readResource(key)?.data ?? null, loading: false, error: true }));
     });
     return () => controller.abort();
   }, [code, enabled, key]);
