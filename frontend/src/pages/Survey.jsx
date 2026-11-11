@@ -40,12 +40,18 @@ export default function Survey() {
 function SurveyForm({ answers }) {
   const navigate = useNavigate();
   const [params] = useSearchParams();
-  const { user, setUser } = useAuth();
+  const { user, setUser, accounts = [] } = useAuth();
   const editing = params.get('mode') === 'edit' && !['survey', 'seed'].includes(getOnboarding(user?.user_id));
   const nextPath = editing ? '/dashboard' : '/seed-money';
   const continueOnboarding = () => {
     if (!editing) setOnboarding(user?.user_id, 'seed');
     navigate(nextPath);
+  };
+  const openAccountSetup = () => {
+    const stage = getOnboarding(user?.user_id);
+    const initialSetup = ['survey', 'seed'].includes(stage) || (!editing && stage !== 'done' && accounts.length === 0);
+    if (initialSetup) setOnboarding(user?.user_id, 'seed');
+    navigate(initialSetup ? '/seed-money' : '/seed-money?mode=new');
   };
   const [selections, setSelections] = useState(() => Object.fromEntries(SURVEY.flatMap((question) => {
     const answer = answers.find((item) => item.question_number === question.number);
@@ -101,6 +107,7 @@ function SurveyForm({ answers }) {
         <SurveyResult
           result={result}
           onRetry={handleRetry}
+          onAccountSetup={openAccountSetup}
           onDone={continueOnboarding}
           doneLabel={editing ? '결과 확인하고 홈으로' : '다음'}
         />
@@ -230,7 +237,7 @@ function SurveyShell({ children, onHome }) {
   );
 }
 
-export function SurveyResult({ result, onRetry, onDone, doneLabel = '시작하기' }) {
+export function SurveyResult({ result, onRetry, onDone, onAccountSetup, doneLabel = '시작하기' }) {
   const analysis = result.analysis;
   const position = STYLES.findIndex((s) => s.label === result.investment_style);
 
@@ -294,6 +301,7 @@ export function SurveyResult({ result, onRetry, onDone, doneLabel = '시작하�
         >
           다시 하기
         </button>
+        {onAccountSetup && <button type="button" onClick={onAccountSetup} className="rounded-lg border border-gray-300 px-6 py-2.5 text-sm font-bold text-gray-700 transition hover:bg-gray-50">계좌 설정</button>}
       </div>
     </div>
   );

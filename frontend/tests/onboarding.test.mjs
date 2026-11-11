@@ -320,3 +320,60 @@ test('failed account refresh retries without creating a duplicate account', asyn
     assert.equal(document.querySelector('output').textContent, '/seed-money');
   } finally { await React.act(async () => root.unmount()); }
 });
+
+test('survey account setup reuses the initial default but adds a separate account for returning users', async () => {
+  for (const initial of [true, false]) {
+    const id = initial ? 201 : 202;
+    localStorage.clear();
+    client.setToken(`flow-${id}`);
+    onboarding.setOnboarding(id, initial ? 'survey' : 'done');
+    mockFlowApi(id);
+    const originalAdapter = client.default.defaults.adapter;
+    let created = 0;
+    client.default.defaults.adapter = async config => {
+      if (config.url === '/trading/accounts' && config.method === 'post') {
+        created++;
+        assert.equal(JSON.parse(config.data).initial_balance, 10000000);
+        return { data: { account_id: 8 }, status: 200, headers: {}, config };
+      }
+      const response = await originalAdapter(config);
+      if (config.url === '/trading/accounts' && created) response.data = [...response.data, { account_id: 8, balance: '10000000', withdrawable_cash: '10000000' }];
+      return response;
+    };
+    const root = createRoot(document.getElementById('root'));
+    try {
+      await React.act(async () => root.render(flow(initial ? '/survey' : '/survey?mode=edit')));
+      await React.act(async () => [...document.querySelectorAll('fieldset')].forEach(field => field.querySelector('input').click()));
+      await click('저장하고 결과 보기');
+      await click('계좌 설정');
+      assert.equal(document.querySelector('output').textContent, initial ? '/seed-money' : '/seed-money?mode=new');
+      await click('설정하기');
+      assert.equal(created, initial ? 0 : 1);
+      assert.equal(document.querySelector('output').textContent, initial ? '/dashboard?tour=start' : '/dashboard');
+      assert.equal(localStorage.getItem('gp_account_id'), initial ? '7' : '8');
+    } finally { await React.act(async () => root.unmount()); }
+  }
+});
+
+test('cancelling seed setup returns home without creating an account or being redirected back', async () => {
+  for (const initial of [true, false]) {
+    const id = initial ? 203 : 204;
+    localStorage.clear();
+    client.setToken(`flow-${id}`);
+    onboarding.setOnboarding(id, initial ? 'seed' : 'done');
+    mockFlowApi(id);
+    const originalAdapter = client.default.defaults.adapter;
+    client.default.defaults.adapter = config => {
+      assert.notEqual(config.method, 'post');
+      return originalAdapter(config);
+    };
+    const root = createRoot(document.getElementById('root'));
+    try {
+      await React.act(async () => root.render(flow(initial ? '/seed-money' : '/seed-money?mode=new')));
+      await click('취소');
+      assert.equal(document.querySelector('output').textContent, '/dashboard');
+      assert.equal(onboarding.getOnboarding(id), 'done');
+      assert.equal(document.querySelector('.site-tour-intro'), null);
+    } finally { await React.act(async () => root.unmount()); }
+  }
+});
