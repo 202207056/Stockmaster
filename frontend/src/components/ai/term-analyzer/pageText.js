@@ -13,8 +13,11 @@ export function readVisiblePageText(root = document.body, region = null) {
   const doc = root.ownerDocument, view = doc.defaultView;
   // "Visible" means rendered page content, including outside the current viewport.
   // Retain this export for existing consumers; never scroll or load missing rows.
-  const inactivePanels = new Set([...doc.querySelectorAll('[role="tab"][aria-selected="false"][aria-controls]')]
-    .flatMap((tab) => tab.getAttribute('aria-controls').trim().split(/\s+/u).filter(Boolean)));
+  // Tabs can share one panel, so a panel the selected tab controls is on screen even when other tabs also name it.
+  const controlled = (selected) => [...doc.querySelectorAll(`[role="tab"][aria-selected="${selected}"][aria-controls]`)]
+    .flatMap((tab) => tab.getAttribute('aria-controls').trim().split(/\s+/u).filter(Boolean));
+  const activePanels = new Set(controlled('true'));
+  const inactivePanels = new Set(controlled('false').filter((id) => !activePanels.has(id)));
   const chunks = [], range = doc.createRange();
 
   function textInArea(node, area, style) {

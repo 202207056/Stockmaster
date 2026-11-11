@@ -148,3 +148,21 @@ test('a word wrapped onto the next line gets one mark box per line', async () =>
   const range = { getClientRects: () => [box(800, 100, 14), box(0, 122, 30), box(30, 122.5, 12), box(5, 140, 0)] };
   assert.deepEqual(lineBoxes(range).map(({ left, top, width }) => [left, top, width]), [[800, 100, 14], [0, 122, 42]]);
 });
+
+test('words inside a closed details are not marked, but its summary is', () => {
+  const dom = page('<details><summary>PER 보기</summary><p>시가총액</p></details><details open><summary>열림</summary><p>배당수익률</p></details>');
+  const marks = collectPageMarks({ left: 0, top: 0, right: 600, bottom: 200 }, GLOSSARY, [], dom.window.document.body);
+  assert.deepEqual(marks.map((mark) => mark.range.toString()), ['PER', '배당수익률']);
+});
+
+test('a summary inside another closed details is not marked', () => {
+  const dom = page('<details><summary>밖</summary><details><summary>PER</summary><p>시가총액</p></details></details><details><summary>PER 보기</summary><summary>PBR</summary></details>');
+  const marks = collectPageMarks({ left: 0, top: 0, right: 600, bottom: 200 }, GLOSSARY, [], dom.window.document.body);
+  assert.deepEqual(marks.map((mark) => mark.range.toString()), ['PER']);
+});
+
+test('screen-reader-only and inert text is not marked', () => {
+  const dom = page('<table><caption class="sr-only">시가·고가·저가·종가</caption></table><p class="visually-hidden">PER</p><div inert><p>PBR</p></div><p>시가총액</p>');
+  const marks = collectPageMarks({ left: 0, top: 0, right: 600, bottom: 200 }, GLOSSARY, [], dom.window.document.body);
+  assert.deepEqual(marks.map((mark) => mark.range.toString()), ['시가총액']);
+});

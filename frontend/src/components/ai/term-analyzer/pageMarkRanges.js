@@ -2,9 +2,20 @@ import { findTermSpans } from './terms.js';
 import { aiId, BASIC_IDS } from './readMarks.js';
 
 const MAX_MARKS = 80;
-const SKIPPED = '[data-ocr-widget], script, style, noscript, textarea, input, select, [aria-hidden="true"]';
+// Screen-reader-only text keeps a layout box under its visible container, so it is skipped like the page text reader does.
+const SKIPPED = '[data-ocr-widget], script, style, noscript, textarea, input, select, [aria-hidden="true"], [hidden], [inert], .sr-only, .visually-hidden';
 const overlaps = (rect, area) => rect.width > 0 && rect.height > 0
   && rect.left < area.right && rect.right > area.left && rect.top < area.bottom && rect.bottom > area.top;
+
+// A closed <details> still reports layout boxes for its content, so only its first summary counts as drawn,
+// and that summary is drawn only if every closed <details> around it also shows it.
+function inClosedDetails(element) {
+  for (let details = element.closest('details:not([open])'); details; details = details.parentElement?.closest('details:not([open])')) {
+    const summary = [...details.children].find((child) => child.tagName === 'SUMMARY');
+    if (!summary?.contains(element)) return true;
+  }
+  return false;
+}
 
 // The whole page, for marks after a full-page analysis.
 export const WHOLE_PAGE = { left: -1e7, top: -1e7, right: 1e7, bottom: 1e7 };
@@ -41,7 +52,7 @@ export function collectPageMarks(area, glossary, aiTerms, root = document.body, 
   for (let node = walker.nextNode(); node && marks.length < limit; node = walker.nextNode()) {
     const text = node.data;
     index += 1;
-    if (!text.trim() || !node.parentElement || node.parentElement.closest(SKIPPED)) continue;
+    if (!text.trim() || !node.parentElement || node.parentElement.closest(SKIPPED) || inClosedDetails(node.parentElement)) continue;
     const whole = doc.createRange(); whole.selectNodeContents(node);
     if (![...whole.getClientRects()].some((rect) => overlaps(rect, area))) continue;
     // Dictionary offsets are measured on the normalized text ("…" becomes "..."), so map them back.

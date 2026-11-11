@@ -93,7 +93,8 @@ export default function TermAnalysisPanel({ onCaptureVisibility, showMarks = tru
       if (records.every((record) => record.target.parentElement?.closest?.('[data-ocr-widget]') || record.target.closest?.('[data-ocr-widget]'))) return;
       clearTimeout(timer); timer = setTimeout(() => setDomVersion((n) => n + 1), 400);
     });
-    observer.observe(document.body, { childList: true, subtree: true, characterData: true });
+    // Opening or closing a <details> only flips its open attribute, but it shows or hides the words inside.
+    observer.observe(document.body, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ['open'] });
     return () => { clearTimeout(timer); observer.disconnect(); };
   }, [capture]);
 

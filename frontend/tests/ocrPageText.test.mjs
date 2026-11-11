@@ -60,6 +60,14 @@ test('offscreen rendered text is included at top, middle and bottom without scro
   } finally { dom.window.close(); }
 });
 
+test('a panel shared by several tabs is read while one of them is selected', () => {
+  const text = read(`<button role="tab" aria-selected="true" aria-controls="shared">투자 지표</button>
+    <button role="tab" aria-selected="false" aria-controls="shared">재무정보</button>
+    <div role="tabpanel" id="shared"><dl><dt>시가총액</dt><dd>1,185조</dd><dt>PER</dt><dd>9.1배</dd></dl></div>`);
+  assert.match(text, /시가총액/u);
+  assert.match(text, /PER/u);
+});
+
 test('closed menus, details, dialogs, popovers and inactive tab panels stay excluded', () => {
   const text = read(`<p>매수</p><nav hidden>PER</nav><button role="tab" aria-selected="false" aria-controls="">메뉴</button>
     <details><summary>매도</summary>ETF<p>PBR</p></details>
