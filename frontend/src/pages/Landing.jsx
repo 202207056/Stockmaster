@@ -93,7 +93,7 @@ export default function Landing() {
             <p className="text-sm font-bold text-brand-600">투자, 배우면서 시작하세요</p>
 
             <h1 className="mt-4 inline-block max-w-3xl border-b-4 border-gray-900 pb-3 text-3xl leading-tight font-extrabold text-gray-900 sm:text-5xl">
-              모의투자 프로젝트
+              인생한방 프로젝트
             </h1>
           </div>
 
