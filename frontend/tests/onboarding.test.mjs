@@ -35,13 +35,42 @@ const click = async label => {
   await React.act(async () => button.click());
 };
 
+test('landing account actions follow session restoration, login and logout', async () => {
+  const root = createRoot(document.getElementById('root'));
+  let loggedOut = false;
+  const render = async (status, user = null) => React.act(async () => root.render(
+    h(MemoryRouter, null, h(AuthContext.Provider, { value: {
+      status, user, isAuthenticated: status === 'authenticated', logout: () => { loggedOut = true; },
+    } }, h(Landing)))));
+  try {
+    for (const status of ['loading', 'error']) {
+      await render(status);
+      assert.equal(document.querySelector('a[href="/signup"]'), null);
+      assert(!document.querySelector('header').textContent.includes('가입'));
+    }
+    await render('authenticated', { user_name: '테스트회원' });
+    assert.equal(document.querySelector('header a[href="/mypage"]').textContent, '테스트회원님');
+    assert.equal(document.querySelector('a[href="/login"]'), null);
+    assert.equal(document.querySelector('a[href="/signup"]'), null);
+    assert([...document.querySelectorAll('a')].some(link => link.textContent === '투자 이어하기' && link.getAttribute('href') === '/dashboard'));
+    await click('로그아웃');
+    assert(loggedOut);
+    await render('unauthenticated');
+    assert(document.querySelector('header a[href="/login"]'));
+    assert(document.querySelector('header a[href="/signup"]'));
+    assert.equal(document.querySelector('header a[href="/mypage"]'), null);
+  } finally {
+    await React.act(async () => root.unmount());
+  }
+});
+
 test('landing browse immediately opens the introduction only when tutorial guidance is enabled', async () => {
   for (const enabled of [true, false]) {
     localStorage.setItem('stockmaster:tutorials-enabled', String(enabled));
     const root = createRoot(document.getElementById('root'));
     try {
       await React.act(async () => root.render(h(MemoryRouter, { initialEntries: ['/'] },
-        h(AuthContext.Provider, { value: { user: null, isAuthenticated: false } },
+        h(AuthContext.Provider, { value: { user: null, isAuthenticated: false, status: 'unauthenticated' } },
           h(Routes, null,
             h(Route, { path: '/', element: h(Landing) }),
             h(Route, { path: '/dashboard', element: h(Tour) }))), h(Location))));

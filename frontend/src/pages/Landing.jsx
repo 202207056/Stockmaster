@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { ChartCandlestick, ClipboardList, Target } from 'lucide-react';
 import Footer from '../components/layout/Footer';
 import useTutorialSetting from '../hooks/useTutorialSetting';
+import useAuth from '../hooks/useAuth';
 
 /**
  * 첫 화면
@@ -33,6 +34,8 @@ const FEATURES = [
 
 export default function Landing() {
   const [tutorialsEnabled] = useTutorialSetting();
+  const { isAuthenticated, status, user, logout } = useAuth();
+  const isGuest = status === 'unauthenticated';
   return (
     <div className="flex min-h-screen flex-col bg-white">
       <div className="relative flex flex-1 flex-col overflow-hidden">
@@ -51,6 +54,14 @@ export default function Landing() {
           </span>
 
           <div className="flex shrink-0 items-center gap-3 sm:gap-4">
+            {isAuthenticated ? <>
+              <Link to="/mypage" className="max-w-32 truncate py-3 text-sm font-medium text-gray-700 hover:text-gray-900">
+                {user?.user_name ? `${user.user_name}님` : '내 정보'}
+              </Link>
+              <button type="button" onClick={logout} className="min-h-11 rounded-md border border-gray-400 px-4 py-1.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50 sm:px-5">
+                로그아웃
+              </button>
+            </> : isGuest ? <>
             <Link
               to="/login"
               className="py-3 text-sm font-medium text-gray-600 transition hover:text-gray-900"
@@ -63,6 +74,11 @@ export default function Landing() {
             >
               가입
             </Link>
+            </> : status === 'error' ? (
+              <Link to="/login" className="py-3 text-sm font-medium text-gray-600 hover:text-gray-900">로그인 상태 확인</Link>
+            ) : (
+              <span role="status" className="py-3 text-sm text-gray-500">로그인 확인 중…</span>
+            )}
           </div>
         </header>
 
@@ -88,12 +104,12 @@ export default function Landing() {
           </p>
 
           <div className="mt-8 flex flex-col gap-3 text-center sm:mt-10 sm:flex-row sm:flex-wrap sm:items-center">
-            <Link
-              to="/signup"
+            {(isAuthenticated || isGuest) && <Link
+              to={isAuthenticated ? '/dashboard' : '/signup'}
               className="rounded-lg bg-brand-600 px-7 py-3 text-sm font-bold text-white transition hover:bg-brand-700"
             >
-              가입하고 시작하기
-            </Link>
+              {isAuthenticated ? '투자 이어하기' : '가입하고 시작하기'}
+            </Link>}
             <Link
               to={tutorialsEnabled ? '/dashboard?tour=start' : '/dashboard'}
               className="rounded-lg border border-gray-300 px-7 py-3 text-sm font-bold text-gray-700 transition hover:bg-gray-50"
